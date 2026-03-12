@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: backend
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:planbookai}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+supabase:
+  url: ${SUPABASE_URL:your-supabase-url}
+  key: ${SUPABASE_KEY:your-supabase-key}
+  bucket: ${SUPABASE_BUCKET:planbookai-storage}
+  s3:
+     endpoint: ${SUPABASE_S3_ENDPOINT:your-supabase-s3-endpoint}
+     region: ${SUPABASE_S3_REGION:ap-southeast-1}
+     accessKey: ${SUPABASE_S3_ACCESS_KEY:your-access-key}
+     secretKey: ${SUPABASE_S3_SECRET_KEY:your-secret-key}
+
+server:
+  port: 8080
