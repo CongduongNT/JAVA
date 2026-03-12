@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   db:
@@ -6,11 +5,14 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: planbookai
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-root}
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - db_data:/var/lib/mysql
 
@@ -18,16 +20,18 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: always
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       MYSQL_HOST: db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: planbookai
       MYSQL_USER: root
-      MYSQL_PASSWORD: root
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
       SUPABASE_S3_ENDPOINT: ${SUPABASE_S3_ENDPOINT}
