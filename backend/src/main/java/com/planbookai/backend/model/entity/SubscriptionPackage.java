@@ -40,6 +40,7 @@ public class SubscriptionPackage {
     @JoinColumn(name = "created_by")
     private User createdBy;
 
+    @Builder.Default
     @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

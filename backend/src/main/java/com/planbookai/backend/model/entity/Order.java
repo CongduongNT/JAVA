@@ -41,6 +41,7 @@ public class Order {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Builder.Default
     @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 

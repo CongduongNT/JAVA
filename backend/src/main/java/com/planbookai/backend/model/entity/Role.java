@@ -22,6 +22,7 @@ public class Role {
 
     private String description;
 
+    @Builder.Default
     @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 

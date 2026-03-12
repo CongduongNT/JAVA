@@ -43,6 +43,7 @@ public class User {
     @Builder.Default
     private Boolean emailVerified = false;
 
+    @Builder.Default
     @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 
