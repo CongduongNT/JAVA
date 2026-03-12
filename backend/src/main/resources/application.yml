@@ -28,5 +28,13 @@ supabase:
      accessKey: ${SUPABASE_S3_ACCESS_KEY:your-access-key}
      secretKey: ${SUPABASE_S3_SECRET_KEY:your-secret-key}
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+
 server:
   port: 8080
