@@ -21,10 +21,9 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final SubscriptionPackageRepository packageRepository;
 
-    @Override
     public void run(String... args) throws Exception {
         seedRoles();
-        seedAdminUser();
+        seedUsers();
         seedPackages();
     }
 
@@ -39,19 +38,35 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void seedAdminUser() {
-        if (userRepository.count() == 0) {
-            Role adminRole = roleRepository.findByName(Role.RoleName.ADMIN)
-                    .orElseThrow(() -> new RuntimeException("Role ADMIN not found"));
+    private void seedUsers() {
+        String defaultPassword = "$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00GdRphumyjmsu"; // 'admin'
 
-            userRepository.save( User.builder()
-                    .fullName("System Admin")
-                    .email("admin@planbookai.com")
-                    .passwordHash("$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00GdRphumyjmsu") // password: 'admin'
-                    .role(adminRole)
-                    .isActive(true)
-                    .emailVerified(true)
-                    .build());
+        if (userRepository.findByEmail("admin@planbookai.com").isEmpty()) {
+            Role adminRole = roleRepository.findByName(Role.RoleName.ADMIN).orElseThrow();
+            userRepository.save(User.builder()
+                    .fullName("System Admin").email("admin@planbookai.com")
+                    .passwordHash(defaultPassword).role(adminRole).isActive(true).emailVerified(true).build());
+        }
+
+        if (userRepository.findByEmail("manager@planbookai.com").isEmpty()) {
+            Role managerRole = roleRepository.findByName(Role.RoleName.MANAGER).orElseThrow();
+            userRepository.save(User.builder()
+                    .fullName("System Manager").email("manager@planbookai.com")
+                    .passwordHash(defaultPassword).role(managerRole).isActive(true).emailVerified(true).build());
+        }
+
+        if (userRepository.findByEmail("staff@planbookai.com").isEmpty()) {
+            Role staffRole = roleRepository.findByName(Role.RoleName.STAFF).orElseThrow();
+            userRepository.save(User.builder()
+                    .fullName("Educational Staff").email("staff@planbookai.com")
+                    .passwordHash(defaultPassword).role(staffRole).isActive(true).emailVerified(true).build());
+        }
+
+        if (userRepository.findByEmail("teacher@planbookai.com").isEmpty()) {
+            Role teacherRole = roleRepository.findByName(Role.RoleName.TEACHER).orElseThrow();
+            userRepository.save(User.builder()
+                    .fullName("HighSchool Teacher").email("teacher@planbookai.com")
+                    .passwordHash(defaultPassword).role(teacherRole).isActive(true).emailVerified(true).build());
         }
     }
 
