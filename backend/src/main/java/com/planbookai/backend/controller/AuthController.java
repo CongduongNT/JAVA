@@ -54,9 +54,12 @@ public class AuthController {
         }
         // Xây dựng DTO để chỉ trả về thông tin cần thiết
         AuthResponse.UserDTO userDTO = AuthResponse.UserDTO.builder()
+                .id(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .role(user.getRole() != null ? user.getRole().getName().name() : null).build();
+                .role(user.getRole() != null ? user.getRole().getName().name() : null)
+                .isActive(user.getIsActive())
+                .build();
         return ResponseEntity.ok(userDTO);
     }
 }

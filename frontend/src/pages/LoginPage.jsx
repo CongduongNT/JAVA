@@ -17,15 +17,19 @@ const Login = () => {
     password: yup.string().required('Vui lòng nhập mật khẩu')
   });
 
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(schema),
+    mode: 'onBlur'
+  });
+
+  const onSubmit = (data) => {
     setLoading(true);
 
     // Giả lập đăng nhập thành công (Bạn sẽ thay thế bằng API backend sau này)
     setTimeout(() => {
       const mockUser = {
         fullName: 'Demo User',
-        email: email,
+        email: data.email,
         role: 'TEACHER'
       };
       dispatch(loginSuccess({ user: mockUser, token: 'demo-token' }));
@@ -33,11 +37,6 @@ const Login = () => {
       navigate('/dashboard');
     }, 1000);
   };
-
- const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: yupResolver(schema),
-    mode: 'onBlur'
-  });
 
 
   return (
@@ -49,7 +48,7 @@ const Login = () => {
           <p className="text-slate-500 mt-2">Vui lòng đăng nhập để tiếp tục</p>
         </div>
 
-        <form className="space-y-6" onSubmit={handleLogin}>
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
             <div className="relative">
