@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import api from '../services/api';
 import { loginSuccess } from '../features/auth/authSlice';
 import * as yup from 'yup';
 
@@ -22,20 +23,19 @@ const Login = () => {
     mode: 'onBlur'
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     setLoading(true);
-
-    // Giả lập đăng nhập thành công (Bạn sẽ thay thế bằng API backend sau này)
-    setTimeout(() => {
-      const mockUser = {
-        fullName: 'Demo User',
-        email: data.email,
-        role: 'TEACHER'
-      };
-      dispatch(loginSuccess({ user: mockUser, token: 'demo-token' }));
-      setLoading(false);
+    try {
+      const response = await api.post('/auth/login', data);
+      // Backend returns AuthResponse { accessToken, refreshToken, user: { id, fullName, email, role, isActive } }
+      dispatch(loginSuccess(response.data));
       navigate('/dashboard');
-    }, 1000);
+    } catch (error) {
+      console.error("Đăng nhập thất bại:", error);
+      alert(error.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu.");
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -70,7 +70,7 @@ const Login = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-medium text-slate-700">Mật khẩu</label>
-              <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+              <Link to="/forgot-password" disabled className="text-sm font-medium text-blue-600 hover:text-blue-700">
                 Quên mật khẩu?
               </Link>
             </div>
