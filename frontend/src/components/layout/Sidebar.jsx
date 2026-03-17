@@ -14,25 +14,29 @@ import {
   Shield,
 } from 'lucide-react';
 
-/**
- * Định nghĩa danh sách menu với property `roles`.
- * roles: [] hoặc không có → hiển thị cho tất cả authenticated user.
- * roles: ['ADMIN'] → chỉ hiện với ADMIN.
- */
 const ALL_NAV_ITEMS = [
-  // ----- Shared (all roles) -----
   {
     name: 'Dashboard',
     icon: LayoutDashboard,
     path: '/dashboard',
-    roles: [], // all roles
+    roles: [],
   },
-
-  // ----- TEACHER -----
   {
     name: 'My Lesson Plans',
     icon: BookOpen,
     path: '/lesson-plans',
+    roles: ['TEACHER'],
+  },
+  {
+    name: 'Packages',
+    icon: Package,
+    path: '/packages',
+    roles: ['TEACHER'],
+  },
+  {
+    name: 'Order History',
+    icon: Settings,
+    path: '/orders/history',
     roles: ['TEACHER'],
   },
   {
@@ -53,16 +57,12 @@ const ALL_NAV_ITEMS = [
     path: '/ocr-grading',
     roles: ['TEACHER'],
   },
-
-  // ----- STAFF -----
   {
     name: 'Prompt Templates',
     icon: Settings,
     path: '/prompt-templates',
     roles: ['STAFF', 'MANAGER'],
   },
-
-  // ----- MANAGER -----
   {
     name: 'Manage Teachers',
     icon: Users,
@@ -70,9 +70,15 @@ const ALL_NAV_ITEMS = [
     roles: ['MANAGER', 'ADMIN'],
   },
   {
-    name: 'Subscriptions',
+    name: 'Packages',
     icon: Package,
     path: '/manager/subscriptions',
+    roles: ['MANAGER', 'ADMIN'],
+  },
+  {
+    name: 'Orders',
+    icon: BookCopy,
+    path: '/manager/orders',
     roles: ['MANAGER', 'ADMIN'],
   },
   {
@@ -81,8 +87,6 @@ const ALL_NAV_ITEMS = [
     path: '/manager/analytics',
     roles: ['MANAGER', 'ADMIN'],
   },
-
-  // ----- ADMIN -----
   {
     name: 'User Management',
     icon: Shield,
@@ -102,9 +106,8 @@ const Sidebar = () => {
   const { user } = useSelector((state) => state.auth);
   const userRole = user?.role?.toUpperCase() || '';
 
-  // Lọc danh sách menu theo role của user hiện tại
   const visibleItems = ALL_NAV_ITEMS.filter((item) => {
-    if (item.roles.length === 0) return true; // hiển thị cho tất cả
+    if (!item.roles || item.roles.length === 0) return true;
     return item.roles.map((r) => r.toUpperCase()).includes(userRole);
   });
 
@@ -112,12 +115,10 @@ const Sidebar = () => {
 
   return (
     <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
-      {/* Logo */}
       <div className="h-16 flex items-center justify-center border-b border-slate-200">
         <h1 className="text-2xl font-semibold font-display text-blue-600">PlanbookAI</h1>
       </div>
 
-      {/* User role badge */}
       {userRole && (
         <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
@@ -132,10 +133,9 @@ const Sidebar = () => {
         </div>
       )}
 
-      {/* Navigation */}
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         <ul className="space-y-0.5">
-          {visibleItems.map((item) => (
+          {Array.isArray(visibleItems) && visibleItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}

@@ -4,6 +4,8 @@ import { useDispatch } from 'react-redux';
 import { User, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { loginSuccess } from '../features/auth/authSlice';
 
+import api from '../services/api';
+
 const Register = () => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -26,18 +28,21 @@ const Register = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: formData.fullName, email: formData.email, password: formData.password }),
+      const response = await api.post('/auth/register', {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Đăng ký thất bại');
       
+      const data = response.data;
       dispatch(loginSuccess(data));
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Lỗi kết nối');
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError(err.message || 'Lỗi kết nối');
+      }
     } finally {
       setLoading(false);
     }

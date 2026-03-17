@@ -17,7 +17,10 @@ import DashboardPage from './pages/DashboardPage';
 // ─── Placeholder pages (tạo sau khi implement từng feature) ───
 // import AdminUserPage from './pages/admin/AdminUserPage';
 // import ManagerTeachersPage from './pages/manager/ManagerTeachersPage';
-// import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage';
+import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage';
+import ManagerOrdersPage from './pages/manager/ManagerOrdersPage';
+import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage';
+import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage';
 // import ManagerAnalyticsPage from './pages/manager/ManagerAnalyticsPage';
 // import StaffPromptPage from './pages/staff/StaffPromptPage';
 // import TeacherLessonPlansPage from './pages/teacher/TeacherLessonPlansPage';
@@ -76,8 +79,15 @@ function App() {
           path="/manager/subscriptions"
           element={
             <RoleGuard roles={['MANAGER', 'ADMIN']}>
-              {/* <ManagerSubscriptionsPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Manager – Subscription Packages</h2></div>
+              <ManagerSubscriptionsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/manager/orders"
+          element={
+            <RoleGuard roles={['MANAGER', 'ADMIN']}>
+              <ManagerOrdersPage />
             </RoleGuard>
           }
         />
@@ -109,6 +119,22 @@ function App() {
             <RoleGuard roles={['TEACHER']}>
               {/* <TeacherLessonPlansPage /> */}
               <div className="p-8"><h2 className="text-2xl font-bold">Teacher – Lesson Plans</h2></div>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/packages"
+          element={
+            <RoleGuard roles={['TEACHER']}>
+              <TeacherPackagesPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/orders/history"
+          element={
+            <RoleGuard roles={['TEACHER']}>
+              <TeacherOrderHistoryPage />
             </RoleGuard>
           }
         />
