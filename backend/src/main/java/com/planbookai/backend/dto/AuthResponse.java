@@ -16,9 +16,13 @@ public class AuthResponse {
 
     @Data
     @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class UserDTO {
+        private Long id;
         private String fullName;
         private String email;
         private String role;
+        private Boolean isActive;
     }
-}
+}

@@ -3,6 +3,7 @@ package com.planbookai.backend.config;
 import com.planbookai.backend.Security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,6 +17,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true) // Bật @PreAuthorize / @PostAuthorize
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -32,12 +34,38 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                    // =============================================================
+                    // PUBLIC endpoints – không cần xác thực
+                    // =============================================================
                     .requestMatchers(
                             "/api/v1/auth/**",
                             "/v3/api-docs/**",
-                            "/swagger-ui/**")
-                    .permitAll() // Cho phép truy cập công khai các endpoint này
-                    .anyRequest().authenticated() // Yêu cầu xác thực cho tất cả các request còn lại
+                            "/swagger-ui/**",
+                            "/swagger-ui.html")
+                    .permitAll()
+
+                    // =============================================================
+                    // ADMIN-only endpoints
+                    // =============================================================
+                    .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                    // =============================================================
+                    // MANAGER endpoints (Manager + Admin)
+                    // =============================================================
+                    .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER", "ADMIN")
+
+                    // =============================================================
+                    // STAFF endpoints (Staff + Manager + Admin)
+                    // =============================================================
+                    .requestMatchers("/api/v1/staff/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+
+                    // =============================================================
+                    // TEACHER endpoints
+                    // =============================================================
+                    .requestMatchers("/api/v1/teacher/**").hasRole("TEACHER")
+
+                    // Tất cả request còn lại phải authenticated
+                    .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -52,9 +80,8 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Cho phép frontend dev server truy cập
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://localhost:5173"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

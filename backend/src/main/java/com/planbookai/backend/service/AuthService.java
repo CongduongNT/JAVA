@@ -94,9 +94,11 @@ public class AuthService {
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
         
         AuthResponse.UserDTO userDTO = AuthResponse.UserDTO.builder()
+                .id(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole() != null ? user.getRole().getName().name() : null)
+                .isActive(user.getIsActive())
                 .build();
 
         return AuthResponse.builder()
