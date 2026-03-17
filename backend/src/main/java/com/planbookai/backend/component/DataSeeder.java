@@ -44,7 +44,7 @@ public class DataSeeder implements CommandLineRunner {
             Role adminRole = roleRepository.findByName(Role.RoleName.ADMIN)
                     .orElseThrow(() -> new RuntimeException("Role ADMIN not found"));
 
-            userRepository.save(User.builder()
+            userRepository.save( User.builder()
                     .fullName("System Admin")
                     .email("admin@planbookai.com")
                     .passwordHash("$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00GdRphumyjmsu") // password: 'admin'

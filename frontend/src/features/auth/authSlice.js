@@ -1,41 +1,38 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit';
+
+// Lấy user từ localStorage nếu có (để giữ đăng nhập khi F5)
+const user = JSON.parse(localStorage.getItem('user'));
+const token = localStorage.getItem('token');
 
 const initialState = {
-  user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: false,
+  user: user || null,
+  token: token || null,
+  isAuthenticated: !!token,
   isLoading: false,
-}
+  isError: false,
+  message: '',
+};
 
-export const authSlice = createSlice({
+const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    loginStart: (state) => {
-      state.isLoading = true
-    },
     loginSuccess: (state, action) => {
-      state.user = action.payload.user
-      state.token = action.payload.token
-      state.isAuthenticated = true
-      state.isLoading = false
-      localStorage.setItem('token', action.payload.token)
-    },
-    loginFailure: (state) => {
-      state.isLoading = false
-      state.isAuthenticated = false
-      state.user = null
-      state.token = null
-      localStorage.removeItem('token')
+      state.isAuthenticated = true;
+      state.user = action.payload.user; // Giả sử payload backend trả về có object user
+      state.token = action.payload.accessToken; // Giả sử payload có accessToken
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
+      localStorage.setItem('token', action.payload.accessToken);
     },
     logout: (state) => {
-      state.user = null
-      state.token = null
-      state.isAuthenticated = false
-      localStorage.removeItem('token')
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     },
   },
-})
+});
 
-export const { loginStart, loginSuccess, loginFailure, logout } = authSlice.actions
-export default authSlice.reducer
+export const { loginSuccess, logout } = authSlice.actions;
+export default authSlice.reducer;
