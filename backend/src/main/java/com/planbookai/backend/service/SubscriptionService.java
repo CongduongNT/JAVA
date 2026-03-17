@@ -9,7 +9,6 @@ import com.planbookai.backend.model.entity.SubscriptionPackage;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.OrderRepository;
 import com.planbookai.backend.repository.SubscriptionPackageRepository;
-import com.planbookai.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,12 +20,10 @@ public class SubscriptionService {
 
     private final SubscriptionPackageRepository packageRepository;
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
 
-    public SubscriptionService(SubscriptionPackageRepository packageRepository, OrderRepository orderRepository, UserRepository userRepository) {
+    public SubscriptionService(SubscriptionPackageRepository packageRepository, OrderRepository orderRepository) {
         this.packageRepository = packageRepository;
         this.orderRepository = orderRepository;
-        this.userRepository = userRepository;
     }
 
     // ===================================

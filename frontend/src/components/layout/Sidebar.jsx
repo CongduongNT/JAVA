@@ -36,6 +36,18 @@ const ALL_NAV_ITEMS = [
     roles: ['TEACHER'],
   },
   {
+    name: 'Packages',
+    icon: Package,
+    path: '/packages',
+    roles: ['TEACHER'],
+  },
+  {
+    name: 'Order History',
+    icon: Settings,
+    path: '/orders/history',
+    roles: ['TEACHER'],
+  },
+  {
     name: 'Question Bank',
     icon: BookCopy,
     path: '/question-bank',
@@ -70,9 +82,15 @@ const ALL_NAV_ITEMS = [
     roles: ['MANAGER', 'ADMIN'],
   },
   {
-    name: 'Subscriptions',
+    name: 'Packages',
     icon: Package,
     path: '/manager/subscriptions',
+    roles: ['MANAGER', 'ADMIN'],
+  },
+  {
+    name: 'Orders',
+    icon: BookCopy,
+    path: '/manager/orders',
     roles: ['MANAGER', 'ADMIN'],
   },
   {
