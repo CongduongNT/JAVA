@@ -122,7 +122,7 @@ const Sidebar = () => {
 
   // Lọc danh sách menu theo role của user hiện tại
   const visibleItems = ALL_NAV_ITEMS.filter((item) => {
-    if (item.roles.length === 0) return true; // hiển thị cho tất cả
+    if (!item.roles || item.roles.length === 0) return true; // hiển thị cho tất cả
     return item.roles.map((r) => r.toUpperCase()).includes(userRole);
   });
 
@@ -150,10 +150,9 @@ const Sidebar = () => {
         </div>
       )}
 
-      {/* Navigation */}
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         <ul className="space-y-0.5">
-          {visibleItems.map((item) => (
+          {Array.isArray(visibleItems) && visibleItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}

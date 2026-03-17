@@ -32,7 +32,9 @@ const ManagerOrdersPage = () => {
     }
   };
 
-  const filteredOrders = filter === 'ALL' ? orders : orders.filter(o => o.status === filter);
+  const filteredOrders = Array.isArray(orders) 
+    ? (filter === 'ALL' ? orders : orders.filter(o => o.status === filter))
+    : [];
 
   return (
     <div className="p-6">

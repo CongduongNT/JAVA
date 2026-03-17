@@ -87,7 +87,7 @@ const TeacherPackagesPage = () => {
               <div className="mt-8">
                 <h4 className="text-sm font-semibold text-slate-800 tracking-wide uppercase mb-4">Bao gồm:</h4>
                 <ul className="space-y-4">
-                  {featuresList.map((feature, index) => (
+                  {(Array.isArray(featuresList) ? featuresList : Object.entries(featuresList).map(([k, v]) => `${k}: ${v}`)).map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <div className="flex-shrink-0">
                         <Check className="w-5 h-5 text-green-500" />
@@ -95,7 +95,7 @@ const TeacherPackagesPage = () => {
                       <p className="ml-3 text-sm text-slate-600">{feature}</p>
                     </li>
                   ))}
-                  {featuresList.length === 0 && (
+                  {((Array.isArray(featuresList) && featuresList.length === 0) || (!Array.isArray(featuresList) && Object.keys(featuresList).length === 0)) && (
                     <li className="flex items-start">
                       <div className="flex-shrink-0"><Check className="w-5 h-5 text-green-500" /></div>
                       <p className="ml-3 text-sm text-slate-600">Quyền lợi cơ bản</p>

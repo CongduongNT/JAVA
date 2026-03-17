@@ -103,8 +103,8 @@ const ManagerSubscriptionsPage = () => {
         <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {packages.map(pkg => (
-            <div key={pkg.id} className={`bg-white rounded-xl shadow-sm border p-6 transition hover:shadow-md ${!pkg.isActive && 'opacity-60 grayscale'}`}>
+          {Array.isArray(packages) && packages.map(pkg => (
+            <div key={pkg.id} className={`bg-white rounded-xl shadow-sm border p-6 transition hover:shadow-md ${pkg.isActive === false ? 'opacity-60 grayscale' : ''}`}>
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-xl font-bold text-slate-800">{pkg.name}</h3>
                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pkg.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -130,6 +130,11 @@ const ManagerSubscriptionsPage = () => {
               </div>
             </div>
           ))}
+          {(!Array.isArray(packages) || packages.length === 0) && (
+             <div className="col-span-full text-center py-10 text-slate-500 bg-white rounded-xl border">
+               Chưa có gói dịch vụ nào được cấu hình.
+             </div>
+          )}
         </div>
       )}
 
