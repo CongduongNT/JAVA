@@ -1,5 +1,7 @@
 package com.planbookai.backend.service;
 
+import com.planbookai.backend.dto.ProfileResponse;
+import com.planbookai.backend.dto.ProfileUpdateRequest;
 import com.planbookai.backend.dto.UserRequest;
 import com.planbookai.backend.dto.UserResponse;
 import com.planbookai.backend.model.entity.Role;
@@ -17,10 +19,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final CurrentUserService currentUserService;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, CurrentUserService currentUserService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.currentUserService = currentUserService;
     }
 
     public List<UserResponse> findAll() {
@@ -86,6 +90,21 @@ public class UserService {
         });
     }
 
+    // Profile-specific methods returning/accepting dedicated DTOs (SOLID)
+    public Optional<ProfileResponse> findCurrentUserProfile() {
+        return currentUserService.getCurrentUserEntity().map(this::toProfileResponse);
+    }
+
+    public Optional<ProfileResponse> updateCurrentUserProfile(ProfileUpdateRequest req) {
+        return currentUserService.getCurrentUserEntity().map(u -> {
+            if (req.getFullName() != null) u.setFullName(req.getFullName());
+            if (req.getPhone() != null) u.setPhone(req.getPhone());
+            if (req.getAvatarUrl() != null) u.setAvatarUrl(req.getAvatarUrl());
+            User saved = userRepository.save(u);
+            return toProfileResponse(saved);
+        });
+    }
+
     private UserResponse toResponse(User u) {
         UserResponse res = new UserResponse();
         res.setId(u.getId());
@@ -98,6 +117,19 @@ public class UserService {
         res.setCreatedAt(u.getCreatedAt());
         res.setUpdatedAt(u.getUpdatedAt());
         res.setRoleName(u.getRole() != null ? u.getRole().getName().name() : null);
+        return res;
+    }
+
+    private ProfileResponse toProfileResponse(User u) {
+        ProfileResponse res = new ProfileResponse();
+        res.setId(u.getId());
+        res.setFullName(u.getFullName());
+        res.setEmail(u.getEmail());
+        res.setPhone(u.getPhone());
+        res.setAvatarUrl(u.getAvatarUrl());
+        res.setRoleName(u.getRole() != null ? u.getRole().getName().name() : null);
+        res.setCreatedAt(u.getCreatedAt());
+        res.setUpdatedAt(u.getUpdatedAt());
         return res;
     }
 }

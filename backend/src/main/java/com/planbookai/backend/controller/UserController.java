@@ -1,5 +1,8 @@
 package com.planbookai.backend.controller;
 
+import com.planbookai.backend.dto.ProfileResponse;
+import com.planbookai.backend.dto.ProfileUpdateRequest;
+import com.planbookai.backend.dto.RoleAssignRequest;
 import com.planbookai.backend.dto.UserRequest;
 import com.planbookai.backend.dto.UserResponse;
 import com.planbookai.backend.service.UserService;
@@ -55,18 +58,26 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+    // Get current authenticated user's profile
+    @GetMapping("/me")
+    public ResponseEntity<ProfileResponse> getMe() {
+        Optional<ProfileResponse> me = userService.findCurrentUserProfile();
+        return me.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    }
+
+    // Update current authenticated user's profile (partial updates allowed)
+    @PutMapping("/me")
+    public ResponseEntity<ProfileResponse> updateMe(@Valid @RequestBody ProfileUpdateRequest req) {
+        Optional<ProfileResponse> updated = userService.updateCurrentUserProfile(req);
+        return updated.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = userService.delete(id);
         if (deleted) return ResponseEntity.noContent().build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
-}
-
-// Simple DTO for role assignment
-class RoleAssignRequest {
-    private Integer roleId;
-
-    public Integer getRoleId() { return roleId; }
-    public void setRoleId(Integer roleId) { this.roleId = roleId; }
 }
