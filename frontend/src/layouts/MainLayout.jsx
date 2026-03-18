@@ -38,10 +38,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from '@/components/ui/tooltip'
 
 // ---------------------------------------------------------------------------
@@ -131,35 +128,24 @@ function AppSidebar() {
           <SidebarMenu>
             {NAV_MAIN.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      asChild={!item.disabled}
-                      isActive={isActive(item.href)}
-                      tooltip={item.title}
-                      className={
-                        item.disabled
-                          ? 'cursor-not-allowed opacity-50'
-                          : 'transition-colors duration-150'
-                      }
-                    >
-                      {item.disabled ? (
-                        <span className="flex items-center gap-2">
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                        </span>
-                      ) : (
-                        <Link to={item.href}>
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      )}
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
+                <SidebarMenuButton
+                  render={item.disabled ? undefined : <Link to={item.href} />}
+                  isActive={isActive(item.href)}
+                  tooltip={item.title}
+                  className={
+                    item.disabled
+                      ? 'cursor-not-allowed opacity-50'
+                      : 'transition-colors duration-150'
+                  }
+                >
+                  <item.icon className="size-4 shrink-0" />
+                  <span className="truncate">{item.title}</span>
                   {item.disabled && (
-                    <TooltipContent side="right">Sắp ra mắt</TooltipContent>
+                    <span className="ml-auto text-[10px] opacity-60 group-data-[collapsible=icon]:hidden">
+                      Soon
+                    </span>
                   )}
-                </Tooltip>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -174,15 +160,13 @@ function AppSidebar() {
             {NAV_SYSTEM.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
-                  asChild
+                  render={<Link to={item.href} />}
                   isActive={isActive(item.href)}
                   tooltip={item.title}
                   className="transition-colors duration-150"
                 >
-                  <Link to={item.href}>
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </Link>
+                  <item.icon className="size-4 shrink-0" />
+                  <span className="truncate">{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
