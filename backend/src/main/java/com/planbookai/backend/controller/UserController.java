@@ -47,10 +47,26 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+    // Assign role to user
+    @PutMapping("/{id}/role")
+    public ResponseEntity<UserResponse> assignRole(@PathVariable Long id, @RequestBody RoleAssignRequest req) {
+        Optional<UserResponse> updated = userService.assignRole(id, req.getRoleId());
+        return updated.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = userService.delete(id);
         if (deleted) return ResponseEntity.noContent().build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
+}
+
+// Simple DTO for role assignment
+class RoleAssignRequest {
+    private Integer roleId;
+
+    public Integer getRoleId() { return roleId; }
+    public void setRoleId(Integer roleId) { this.roleId = roleId; }
 }

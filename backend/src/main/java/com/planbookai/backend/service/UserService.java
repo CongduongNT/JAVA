@@ -6,7 +6,6 @@ import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.RoleRepository;
 import com.planbookai.backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,7 +18,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
 
-    @Autowired
     public UserService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -74,6 +72,18 @@ public class UserService {
             userRepository.deleteById(id);
             return true;
         }).orElse(false);
+    }
+
+    public Optional<UserResponse> assignRole(Long userId, Integer roleId) {
+        return userRepository.findById(userId).map(u -> {
+            Role role = null;
+            if (roleId != null) {
+                role = roleRepository.findById(roleId).orElse(null);
+            }
+            u.setRole(role);
+            User saved = userRepository.save(u);
+            return toResponse(saved);
+        });
     }
 
     private UserResponse toResponse(User u) {
