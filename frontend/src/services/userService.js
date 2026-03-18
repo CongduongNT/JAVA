@@ -10,11 +10,12 @@ export const ROLES = [
 
 export const ROLE_NAMES = ROLES.map((r) => r.name)
 
+// Paths are relative to VITE_API_BASE_URL (which already includes /api/v1)
 export const userService = {
-  getAll: () => api.get('/api/v1/users'),
-  getById: (id) => api.get(`/api/v1/users/${id}`),
-  create: (data) => api.post('/api/v1/users', data),
-  update: (id, data) => api.put(`/api/v1/users/${id}`, data),
-  assignRole: (id, roleId) => api.put(`/api/v1/users/${id}/role`, { roleId }),
-  delete: (id) => api.delete(`/api/v1/users/${id}`),
+  getAll: () => api.get('/users'),
+  getById: (id) => api.get(`/users/${id}`),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  assignRole: (id, roleId) => api.put(`/users/${id}/role`, { roleId }),
+  delete: (id) => api.delete(`/users/${id}`),
 }
