@@ -1,6 +1,7 @@
 import { Activity, CheckCircle2, Server, Shield, User, XCircle } from 'lucide-react'
 import { useSelector } from 'react-redux'
 
+import ProfileSection from './components/ProfileSection'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -153,7 +154,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="profile">
-          <ComingSoonTab label="Hồ sơ cá nhân" icon={User} />
+          <ProfileSection />
         </TabsContent>
 
         <TabsContent value="security">
