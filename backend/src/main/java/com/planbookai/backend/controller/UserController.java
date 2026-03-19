@@ -67,17 +67,26 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getMe() {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getMe() {
         Optional<ProfileResponse> me = userService.findCurrentUserProfile();
         return me.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Current user profile not found")));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<ProfileResponse> updateMe(@Valid @RequestBody ProfileUpdateRequest req) {
-        Optional<ProfileResponse> updated = userService.updateCurrentUserProfile(req);
-        return updated.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> updateMe(@Valid @RequestBody ProfileUpdateRequest req) {
+        try {
+            Optional<ProfileResponse> updated = userService.updateCurrentUserProfile(req);
+            return updated.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(new ErrorResponse("Current user profile not found")));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Failed to update profile: " + e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")

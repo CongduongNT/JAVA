@@ -95,14 +95,22 @@ public class UserService {
     }
 
     public Optional<ProfileResponse> findCurrentUserProfile() {
-        return currentUserService.getCurrentUserEntity().map(this::toProfileResponse);
+        return currentUserService.getCurrentUserEntity()
+                .map(this::toProfileResponse);
     }
 
     public Optional<ProfileResponse> updateCurrentUserProfile(ProfileUpdateRequest req) {
         return currentUserService.getCurrentUserEntity().map(u -> {
-            if (req.getFullName() != null) u.setFullName(req.getFullName());
-            if (req.getPhone() != null) u.setPhone(req.getPhone());
-            if (req.getAvatarUrl() != null) u.setAvatarUrl(req.getAvatarUrl());
+            // Validation: kiểm tra các field cập nhật
+            if (req.getFullName() != null && !req.getFullName().trim().isEmpty()) {
+                u.setFullName(req.getFullName().trim());
+            }
+            if (req.getPhone() != null) {
+                u.setPhone(req.getPhone());
+            }
+            if (req.getAvatarUrl() != null && !req.getAvatarUrl().trim().isEmpty()) {
+                u.setAvatarUrl(req.getAvatarUrl().trim());
+            }
             User saved = userRepository.save(u);
             return toProfileResponse(saved);
         });
