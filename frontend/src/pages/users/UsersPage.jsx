@@ -146,7 +146,7 @@ export default function UsersPage() {
             {isLoading ? 'Đang tải...' : `${filtered.length} / ${list.length} người dùng`}
           </p>
         </div>
-        <Button onClick={() => navigate('/admin/users')} className="gap-1.5 shrink-0" size="sm">
+        <Button onClick={() => navigate('/admin/users/new')} className="gap-1.5 shrink-0" size="sm">
           <Plus className="size-4" />
           Thêm người dùng
         </Button>

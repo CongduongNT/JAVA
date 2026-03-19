@@ -146,7 +146,7 @@ export default function UserTable({ users, isLoading }) {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => navigate(`/users/${user.id}/edit`)}
+                        onClick={() => navigate(`/admin/users/${user.id}/edit`)}
                         aria-label="Chỉnh sửa"
                       >
                         <Pencil className="size-3.5" />

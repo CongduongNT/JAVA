@@ -20,6 +20,7 @@ import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
 import UsersPage from './pages/users/UsersPage'
+import UserFormPage from './pages/users/UserFormPage'
 
 function App() {
   return (
@@ -43,6 +44,22 @@ function App() {
           element={
             <RoleGuard roles={['ADMIN']}>
               <UsersPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/users/new"
+          element={
+            <RoleGuard roles={['ADMIN']}>
+              <UserFormPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/users/:id/edit"
+          element={
+            <RoleGuard roles={['ADMIN']}>
+              <UserFormPage />
             </RoleGuard>
           }
         />
