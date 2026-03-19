@@ -27,42 +27,14 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAll() {
-        List<UserResponse> users = userService.findAll();
-        return ResponseEntity.ok(users);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getById(@PathVariable Long id) {
-        Optional<UserResponse> userOpt = userService.findById(id);
-        return userOpt.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-    }
-
-    @PostMapping
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest user) {
-        UserResponse created = userService.create(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> update(@PathVariable Long id, @Valid @RequestBody UserRequest user) {
-        Optional<UserResponse> updated = userService.update(id, user);
-        return updated.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-    }
-
-    @PutMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> assignRole(@PathVariable Long id, @RequestBody RoleAssignRequest req) {
+    public ResponseEntity<?> getAll() {
         try {
-            Optional<UserResponse> updated = userService.assignRole(id, req.getRoleId());
-            return updated.map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body(new ErrorResponse("User not found with ID: " + id)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(e.getMessage()));
+            List<UserResponse> users = userService.findAll();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to fetch users: " + e.getMessage()));
         }
     }
 
@@ -73,6 +45,58 @@ public class UserController {
         return me.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ErrorResponse("Current user profile not found")));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        Optional<UserResponse> userOpt = userService.findById(id);
+        return userOpt.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("User not found with ID: " + id)));
+    }
+
+    @PostMapping
+    public ResponseEntity<?> create(@Valid @RequestBody UserRequest user) {
+        try {
+            UserResponse created = userService.create(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to create user: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UserRequest user) {
+        try {
+            Optional<UserResponse> updated = userService.update(id, user);
+            return updated.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(new ErrorResponse("User not found with ID: " + id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to update user: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> assignRole(@PathVariable Long id, @Valid @RequestBody RoleAssignRequest req) {
+        try {
+            Optional<UserResponse> updated = userService.assignRole(id, req.getRoleId());
+            return updated.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(new ErrorResponse("User not found with ID: " + id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
     }
 
     @PutMapping("/me")
@@ -90,9 +114,13 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         boolean deleted = userService.delete(id);
-        if (deleted) return ResponseEntity.noContent().build();
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("User not found with ID: " + id));
     }
 }

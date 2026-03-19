@@ -8,6 +8,7 @@ import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.RoleRepository;
 import com.planbookai.backend.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,11 +21,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final CurrentUserService currentUserService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, CurrentUserService currentUserService) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, 
+                       CurrentUserService currentUserService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.currentUserService = currentUserService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UserResponse> findAll() {
@@ -36,35 +40,61 @@ public class UserService {
     }
 
     public UserResponse create(UserRequest req) {
+        // Validate email unique and normalize
+        String normalizedEmail = req.getEmail().toLowerCase().trim();
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+            throw new IllegalArgumentException("Email " + normalizedEmail + " is already in use");
+        }
+        
         User user = new User();
-        user.setId(null);
-        user.setFullName(req.getFullName());
-        user.setEmail(req.getEmail());
-        user.setPhone(req.getPhone());
+        user.setFullName(req.getFullName().trim());
+        user.setEmail(normalizedEmail);
+        user.setPhone(req.getPhone() != null ? req.getPhone().trim() : null);
         user.setAvatarUrl(null);
         user.setIsActive(true);
         user.setEmailVerified(false);
+        
+        // Validate role if provided
         if (req.getRoleId() != null) {
-            Role role = roleRepository.findById(req.getRoleId()).orElse(null);
+            Role role = roleRepository.findById(req.getRoleId())
+                    .orElseThrow(() -> new IllegalArgumentException("Role with ID " + req.getRoleId() + " not found"));
             user.setRole(role);
         }
-        user.setPasswordHash(req.getPassword());
+        
+        // Hash password before storing (trim password to avoid whitespace issues)
+        user.setPasswordHash(passwordEncoder.encode(req.getPassword().trim()));
         User saved = userRepository.save(user);
         return toResponse(saved);
     }
 
     public Optional<UserResponse> update(Long id, UserRequest req) {
         return userRepository.findById(id).map(existing -> {
-            existing.setFullName(req.getFullName());
-            existing.setEmail(req.getEmail());
-            existing.setPhone(req.getPhone());
+            // Normalize email for comparison and checking uniqueness
+            String normalizedEmail = req.getEmail().toLowerCase().trim();
+            String normalizedExistingEmail = existing.getEmail().toLowerCase().trim();
+            
+            // Validate email unique (if email changed)
+            if (!normalizedExistingEmail.equals(normalizedEmail) && 
+                userRepository.findByEmail(normalizedEmail).isPresent()) {
+                throw new IllegalArgumentException("Email " + normalizedEmail + " is already in use");
+            }
+            
+            existing.setFullName(req.getFullName().trim());
+            existing.setEmail(normalizedEmail);
+            existing.setPhone(req.getPhone() != null ? req.getPhone().trim() : null);
+            
+            // Validate role if provided
             if (req.getRoleId() != null) {
-                Role role = roleRepository.findById(req.getRoleId()).orElse(null);
+                Role role = roleRepository.findById(req.getRoleId())
+                        .orElseThrow(() -> new IllegalArgumentException("Role with ID " + req.getRoleId() + " not found"));
                 existing.setRole(role);
             }
-            if (req.getPassword() != null && !req.getPassword().isEmpty()) {
-                existing.setPasswordHash(req.getPassword());
+            
+            // Hash password before storing (only if provided, trim to avoid whitespace issues)
+            if (req.getPassword() != null && !req.getPassword().trim().isEmpty()) {
+                existing.setPasswordHash(passwordEncoder.encode(req.getPassword().trim()));
             }
+            
             User saved = userRepository.save(existing);
             return toResponse(saved);
         });
@@ -78,15 +108,15 @@ public class UserService {
     }
 
     public Optional<UserResponse> assignRole(Long userId, Integer roleId) {
-        // Kiểm tra user tồn tại
+        // Check if user exists
         return userRepository.findById(userId).map(u -> {
-            // Nếu roleId không null, phải kiểm tra role tồn tại
+            // If roleId is not null, must validate role exists
             if (roleId != null) {
                 Role role = roleRepository.findById(roleId)
                         .orElseThrow(() -> new IllegalArgumentException("Role with ID " + roleId + " not found"));
                 u.setRole(role);
             } else {
-                // Cho phép xóa role (set null)
+                // Allow role removal (set to null)
                 u.setRole(null);
             }
             User saved = userRepository.save(u);
@@ -101,12 +131,12 @@ public class UserService {
 
     public Optional<ProfileResponse> updateCurrentUserProfile(ProfileUpdateRequest req) {
         return currentUserService.getCurrentUserEntity().map(u -> {
-            // Validation: kiểm tra các field cập nhật
+            // Validation: check fields to update
             if (req.getFullName() != null && !req.getFullName().trim().isEmpty()) {
                 u.setFullName(req.getFullName().trim());
             }
-            if (req.getPhone() != null) {
-                u.setPhone(req.getPhone());
+            if (req.getPhone() != null && !req.getPhone().trim().isEmpty()) {
+                u.setPhone(req.getPhone().trim());
             }
             if (req.getAvatarUrl() != null && !req.getAvatarUrl().trim().isEmpty()) {
                 u.setAvatarUrl(req.getAvatarUrl().trim());
