@@ -38,19 +38,10 @@ public class UserController {
         }
     }
 
-    @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getMe() {
-        Optional<ProfileResponse> me = userService.findCurrentUserProfile();
-        return me.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("Current user profile not found")));
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Long id) {
         Optional<UserResponse> userOpt = userService.findById(id);
-        return userOpt.map(ResponseEntity::ok)
+        return userOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ErrorResponse("User not found with ID: " + id)));
     }
@@ -73,7 +64,7 @@ public class UserController {
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UserRequest user) {
         try {
             Optional<UserResponse> updated = userService.update(id, user);
-            return updated.map(ResponseEntity::ok)
+            return updated.<ResponseEntity<?>>map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                             .body(new ErrorResponse("User not found with ID: " + id)));
         } catch (IllegalArgumentException e) {
@@ -90,7 +81,7 @@ public class UserController {
     public ResponseEntity<?> assignRole(@PathVariable Long id, @Valid @RequestBody RoleAssignRequest req) {
         try {
             Optional<UserResponse> updated = userService.assignRole(id, req.getRoleId());
-            return updated.map(ResponseEntity::ok)
+            return updated.<ResponseEntity<?>>map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                             .body(new ErrorResponse("User not found with ID: " + id)));
         } catch (IllegalArgumentException e) {
@@ -99,12 +90,21 @@ public class UserController {
         }
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getMe() {
+        Optional<ProfileResponse> me = userService.findCurrentUserProfile();
+        return me.<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Current user profile not found")));
+    }
+
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> updateMe(@Valid @RequestBody ProfileUpdateRequest req) {
         try {
             Optional<ProfileResponse> updated = userService.updateCurrentUserProfile(req);
-            return updated.map(ResponseEntity::ok)
+            return updated.<ResponseEntity<?>>map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                             .body(new ErrorResponse("Current user profile not found")));
         } catch (Exception e) {
@@ -114,7 +114,6 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         boolean deleted = userService.delete(id);
         if (deleted) {
