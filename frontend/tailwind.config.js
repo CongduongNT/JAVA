@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        sans: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Geist Variable', 'Outfit', 'system-ui', 'sans-serif'],
+        sans: ['Geist Variable', 'Outfit', 'Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

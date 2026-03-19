@@ -2,29 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+@import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import '@fontsource-variable/geist';
 
+/* ============================================================
+   PlanbookAI theme tokens (adapted từ bản clone)
+   ============================================================ */
 :root {
-  font-family: 'Outfit', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Geist Variable', 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light;
-  color: rgba(0, 0, 0, 0.87);
+  color: #0f172a;
   background-color: #f8fafc;
-
-  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #eff6ff;
+  --accent-foreground: #1d4ed8;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
+  --chart-2: #3b82f6;
+  --chart-3: #60a5fa;
+  --chart-4: #1d4ed8;
+  --chart-5: #1e40af;
+  --radius: 10px;
+
+  /* Sidebar */
+  --sidebar: #1e3a8a;
+  --sidebar-foreground: #eff6ff;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e40af;
+  --sidebar-accent-foreground: #bfdbfe;
+  --sidebar-border: #1e40af;
+  --sidebar-ring: #3b82f6;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+.dark {
+  --background: #0a0f1e;
+  --foreground: #eff6ff;
+  --card: #0d1526;
+  --card-foreground: #eff6ff;
+  --popover: #0d1526;
+  --popover-foreground: #eff6ff;
+  --primary: #3b82f6;
+  --primary-foreground: #0a0f1e;
+  --secondary: #1e3a8a;
+  --secondary-foreground: #bfdbfe;
+  --muted: #1e3a8a;
+  --muted-foreground: #93c5fd;
+  --accent: #1e3a8a;
+  --accent-foreground: #bfdbfe;
+  --destructive: #ef4444;
+  --border: #1e3a8a;
+  --input: #1e3a8a;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #60a5fa;
+  --chart-3: #93c5fd;
+  --chart-4: #2563eb;
+  --chart-5: #1d4ed8;
+  --sidebar: #0d1526;
+  --sidebar-foreground: #eff6ff;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #0a0f1e;
+  --sidebar-accent: #1e3a8a;
+  --sidebar-accent-foreground: #bfdbfe;
+  --sidebar-border: #1e3a8a;
+  --sidebar-ring: #3b82f6;
 }
 
-#root {
-  width: 100%;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    min-height: 100vh;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  .page-header {
+    @apply text-2xl font-bold text-foreground leading-tight;
+  }
+
+  .page-subheader {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  .stat-card {
+    @apply bg-card border border-border rounded-xl p-5;
+  }
 }
