@@ -138,8 +138,10 @@ function SidebarMenuButton({
   )
 
   if (render) {
-    const LinkWrapper = render
-    return <LinkWrapper>{content}</LinkWrapper>
+    return React.cloneElement(render, {
+      children: content,
+      className: cn('block', render.props?.className),
+    })
   }
 
   if (tooltip && collapsed) {
