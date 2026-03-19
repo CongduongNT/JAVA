@@ -78,12 +78,17 @@ public class UserService {
     }
 
     public Optional<UserResponse> assignRole(Long userId, Integer roleId) {
+        // Kiểm tra user tồn tại
         return userRepository.findById(userId).map(u -> {
-            Role role = null;
+            // Nếu roleId không null, phải kiểm tra role tồn tại
             if (roleId != null) {
-                role = roleRepository.findById(roleId).orElse(null);
+                Role role = roleRepository.findById(roleId)
+                        .orElseThrow(() -> new IllegalArgumentException("Role with ID " + roleId + " not found"));
+                u.setRole(role);
+            } else {
+                // Cho phép xóa role (set null)
+                u.setRole(null);
             }
-            u.setRole(role);
             User saved = userRepository.save(u);
             return toResponse(saved);
         });
