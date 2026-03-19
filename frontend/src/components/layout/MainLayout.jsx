@@ -51,6 +51,7 @@ const NAV_ITEMS = [
   { title: 'Orders', href: '/manager/orders', icon: BookCopy, roles: ['MANAGER', 'ADMIN'] },
   { title: 'Analytics', href: '/manager/analytics', icon: BarChart3, roles: ['MANAGER', 'ADMIN'] },
   { title: 'User Management', href: '/admin/users', icon: Shield, roles: ['ADMIN'] },
+  { title: 'System Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
 ]
 
 const ROLE_LABELS = {

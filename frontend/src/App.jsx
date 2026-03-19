@@ -21,6 +21,8 @@ import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
 import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
+import SettingsPage from './pages/settings/SettingsPage'
+import { Toaster } from 'sonner'
 
 function App() {
   return (
@@ -38,6 +40,8 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+
+        <Route path="/settings" element={<SettingsPage />} />
 
         <Route
           path="/admin/users"
@@ -170,6 +174,9 @@ function App() {
           }
         />
       </Route>
+
+      {/* Global toast */}
+      <Toaster position="top-right" richColors closeButton />
     </Routes>
   )
 }
