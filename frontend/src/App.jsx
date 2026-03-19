@@ -19,6 +19,7 @@ import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage'
 import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
+import UsersPage from './pages/users/UsersPage'
 
 function App() {
   return (
@@ -41,10 +42,7 @@ function App() {
           path="/admin/users"
           element={
             <RoleGuard roles={['ADMIN']}>
-              <div className="p-8">
-                <h2 className="text-2xl font-bold">Admin – User Management</h2>
-                <p className="text-slate-500 mt-2">Implement AdminUserPage tại đây.</p>
-              </div>
+              <UsersPage />
             </RoleGuard>
           }
         />
