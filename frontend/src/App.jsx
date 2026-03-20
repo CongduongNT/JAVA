@@ -1,49 +1,37 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 
 // Layout & Guards
-import MainLayout from './components/layout/MainLayout';
-import ProtectedRoute from './components/ProtectedRoute';
-import RoleGuard from './components/guards/RoleGuard';
+import MainLayout from './components/layout/MainLayout'
+import ProtectedRoute from './components/ProtectedRoute'
+import RoleGuard from './components/guards/RoleGuard'
 
 // Public pages
-import Login from './pages/LoginPage';
-import Register from './pages/RegisterPage';
-import UnauthorizedPage from './pages/UnauthorizedPage';
+import Login from './pages/LoginPage'
+import Register from './pages/RegisterPage'
+import UnauthorizedPage from './pages/UnauthorizedPage'
 
 // Dashboard (all authenticated users)
-import DashboardPage from './pages/DashboardPage';
+import DashboardPage from './pages/DashboardPage'
 
-// ─── Placeholder pages (tạo sau khi implement từng feature) ───
-// import AdminUserPage from './pages/admin/AdminUserPage';
-// import ManagerTeachersPage from './pages/manager/ManagerTeachersPage';
-import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage';
-import ManagerOrdersPage from './pages/manager/ManagerOrdersPage';
-import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage';
-import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage';
-// import ManagerAnalyticsPage from './pages/manager/ManagerAnalyticsPage';
-// import StaffPromptPage from './pages/staff/StaffPromptPage';
-// import TeacherLessonPlansPage from './pages/teacher/TeacherLessonPlansPage';
-// import QuestionBankPage from './pages/QuestionBankPage';
-// import ExamGeneratorPage from './pages/ExamGeneratorPage';
-// import OCRGradingPage from './pages/OCRGradingPage';
+// Placeholder pages
+import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage'
+import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
+import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
+import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
+import UsersPage from './pages/users/UsersPage'
+import UserFormPage from './pages/users/UserFormPage'
+import SettingsPage from './pages/settings/SettingsPage'
+import { Toaster } from 'sonner'
 
 function App() {
   return (
     <Routes>
-      {/* ======================================================
-          PUBLIC ROUTES
-      ====================================================== */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* ======================================================
-          PROTECTED ROUTES (require authentication)
-          Mọi route bên trong đều cần đăng nhập trước (ProtectedRoute).
-          Sau đó từng route có thể thêm RoleGuard để giới hạn role.
-      ====================================================== */}
       <Route
         element={
           <ProtectedRoute>
@@ -51,27 +39,42 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* Dashboard – tất cả roles */}
         <Route path="/dashboard" element={<DashboardPage />} />
 
-        {/* ── ADMIN routes ── */}
+        <Route path="/settings" element={<SettingsPage />} />
+
         <Route
           path="/admin/users"
           element={
             <RoleGuard roles={['ADMIN']}>
-              {/* <AdminUserPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Admin – User Management</h2><p className="text-slate-500 mt-2">Implement AdminUserPage tại đây.</p></div>
+              <UsersPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/users/new"
+          element={
+            <RoleGuard roles={['ADMIN']}>
+              <UserFormPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/users/:id/edit"
+          element={
+            <RoleGuard roles={['ADMIN']}>
+              <UserFormPage />
             </RoleGuard>
           }
         />
 
-        {/* ── MANAGER routes ── */}
         <Route
           path="/manager/teachers"
           element={
             <RoleGuard roles={['MANAGER', 'ADMIN']}>
-              {/* <ManagerTeachersPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Manager – Danh sách giáo viên</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Manager – Danh sách giáo viên</h2>
+              </div>
             </RoleGuard>
           }
         />
@@ -95,30 +98,31 @@ function App() {
           path="/manager/analytics"
           element={
             <RoleGuard roles={['MANAGER', 'ADMIN']}>
-              {/* <ManagerAnalyticsPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Manager – Analytics</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Manager – Analytics</h2>
+              </div>
             </RoleGuard>
           }
         />
 
-        {/* ── STAFF routes ── */}
         <Route
           path="/prompt-templates"
           element={
             <RoleGuard roles={['STAFF', 'MANAGER', 'ADMIN']}>
-              {/* <StaffPromptPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Staff – AI Prompt Templates</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Staff – AI Prompt Templates</h2>
+              </div>
             </RoleGuard>
           }
         />
 
-        {/* ── TEACHER routes ── */}
         <Route
           path="/lesson-plans"
           element={
             <RoleGuard roles={['TEACHER']}>
-              {/* <TeacherLessonPlansPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Teacher – Lesson Plans</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Teacher – Lesson Plans</h2>
+              </div>
             </RoleGuard>
           }
         />
@@ -142,8 +146,9 @@ function App() {
           path="/exam-generator"
           element={
             <RoleGuard roles={['TEACHER']}>
-              {/* <ExamGeneratorPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Teacher – Exam Generator</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Teacher – Exam Generator</h2>
+              </div>
             </RoleGuard>
           }
         />
@@ -151,25 +156,29 @@ function App() {
           path="/ocr-grading"
           element={
             <RoleGuard roles={['TEACHER']}>
-              {/* <OCRGradingPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Teacher – OCR Grading</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Teacher – OCR Grading</h2>
+              </div>
             </RoleGuard>
           }
         />
 
-        {/* Question Bank – TEACHER + STAFF */}
         <Route
           path="/question-bank"
           element={
             <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER', 'ADMIN']}>
-              {/* <QuestionBankPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Question Bank</h2></div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold">Question Bank</h2>
+              </div>
             </RoleGuard>
           }
         />
       </Route>
+
+      {/* Global toast */}
+      <Toaster position="top-right" richColors closeButton />
     </Routes>
-  );
+  )
 }
 
-export default App;
+export default App

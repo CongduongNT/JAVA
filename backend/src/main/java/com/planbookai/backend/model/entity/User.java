@@ -6,7 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,12 +29,18 @@ public class User {
     private Role role;
 
     @Column(name = "full_name")
+    @NotNull(message = "Full name cannot be null")
     private String fullName;
 
+    @Column(unique = true, nullable = false)
+    @NotNull(message = "Email cannot be null")
     private String email;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", nullable = false)
+    @NotNull(message = "Password hash cannot be null")
     private String passwordHash;
+
+    private String phone;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
@@ -49,6 +57,7 @@ public class User {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
