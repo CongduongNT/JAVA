@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Brain, Sparkles, Send, Check, Edit3, Trash2, X, PlusCircle, Book, Layout, Loader2 } from 'lucide-react';
 import questionApi from '../../services/questionApi';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 /**
  * AIQuestionGenerator – Bộ tạo câu hỏi thông minh.

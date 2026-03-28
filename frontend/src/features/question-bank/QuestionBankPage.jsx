@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, Trash2, Brain, MoreHorizontal, Layout, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
 import questionApi from '../../services/questionApi';
 import AIQuestionGenerator from './AIQuestionGenerator';
-import { toast } from 'react-hot-toast'; // Giả định toast là common notification handler
+import { toast } from 'sonner';
 
 /**
  * QuestionBankPage – Trang chính quản lý Ngân hàng câu hỏi.
