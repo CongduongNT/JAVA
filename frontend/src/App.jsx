@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Layout & Guards
 import MainLayout from './components/layout/MainLayout';
@@ -27,10 +28,13 @@ import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage';
 // import QuestionBankPage from './pages/QuestionBankPage';
 // import ExamGeneratorPage from './pages/ExamGeneratorPage';
 // import OCRGradingPage from './pages/OCRGradingPage';
+import QuestionBankPage from './features/question-bank/QuestionBankPage';
 
 function App() {
   return (
-    <Routes>
+    <>
+      <Toaster position="top-right" />
+      <Routes>
       {/* ======================================================
           PUBLIC ROUTES
       ====================================================== */}
@@ -162,14 +166,14 @@ function App() {
           path="/question-bank"
           element={
             <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER', 'ADMIN']}>
-              {/* <QuestionBankPage /> */}
-              <div className="p-8"><h2 className="text-2xl font-bold">Question Bank</h2></div>
+              <QuestionBankPage />
             </RoleGuard>
           }
         />
       </Route>
     </Routes>
-  );
+  </>
+);
 }
 
 export default App;
