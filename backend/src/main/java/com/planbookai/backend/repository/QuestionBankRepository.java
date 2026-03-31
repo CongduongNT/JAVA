@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * Repository truy cập dữ liệu cho bảng question_bank.
+ * Repository truy cập dữ liệu cho bảng question_banks.
  */
 @Repository
 public interface QuestionBankRepository extends JpaRepository<QuestionBank, Integer> {

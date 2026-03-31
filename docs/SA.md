@@ -131,7 +131,7 @@ PlanbookAI follows an **N-Tier Architecture** pattern with clear separation betw
 | `orders` | Teacher subscription purchase records |
 | `curriculum_frameworks` | Lesson plan templates designed by Admin |
 | `lesson_plans` | Teacher-created lesson plans |
-| `question_bank` | Categorized question repository |
+| `question_banks` | Categorized question repository |
 | `questions` | Individual questions with metadata |
 | `exams` | Generated exam papers |
 | `exam_questions` | Junction table: exam ↔ questions |
@@ -245,7 +245,7 @@ CREATE TABLE lesson_plans (
 -- QUESTION BANK
 -- ============================================================
 
-CREATE TABLE question_bank (
+CREATE TABLE question_banks (
     id              INT PRIMARY KEY AUTO_INCREMENT,
     name            VARCHAR(255) NOT NULL,
     subject         VARCHAR(100),
@@ -272,7 +272,7 @@ CREATE TABLE questions (
     is_approved     BOOLEAN DEFAULT FALSE,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (bank_id) REFERENCES question_bank(id),
+    FOREIGN KEY (bank_id) REFERENCES question_banks(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
@@ -374,7 +374,7 @@ users ──────────────< orders >───────�
   │
   ├──────────────< lesson_plans >──────────── curriculum_frameworks
   │
-  ├──────────────< question_bank
+  ├──────────────< question_banks
   │                    └──< questions
   │
   ├──────────────< exams

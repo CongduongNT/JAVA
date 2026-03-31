@@ -2,6 +2,7 @@ package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
 import com.planbookai.backend.dto.QuestionDTO;
+import com.planbookai.backend.dto.SavePreviewedQuestionsRequest;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +14,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * QuestionController – REST API quản lý câu hỏi (CRUD + AI Generate).
@@ -125,15 +125,13 @@ public class QuestionController {
             description = "Dùng sau khi user chỉnh sửa câu hỏi AI sinh ra, gọi để lưu vào ngân hàng."
     )
     public ResponseEntity<List<QuestionDTO>> savePreviewedQuestions(
-            @RequestBody Map<String, Object> body,
+            @RequestBody SavePreviewedQuestionsRequest request,
             @AuthenticationPrincipal User user) {
 
-        Integer bankId = (Integer) body.get("bankId");
-        @SuppressWarnings("unchecked")
-        List<QuestionDTO> questions = (List<QuestionDTO>) body.get("questions");
-
-        // FE gửi raw maps, cần deserialize thủ công
         return ResponseEntity.status(201)
-                .body(questionService.savePreviewedQuestions(bankId, questions, user));
+                .body(questionService.savePreviewedQuestions(
+                        request.getBankId(),
+                        request.getQuestions(),
+                        user));
     }
 }

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * <p>Mỗi ngân hàng có thể chứa nhiều {@link Question}. Được tạo bởi Staff hoặc Teacher.
  */
 @Entity
-@Table(name = "question_bank")
+@Table(name = "question_banks")
 @Getter
 @Setter
 @NoArgsConstructor
