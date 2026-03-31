@@ -9,6 +9,7 @@ import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.RoleRepository;
 import com.planbookai.backend.repository.UserRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -82,11 +83,23 @@ public class AuthService {
     }
 
     public User getCurrentUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+        String email;
+
         if (principal instanceof User) {
             return (User) principal;
+        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+            email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+        } else {
+            email = principal.toString();
         }
-        return null;
+
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     private AuthResponse generateAuthResponse(User user) {

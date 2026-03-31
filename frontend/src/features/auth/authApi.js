@@ -1,11 +1,10 @@
 import axios from 'axios';
-import { store } from '../../app/store'; // Import a global store
 import { loginSuccess, logout } from './authSlice';
 
 // Sử dụng biến môi trường (Vite), fallback về localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-const apiClient = axios.create({
+export const apiClient = axios.create({
   baseURL: API_URL,
 });
 
@@ -22,7 +21,8 @@ export const register = (userData) => {
 // Request interceptor to add the auth token header to requests
 apiClient.interceptors.request.use(
   (config) => {
-    const token = store.getState().auth.accessToken;
+    // Lấy token trực tiếp từ localStorage để tránh circular dependency với store
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -38,21 +38,23 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // If the error is 401 and we haven't retried yet
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = store.getState().auth.refreshToken;
+        // Lấy refreshToken từ localStorage
+        const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) {
-          store.dispatch(logout());
+          // Chuyển hướng hoặc xử lý logout thủ công nếu không có store dispatch
           return Promise.reject(error);
         }
 
         // Call the refresh token endpoint
         const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
 
-        // Update the store with the new tokens
-        store.dispatch(loginSuccess(data));
+        // Cập nhật localStorage (Redux state sẽ được đồng bộ ở lần request tiếp theo hoặc reload)
+        localStorage.setItem('token', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
 
         // Update the header of the original request
         originalRequest.headers['Authorization'] = `Bearer ${data.accessToken}`;
@@ -60,8 +62,9 @@ apiClient.interceptors.response.use(
         // Retry the original request
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, logout the user
-        store.dispatch(logout());
+        // Nếu refresh thất bại, xóa sạch và đá về login
+        localStorage.clear();
+        window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }

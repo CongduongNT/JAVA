@@ -16,6 +16,19 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+/**
+ * @param id
+ * @param role
+ * @param fullName
+ * @param email
+ * @param passwordHash
+ * @param phone
+ * @param avatarUrl
+ * @param isActive
+ * @param emailVerified
+ * @param createdAt
+ * @param updatedAt
+ */
 @AllArgsConstructor
 @Builder
 public class User {
@@ -60,4 +73,5 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
 }

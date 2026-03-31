@@ -1,0 +1,2 @@
+-- Đảm bảo cột created_by_id tồn tại cho Entity Java
+-- File này đã được làm trống để quay về cấu trúc V3 ổn định.
