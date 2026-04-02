@@ -83,6 +83,102 @@ public class Question {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public Long getId() {
+        return id;
+    }
+
+    public QuestionBank getBank() {
+        return bank;
+    }
+
+    public void setBank(QuestionBank bank) {
+        this.bank = bank;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public QuestionType getType() {
+        return type;
+    }
+
+    public void setType(QuestionType type) {
+        this.type = type;
+    }
+
+    public Difficulty getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    public List<Map<String, Object>> getOptions() {
+        return options;
+    }
+
+    public void setOptions(List<Map<String, Object>> options) {
+        this.options = options;
+    }
+
+    public String getCorrectAnswer() {
+        return correctAnswer;
+    }
+
+    public void setCorrectAnswer(String correctAnswer) {
+        this.correctAnswer = correctAnswer;
+    }
+
+    public String getExplanation() {
+        return explanation;
+    }
+
+    public void setExplanation(String explanation) {
+        this.explanation = explanation;
+    }
+
+    public Boolean getAiGenerated() {
+        return aiGenerated;
+    }
+
+    public void setAiGenerated(Boolean aiGenerated) {
+        this.aiGenerated = aiGenerated;
+    }
+
+    public Boolean getIsApproved() {
+        return isApproved;
+    }
+
+    public void setIsApproved(Boolean isApproved) {
+        this.isApproved = isApproved;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
     public enum QuestionType {
         MULTIPLE_CHOICE, SHORT_ANSWER, FILL_IN_BLANK
     }

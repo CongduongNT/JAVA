@@ -167,17 +167,17 @@ public class GeminiAIService {
             }
         }
 
-        return QuestionDTO.builder()
-                .content(content)
-                .type(parsedType.name())
-                .difficulty(parsedDifficulty.name())
-                .topic(topicVal)
-                .options(options)
-                .correctAnswer(correctAnswer)
-                .explanation(explanation)
-                .aiGenerated(true)
-                .isApproved(false)
-                .build();
+        QuestionDTO dto = new QuestionDTO();
+        dto.setContent(content);
+        dto.setType(parsedType.name());
+        dto.setDifficulty(parsedDifficulty.name());
+        dto.setTopic(topicVal);
+        dto.setOptions(options);
+        dto.setCorrectAnswer(correctAnswer);
+        dto.setExplanation(explanation);
+        dto.setAiGenerated(true);
+        dto.setIsApproved(false);
+        return dto;
     }
 
     private String getStr(Map<String, Object> map, String key, String defaultVal) {

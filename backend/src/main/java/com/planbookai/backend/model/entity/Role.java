@@ -26,6 +26,10 @@ public class Role {
     @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    public RoleName getName() {
+        return name;
+    }
+
     public enum RoleName {
         ADMIN, MANAGER, STAFF, TEACHER
     }

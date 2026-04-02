@@ -81,14 +81,13 @@ public class QuestionService {
     @Transactional
     public QuestionDTO.QuestionBankDTO createBank(QuestionBankRequest request, User user) {
         assertCanCreateBank(user);
-        QuestionBank bank = QuestionBank.builder()
-                .name(request.getName())
-                .subject(request.getSubject())
-                .gradeLevel(request.getGradeLevel())
-                .description(request.getDescription())
-                .createdBy(user)
-                .isPublished(request.getIsPublished() != null ? request.getIsPublished() : false)
-                .build();
+        QuestionBank bank = new QuestionBank();
+        bank.setName(request.getName());
+        bank.setSubject(request.getSubject());
+        bank.setGradeLevel(request.getGradeLevel());
+        bank.setDescription(request.getDescription());
+        bank.setCreatedBy(user);
+        bank.setIsPublished(request.getIsPublished() != null ? request.getIsPublished() : false);
         return mapToBankDTO(bankRepository.save(bank));
     }
 
@@ -301,52 +300,52 @@ public class QuestionService {
     // =====================================================================
 
     private QuestionDTO.QuestionBankDTO mapToBankDTO(QuestionBank bank) {
-        return QuestionDTO.QuestionBankDTO.builder()
-                .id(bank.getId())
-                .name(bank.getName())
-                .subject(bank.getSubject())
-                .gradeLevel(bank.getGradeLevel())
-                .description(bank.getDescription())
-                .createdById(bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null)
-                .createdByName(bank.getCreatedBy() != null ? bank.getCreatedBy().getFullName() : null)
-                .isPublished(bank.getIsPublished())
-                .createdAt(bank.getCreatedAt())
-                .build();
+        QuestionDTO.QuestionBankDTO dto = new QuestionDTO.QuestionBankDTO();
+        dto.setId(bank.getId());
+        dto.setName(bank.getName());
+        dto.setSubject(bank.getSubject());
+        dto.setGradeLevel(bank.getGradeLevel());
+        dto.setDescription(bank.getDescription());
+        dto.setCreatedById(bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null);
+        dto.setCreatedByName(bank.getCreatedBy() != null ? bank.getCreatedBy().getFullName() : null);
+        dto.setIsPublished(bank.getIsPublished());
+        dto.setCreatedAt(bank.getCreatedAt());
+        return dto;
     }
 
     public QuestionDTO mapToQuestionDTO(Question q) {
-        return QuestionDTO.builder()
-                .id(q.getId())
-                .bankId(q.getBank() != null ? q.getBank().getId() : null)
-                .bankName(q.getBank() != null ? q.getBank().getName() : null)
-                .createdById(q.getCreatedBy() != null ? q.getCreatedBy().getId() : null)
-                .createdByName(q.getCreatedBy() != null ? q.getCreatedBy().getFullName() : null)
-                .content(q.getContent())
-                .type(q.getType() != null ? q.getType().name() : null)
-                .difficulty(q.getDifficulty() != null ? q.getDifficulty().name() : null)
-                .topic(q.getTopic())
-                .options(q.getOptions())
-                .correctAnswer(q.getCorrectAnswer())
-                .explanation(q.getExplanation())
-                .aiGenerated(q.getAiGenerated())
-                .isApproved(q.getIsApproved())
-                .createdAt(q.getCreatedAt())
-                .build();
+        QuestionDTO dto = new QuestionDTO();
+        dto.setId(q.getId());
+        dto.setBankId(q.getBank() != null ? q.getBank().getId() : null);
+        dto.setBankName(q.getBank() != null ? q.getBank().getName() : null);
+        dto.setCreatedById(q.getCreatedBy() != null ? q.getCreatedBy().getId() : null);
+        dto.setCreatedByName(q.getCreatedBy() != null ? q.getCreatedBy().getFullName() : null);
+        dto.setContent(q.getContent());
+        dto.setType(q.getType() != null ? q.getType().name() : null);
+        dto.setDifficulty(q.getDifficulty() != null ? q.getDifficulty().name() : null);
+        dto.setTopic(q.getTopic());
+        dto.setOptions(q.getOptions());
+        dto.setCorrectAnswer(q.getCorrectAnswer());
+        dto.setExplanation(q.getExplanation());
+        dto.setAiGenerated(q.getAiGenerated());
+        dto.setIsApproved(q.getIsApproved());
+        dto.setCreatedAt(q.getCreatedAt());
+        return dto;
     }
 
     private Question buildQuestionEntity(QuestionDTO dto, QuestionBank bank, User user) {
-        return Question.builder()
-                .bank(bank)
-                .createdBy(user)
-                .content(dto.getContent())
-                .type(Question.QuestionType.valueOf(dto.getType()))
-                .difficulty(Question.Difficulty.valueOf(dto.getDifficulty()))
-                .topic(dto.getTopic())
-                .options(dto.getOptions())
-                .correctAnswer(dto.getCorrectAnswer())
-                .explanation(dto.getExplanation())
-                .aiGenerated(dto.getAiGenerated() != null ? dto.getAiGenerated() : false)
-                .isApproved(false)
-                .build();
+        Question question = new Question();
+        question.setBank(bank);
+        question.setCreatedBy(user);
+        question.setContent(dto.getContent());
+        question.setType(Question.QuestionType.valueOf(dto.getType()));
+        question.setDifficulty(Question.Difficulty.valueOf(dto.getDifficulty()));
+        question.setTopic(dto.getTopic());
+        question.setOptions(dto.getOptions());
+        question.setCorrectAnswer(dto.getCorrectAnswer());
+        question.setExplanation(dto.getExplanation());
+        question.setAiGenerated(dto.getAiGenerated() != null ? dto.getAiGenerated() : false);
+        question.setIsApproved(false);
+        return question;
     }
 }
