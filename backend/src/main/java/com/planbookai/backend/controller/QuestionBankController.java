@@ -1,5 +1,6 @@
 package com.planbookai.backend.controller;
 
+import com.planbookai.backend.dto.PageResponse;
 import com.planbookai.backend.dto.QuestionBankRequest;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.model.entity.User;
@@ -106,10 +107,15 @@ public class QuestionBankController {
      */
     @GetMapping("/{id}/questions")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(summary = "Lấy câu hỏi trong ngân hàng")
-    public ResponseEntity<List<QuestionDTO>> getQuestionsInBank(
+    @Operation(summary = "Lấy câu hỏi trong ngân hàng", description = "Hỗ trợ phân trang và filter theo topic, difficulty, type")
+    public ResponseEntity<PageResponse<QuestionDTO>> getQuestionsInBank(
             @PathVariable Integer id,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String type,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(questionService.getQuestionsByBank(id, user));
+        return ResponseEntity.ok(questionService.getQuestionsByBank(id, user, page, size, topic, difficulty, type));
     }
 }

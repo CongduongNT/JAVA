@@ -20,8 +20,8 @@ export const questionApi = {
   /** Xóa ngân hàng câu hỏi */
   deleteBank: (id) => api.delete(`/question-banks/${id}`),
 
-  /** Lấy câu hỏi trong ngân hàng */
-  getBankQuestions: (id) => api.get(`/question-banks/${id}/questions`),
+  /** Lấy câu hỏi trong ngân hàng với phân trang / filter */
+  getBankQuestions: (id, params = {}) => api.get(`/question-banks/${id}/questions`, { params }),
 
   // ==========================================
   // QUESTIONS & AI GENERATE

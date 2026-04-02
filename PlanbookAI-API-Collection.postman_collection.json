@@ -540,7 +540,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/{{api_version}}/question-banks/{{bank_id}}/questions",
+              "raw": "{{base_url}}/api/{{api_version}}/question-banks/{{bank_id}}/questions?page=0&size=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -550,6 +550,31 @@
                 "question-banks",
                 "{{bank_id}}",
                 "questions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "topic",
+                  "value": "Quadratic",
+                  "disabled": true
+                },
+                {
+                  "key": "difficulty",
+                  "value": "MEDIUM",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "MULTIPLE_CHOICE",
+                  "disabled": true
+                }
               ]
             }
           }

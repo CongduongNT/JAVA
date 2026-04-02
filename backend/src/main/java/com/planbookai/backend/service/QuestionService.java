@@ -1,6 +1,7 @@
 package com.planbookai.backend.service;
 
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
+import com.planbookai.backend.dto.PageResponse;
 import com.planbookai.backend.dto.QuestionBankRequest;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.exception.ForbiddenOperationException;
@@ -11,10 +12,15 @@ import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.QuestionBankRepository;
 import com.planbookai.backend.repository.QuestionRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * QuestionService – Business logic cho Question Bank &amp; Question.
@@ -111,13 +117,29 @@ public class QuestionService {
     // QUESTIONS – CRUD
     // =====================================================================
 
-    /** Lấy danh sách câu hỏi trong 1 ngân hàng. */
-    public List<QuestionDTO> getQuestionsByBank(Integer bankId, User user) {
+    /** Lấy danh sách câu hỏi trong 1 ngân hàng với phân trang và filter. */
+    public PageResponse<QuestionDTO> getQuestionsByBank(
+            Integer bankId,
+            User user,
+            Integer page,
+            Integer size,
+            String topic,
+            String difficulty,
+            String type) {
         QuestionBank bank = findBankOrThrow(bankId);
         assertCanReadBank(bank, user);
-        return questionRepository.findByBankId(bankId).stream()
-                .map(this::mapToQuestionDTO)
-                .toList();
+
+        validatePageRequest(page, size);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var questionsPage = questionRepository.findByBankIdWithFilters(
+                bankId,
+                normalizeFilter(topic),
+                parseDifficulty(difficulty),
+                parseQuestionType(type),
+                pageable);
+
+        return PageResponse.from(questionsPage.map(this::mapToQuestionDTO));
     }
 
     /** Lấy chi tiết 1 câu hỏi. */
@@ -198,6 +220,43 @@ public class QuestionService {
     private QuestionBank findBankOrThrow(Integer id) {
         return bankRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question bank not found: " + id));
+    }
+
+    private void validatePageRequest(Integer page, Integer size) {
+        if (page == null || page < 0) {
+            throw new IllegalArgumentException("page must be greater than or equal to 0");
+        }
+        if (size == null || size < 1 || size > 100) {
+            throw new IllegalArgumentException("size must be between 1 and 100");
+        }
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private Question.Difficulty parseDifficulty(String value) {
+        return parseEnum(value, Question.Difficulty.class, "difficulty");
+    }
+
+    private Question.QuestionType parseQuestionType(String value) {
+        return parseEnum(value, Question.QuestionType.class, "type");
+    }
+
+    private <E extends Enum<E>> E parseEnum(String value, Class<E> enumType, String fieldName) {
+        String normalized = normalizeFilter(value);
+        if (normalized == null) {
+            return null;
+        }
+
+        try {
+            return Enum.valueOf(enumType, normalized.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid " + fieldName + ": " + value);
+        }
     }
 
     private void assertCanCreateBank(User user) {

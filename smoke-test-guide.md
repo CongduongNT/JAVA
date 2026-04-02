@@ -264,9 +264,34 @@ Expected: `400`
 
 - [ ] `Get Questions in Bank` voi `bank_id` hop le
 Expected: `200`
+Note: response dang phan trang, doc du lieu trong `content`
 
 - [ ] `Get Questions in Bank` voi bank rong
-Expected: `200`, mang rong
+Expected: `200`, `content: []`
+
+- [ ] `Get Questions in Bank` voi `page = 0`, `size = 10`
+Expected: `200`
+
+- [ ] `Get Questions in Bank` filter theo `topic`
+Expected: `200`, chi tra cau hoi khop topic
+
+- [ ] `Get Questions in Bank` filter theo `difficulty`
+Expected: `200`, chi tra cau hoi dung muc do
+
+- [ ] `Get Questions in Bank` filter theo `type`
+Expected: `200`, chi tra cau hoi dung loai
+
+- [ ] `Get Questions in Bank` voi `page = -1`
+Expected: `400`
+
+- [ ] `Get Questions in Bank` voi `size = 0`
+Expected: `400`
+
+- [ ] `Get Questions in Bank` voi `difficulty` khong hop le
+Expected: `400`
+
+- [ ] `Get Questions in Bank` voi `type` khong hop le
+Expected: `400`
 
 ### Delete Question Bank
 
