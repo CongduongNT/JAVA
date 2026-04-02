@@ -2,8 +2,10 @@ package com.planbookai.backend.service;
 
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
 import com.planbookai.backend.dto.PageResponse;
+import com.planbookai.backend.dto.QuestionCreateRequest;
 import com.planbookai.backend.dto.QuestionBankRequest;
 import com.planbookai.backend.dto.QuestionDTO;
+import com.planbookai.backend.dto.QuestionUpdateRequest;
 import com.planbookai.backend.exception.ForbiddenOperationException;
 import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.model.entity.Question;
@@ -141,16 +143,63 @@ public class QuestionService {
         return PageResponse.from(questionsPage.map(this::mapToQuestionDTO));
     }
 
+    /** Tạo câu hỏi thủ công. */
+    @Transactional
+    public QuestionDTO createQuestion(QuestionCreateRequest request, User user) {
+        QuestionBank bank = findBankOrThrow(request.getBankId());
+        assertCanManageBank(bank, user);
+
+        Question question = new Question();
+        question.setBank(bank);
+        question.setCreatedBy(user);
+        applyCreateRequest(question, request);
+        question.setAiGenerated(false);
+        question.setIsApproved(false);
+
+        return mapToQuestionDTO(questionRepository.save(question));
+    }
+
     /** Lấy chi tiết 1 câu hỏi. */
-    public QuestionDTO getQuestionById(Long id) {
-        Question q = questionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Question not found: " + id));
+    public QuestionDTO getQuestionById(Long id, User user) {
+        Question q = findQuestionOrThrow(id);
+        assertCanReadQuestion(q, user);
         return mapToQuestionDTO(q);
     }
 
+    /** Cập nhật 1 câu hỏi thủ công. */
+    @Transactional
+    public QuestionDTO updateQuestion(Long id, QuestionUpdateRequest request, User user) {
+        Question question = findQuestionOrThrow(id);
+        assertCanManageQuestion(question, user);
+
+        question.setContent(request.getContent());
+        question.setType(request.getType());
+
+        if (request.getDifficulty() != null) {
+            question.setDifficulty(request.getDifficulty());
+        }
+        if (request.getTopic() != null) {
+            question.setTopic(request.getTopic());
+        }
+        if (request.getOptions() != null || request.getType() != Question.QuestionType.MULTIPLE_CHOICE) {
+            question.setOptions(request.getType() == Question.QuestionType.MULTIPLE_CHOICE ? request.getOptions() : null);
+        }
+        if (request.getCorrectAnswer() != null) {
+            question.setCorrectAnswer(request.getCorrectAnswer());
+        }
+        if (request.getExplanation() != null) {
+            question.setExplanation(request.getExplanation());
+        }
+
+        return mapToQuestionDTO(questionRepository.save(question));
+    }
+
     /** Xóa câu hỏi. */
-    public void deleteQuestion(Long id) {
-        questionRepository.deleteById(id);
+    @Transactional
+    public void deleteQuestion(Long id, User user) {
+        Question question = findQuestionOrThrow(id);
+        assertCanManageQuestion(question, user);
+        questionRepository.delete(question);
     }
 
     // =====================================================================
@@ -221,6 +270,11 @@ public class QuestionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Question bank not found: " + id));
     }
 
+    private Question findQuestionOrThrow(Long id) {
+        return questionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + id));
+    }
+
     private void validatePageRequest(Integer page, Integer size) {
         if (page == null || page < 0) {
             throw new IllegalArgumentException("page must be greater than or equal to 0");
@@ -281,6 +335,14 @@ public class QuestionService {
             return;
         }
         throw new ForbiddenOperationException("You do not have permission to access question bank: " + bank.getId());
+    }
+
+    private void assertCanReadQuestion(Question question, User user) {
+        assertCanReadBank(question.getBank(), user);
+    }
+
+    private void assertCanManageQuestion(Question question, User user) {
+        assertCanManageBank(question.getBank(), user);
     }
 
     private boolean isOwner(QuestionBank bank, User user) {
@@ -347,5 +409,15 @@ public class QuestionService {
         question.setAiGenerated(dto.getAiGenerated() != null ? dto.getAiGenerated() : false);
         question.setIsApproved(false);
         return question;
+    }
+
+    private void applyCreateRequest(Question question, QuestionCreateRequest request) {
+        question.setContent(request.getContent());
+        question.setType(request.getType());
+        question.setDifficulty(request.getDifficulty() != null ? request.getDifficulty() : Question.Difficulty.MEDIUM);
+        question.setTopic(request.getTopic());
+        question.setOptions(request.getType() == Question.QuestionType.MULTIPLE_CHOICE ? request.getOptions() : null);
+        question.setCorrectAnswer(request.getCorrectAnswer());
+        question.setExplanation(request.getExplanation());
     }
 }

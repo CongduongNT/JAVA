@@ -303,6 +303,51 @@ Expected: `404`
 
 ## Folder: Questions
 
+### Create Question
+
+- [ ] `Create Question` voi body hop le
+Expected: `201`
+
+- [ ] `Create Question` voi thieu `bankId`
+Expected: `400`
+
+- [ ] `Create Question` voi thieu `content`
+Expected: `400`
+
+- [ ] `Create Question` voi `bankId` khong ton tai
+Expected: `404`
+
+- [ ] `Create Question` vao bank khong thuoc teacher hien tai
+Expected: `403`
+
+Body dung:
+
+```json
+{
+  "bankId": 1,
+  "content": "What is the capital of France?",
+  "type": "MULTIPLE_CHOICE",
+  "difficulty": "EASY",
+  "topic": "Geography",
+  "options": [
+    { "label": "A", "text": "Paris", "isCorrect": true },
+    { "label": "B", "text": "London", "isCorrect": false },
+    { "label": "C", "text": "Berlin", "isCorrect": false },
+    { "label": "D", "text": "Madrid", "isCorrect": false }
+  ],
+  "correctAnswer": "Paris",
+  "explanation": "Paris is the capital city of France."
+}
+```
+
+### Get Question Detail
+
+- [ ] `Get Question Detail` voi `question_id` hop le
+Expected: `200`
+
+- [ ] `Get Question Detail` voi `question_id` khong ton tai
+Expected: `404`
+
 ### Generate AI Questions
 
 - [ ] Neu CHUA set `GEMINI_API_KEY`, goi `Generate AI Questions`
@@ -337,8 +382,17 @@ Body dung:
 
 ### Update Question
 
-- [ ] Bo qua request nay trong collection
-Ly do: backend hien tai khong co endpoint `PUT /api/v1/questions/{id}`
+- [ ] `Update Question` voi id hop le
+Expected: `200`
+
+- [ ] `Update Question` voi id khong ton tai
+Expected: `404`
+
+- [ ] `Update Question` voi body thieu `content`
+Expected: `400`
+
+- [ ] `Update Question` vao question thuoc bank khong duoc phep sua
+Expected: `403`
 
 ### Delete Question
 
@@ -346,13 +400,9 @@ Ly do: backend hien tai khong co endpoint `PUT /api/v1/questions/{id}`
 Expected: `204`
 
 - [ ] `Delete Question` voi id khong ton tai
-Expected: ghi nhan hanh vi that su
-Canh bao: co the ra `204`, `404` hoac `500`
+Expected: `404`
 
 ### Request thu cong can them
-
-- [ ] Tao request thu cong `GET {{base_url}}/api/{{api_version}}/questions/{{question_id}}`
-Expected: `200` neu ton tai, `404` neu khong ton tai
 
 - [ ] Tao request thu cong `POST {{base_url}}/api/{{api_version}}/questions/save-batch`
 Expected: `201` neu hop le

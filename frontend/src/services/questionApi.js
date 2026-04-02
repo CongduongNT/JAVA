@@ -27,6 +27,15 @@ export const questionApi = {
   // QUESTIONS & AI GENERATE
   // ==========================================
 
+  /** Tạo câu hỏi thủ công */
+  createQuestion: (data) => api.post('/questions', data),
+
+  /** Lấy chi tiết câu hỏi */
+  getQuestion: (id) => api.get(`/questions/${id}`),
+
+  /** Cập nhật câu hỏi */
+  updateQuestion: (id, data) => api.put(`/questions/${id}`, data),
+
   /** 
    * Sinh câu hỏi bằng AI (Preview)
    * data: { bankId, subject, topic, difficulty, type, count, saveToDb: false }

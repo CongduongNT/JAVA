@@ -614,6 +614,72 @@
       "name": "Questions",
       "item": [
         {
+          "name": "Create Question",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \"bankId\": {{bank_id}},\\n  \"content\": \"What is the capital of France?\",\\n  \"type\": \"MULTIPLE_CHOICE\",\\n  \"difficulty\": \"EASY\",\\n  \"topic\": \"Geography\",\\n  \"options\": [\\n    { \"label\": \"A\", \"text\": \"Paris\", \"isCorrect\": true },\\n    { \"label\": \"B\", \"text\": \"London\", \"isCorrect\": false },\\n    { \"label\": \"C\", \"text\": \"Berlin\", \"isCorrect\": false },\\n    { \"label\": \"D\", \"text\": \"Madrid\", \"isCorrect\": false }\\n  ],\\n  \"correctAnswer\": \"Paris\",\\n  \"explanation\": \"Paris is the capital city of France.\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/questions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "{{api_version}}",
+                "questions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Question Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/questions/{{question_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "{{api_version}}",
+                "questions",
+                "{{question_id}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "Generate AI Questions",
           "request": {
             "auth": {
@@ -673,10 +739,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\\n  \"content\": \"Updated question content\",\\n  \"type\": \"MULTIPLE_CHOICE\"\\n}"
+              "raw": "{\\n  \"content\": \"Updated question content\",\\n  \"type\": \"MULTIPLE_CHOICE\",\\n  \"difficulty\": \"MEDIUM\",\\n  \"topic\": \"Updated topic\",\\n  \"correctAnswer\": \"Updated answer\",\\n  \"explanation\": \"Updated explanation\"\\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/{{api_version}}/questions/1",
+              "raw": "{{base_url}}/api/{{api_version}}/questions/{{question_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -684,7 +750,7 @@
                 "api",
                 "{{api_version}}",
                 "questions",
-                "1"
+                "{{question_id}}"
               ]
             }
           }
@@ -705,7 +771,7 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/{{api_version}}/questions/1",
+              "raw": "{{base_url}}/api/{{api_version}}/questions/{{question_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -713,7 +779,7 @@
                 "api",
                 "{{api_version}}",
                 "questions",
-                "1"
+                "{{question_id}}"
               ]
             }
           }

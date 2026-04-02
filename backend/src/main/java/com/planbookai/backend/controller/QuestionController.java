@@ -1,7 +1,9 @@
 package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
+import com.planbookai.backend.dto.QuestionCreateRequest;
 import com.planbookai.backend.dto.QuestionDTO;
+import com.planbookai.backend.dto.QuestionUpdateRequest;
 import com.planbookai.backend.dto.SavePreviewedQuestionsRequest;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.QuestionService;
@@ -22,7 +24,9 @@ import java.util.List;
  *
  * <p>Endpoints:
  * <ul>
+ *   <li>POST   /questions               – Tạo câu hỏi thủ công</li>
  *   <li>GET    /questions/{id}          – Xem chi tiết 1 câu hỏi</li>
+ *   <li>PUT    /questions/{id}          – Cập nhật câu hỏi</li>
  *   <li>DELETE /questions/{id}          – Xóa câu hỏi</li>
  *   <li>POST   /questions/ai-generate   – Sinh câu hỏi bằng AI (preview hoặc lưu)</li>
  *   <li>POST   /questions/save-batch    – Lưu danh sách câu hỏi đã preview/chỉnh sửa</li>
@@ -46,23 +50,52 @@ public class QuestionController {
     }
 
     /**
+     * Tạo câu hỏi thủ công.
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
+    @Operation(summary = "Tạo câu hỏi thủ công")
+    public ResponseEntity<QuestionDTO> createQuestion(
+            @Valid @RequestBody QuestionCreateRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(201).body(questionService.createQuestion(request, user));
+    }
+
+    /**
      * Lấy chi tiết câu hỏi theo ID.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     @Operation(summary = "Xem chi tiết câu hỏi")
-    public ResponseEntity<QuestionDTO> getQuestion(@PathVariable Long id) {
-        return ResponseEntity.ok(questionService.getQuestionById(id));
+    public ResponseEntity<QuestionDTO> getQuestion(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.getQuestionById(id, user));
+    }
+    
+    /**
+     * Cập nhật câu hỏi theo ID.
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
+    @Operation(summary = "Cập nhật câu hỏi")
+    public ResponseEntity<QuestionDTO> updateQuestion(
+            @PathVariable Long id,
+            @Valid @RequestBody QuestionUpdateRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.updateQuestion(id, request, user));
     }
 
     /**
      * Xóa câu hỏi theo ID.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Xóa câu hỏi")
-    public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
-        questionService.deleteQuestion(id);
+    public ResponseEntity<Void> deleteQuestion(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        questionService.deleteQuestion(id, user);
         return ResponseEntity.noContent().build();
     }
 
