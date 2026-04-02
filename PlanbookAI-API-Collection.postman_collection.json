@@ -408,6 +408,35 @@
           }
         },
         {
+          "name": "Get Question Bank Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/question-banks/{{bank_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "{{api_version}}",
+                "question-banks",
+                "{{bank_id}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "Create Question Bank",
           "event": [
             {
@@ -442,7 +471,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\\n  \"name\": \"Math Questions - Chapter 1\",\\n  \"description\": \"Algebra and geometry problems\",\\n  \"category\": \"Mathematics\"\\n}"
+              "raw": "{\\n  \"name\": \"Math Questions - Chapter 1\",\\n  \"subject\": \"Mathematics\",\\n  \"gradeLevel\": \"10\",\\n  \"description\": \"Algebra and geometry problems\",\\n  \"isPublished\": false\\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/{{api_version}}/question-banks",
@@ -479,7 +508,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\\n  \"name\": \"Updated Bank Name\",\\n  \"description\": \"Updated description\"\\n}"
+              "raw": "{\\n  \"name\": \"Updated Bank Name\",\\n  \"subject\": \"Mathematics\",\\n  \"gradeLevel\": \"11\",\\n  \"description\": \"Updated description\",\\n  \"isPublished\": true\\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/{{api_version}}/question-banks/{{bank_id}}",

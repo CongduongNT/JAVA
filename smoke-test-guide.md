@@ -1,88 +1,36 @@
-# POSTMAN_BACKEND_CHECK
+# POSTMAN CHECKLIST BY FOLDER
 
 ## Muc tieu
 
-Huong dan chay backend sau khi sua bug va kiem tra nhanh xem API da hoat dong chua bang Postman.
+Checklist nay duoc sap theo dung folder request trong Postman collection hien tai:
 
-## File Postman da co san
+- `Authentication`
+- `Users`
+- `Question Banks`
+- `Questions`
+- `Orders`
+- `Subscriptions`
 
-- Collection: `PlanbookAI-API-Collection.postman_collection.json`
-- Environment: `PlanbookAI-Environment.postman_environment.json`
+Muc tieu:
 
-## Luu y quan trong truoc khi chay
+- tick theo tung request trong Postman
+- ghi nhanh expected status
+- canh bao request nao dang "pass gia"
+- bat som `400`, `401`, `403`, `404`, `409`, `500`, `502`, `503`
 
-- Neu muon chay backend bang `mvn spring-boot:run`, chi nen chay database bang Docker.
-- Khong nen chay ca backend container va backend local cung luc, vi deu dung cong `8080`.
+## Truoc khi tick checklist
 
-## Cach chay backend de test bang Postman
+### Environment
 
-### Cach 1: Chay backend local, database bang Docker
+- [ ] Chon environment `PlanbookAI Local`
+- [ ] `base_url = http://localhost:8080`
+- [ ] `api_version = v1`
+- [ ] Backend dang `Up`
+- [ ] MySQL dang `healthy`
 
-Day la cach nen dung de test sau khi vua sua code backend.
+### Token script can sua truoc
 
-1. Mo terminal tai thu muc goc project.
-2. Chi chay MySQL:
-
-```cmd
-docker-compose up -d db
-```
-
-3. Chay backend local:
-
-```cmd
-cd backend
-```
-
-```powershell
-$env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot'
-$env:Path='C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot\bin;' + $env:Path
-& 'C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\plugins\maven\lib\maven3\bin\mvn.cmd' spring-boot:run
-```
-
-Neu may ban khong co duong dan Maven nhu tren, co the dung Maven/IDE cua ban mien la backend start thanh cong o `http://localhost:8080`.
-
-### Cach 2: Chay full bang Docker
-
-Neu ban muon test nhanh ban container:
-
-```cmd
-docker-compose up -d
-```
-
-Sau do dung Postman goi truc tiep vao `http://localhost:8080`.
-
-## Kiem tra backend da len chua
-
-Mo 1 trong 2 URL sau tren browser:
-
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8080/v3/api-docs`
-
-Neu mo duoc thi backend da len va co the bat dau test bang Postman.
-
-## Import Postman
-
-1. Mo Postman.
-2. Import file `PlanbookAI-API-Collection.postman_collection.json`.
-3. Import file `PlanbookAI-Environment.postman_environment.json`.
-4. Chon environment `PlanbookAI Local`.
-5. Xac nhan:
-   - `base_url = http://localhost:8080`
-   - `api_version = v1`
-
-## Can chinh sua gi trong collection hien tai
-
-Collection hien tai co mot so request cu khong con khop 100% voi backend. Nen sua cac muc duoi day truoc khi bam Send.
-
-### 1. Sua script luu token trong `Register User` va `Login User`
-
-Collection dang dung `jsonData.token`, trong khi backend hien tai tra ve:
-
-- `accessToken`
-- `refreshToken`
-- `user`
-
-Trong tab `Tests` cua `Register User` va `Login User`, sua ve:
+Trong `Register User` va `Login User`, sua script `Tests` thanh:
 
 ```javascript
 const jsonData = pm.response.json();
@@ -90,25 +38,206 @@ pm.environment.set("token", jsonData.accessToken);
 pm.environment.set("refresh_token", jsonData.refreshToken);
 ```
 
-Neu khong sua script, ban co the copy tay `accessToken` tu response roi paste vao env `token`.
+- [ ] Da sua script luu token
 
-### 2. Sua body `Register User`
+### Tai khoan co san de test
+
+- [ ] Teacher: `teacher@planbookai.com / admin`
+- [ ] Admin: `admin@planbookai.com / admin`
+- [ ] Manager: `manager@planbookai.com / admin`
+
+Luu y:
+
+- Muon test theo role, KHONG dung `Register User` de tao admin/manager.
+- Dung cac tai khoan seed san hoac login admin roi goi API user management.
+
+## Folder: Authentication
+
+### Register User
+
+- [ ] `Register User` voi email moi
+Expected: `200`
+Note: backend hien tai tra `AuthResponse` ngay sau khi register, khong phai `201`
+Canh bao: register KHONG phan role theo body; self-registration hien tai luon tao `TEACHER`
+
+- [ ] `Register User` voi email da ton tai
+Expected: `409`
+Canh bao: neu ra `500` thi bug exception mapping
+
+- [ ] `Register User` voi body rong/null
+Expected: nen la `400`
+Canh bao: request DTO chua co validation chat, co the ra status khac
 
 Body dung:
 
 ```json
 {
   "fullName": "John Teacher",
-  "email": "teacher@example.com",
+  "email": "teacher-new@example.com",
   "password": "Password123!"
 }
 ```
 
-Khong can gui field `role`.
+- [ ] Khong dung `role: "ADMIN"` trong request `Register User`
+Expected: field nay bi bo qua
+Canh bao: neu response van la `TEACHER` thi do la hanh vi dung theo code hien tai, khong phai bug
 
-### 3. Sua body `Create Question Bank`
+### Login User
 
-Body mau trong collection dang dung `category`. Backend hien tai can:
+- [ ] `Login User` voi teacher dung mat khau
+Expected: `200`
+
+- [ ] `Login User` sai password
+Expected: `401`
+
+- [ ] `Login User` email khong ton tai
+Expected: `401`
+
+- [ ] `Login User` body thieu field
+Expected: nen la `400`
+Canh bao: co the ra `401` hoac `500` vi validation chua day du
+
+Body teacher:
+
+```json
+{
+  "email": "teacher@planbookai.com",
+  "password": "admin"
+}
+```
+
+### Get Current User
+
+- [ ] `Get Current User` voi teacher token
+Expected: `200`
+
+- [ ] `Get Current User` khong gui token
+Expected: `401`
+
+- [ ] `Get Current User` voi token rac
+Expected: `401`
+
+### Refresh Token
+
+- [ ] `Refresh Token` voi refresh token hop le
+Expected: `200`
+
+- [ ] `Refresh Token` voi token rac
+Expected: nen la `401`
+Canh bao: neu ra `500` thi bug exception handling
+
+### Logout
+
+- [ ] `Logout` voi token hop le
+Expected: `200`
+
+## Folder: Users
+
+### Get All Users (Admin)
+
+- [ ] Admin goi `Get All Users (Admin)`
+Expected: `200`
+
+- [ ] Teacher goi `Get All Users (Admin)`
+Expected: `403`
+Canh bao: neu ra `200` thi bug security
+
+### Get User by ID
+
+- [ ] Admin goi `Get User by ID`
+Expected: `200`
+
+- [ ] Teacher goi `Get User by ID`
+Expected: nen la `403` hoac chi doc chinh minh
+Canh bao: neu ra `200` thi bug security, vi route nay dang thieu `@PreAuthorize`
+
+- [ ] `Get User by ID` voi id khong ton tai
+Expected: `404`
+
+### Create New User
+
+- [ ] Admin goi `Create New User` voi body hop le
+Expected: `201`
+
+- [ ] Teacher goi `Create New User`
+Expected: nen la `403`
+Canh bao: neu ra `201` thi bug security nghiem trong
+
+- [ ] `Create New User` voi email da ton tai
+Expected: `400`
+
+- [ ] `Create New User` voi roleId sai
+Expected: `400`
+
+- [ ] `Create New User` voi body sai format
+Expected: `400`
+
+Body hop le:
+
+```json
+{
+  "fullName": "New User",
+  "email": "newuser@example.com",
+  "password": "Password123!",
+  "phone": "0123456789",
+  "roleId": 4
+}
+```
+
+### Update User
+
+- [ ] Admin goi `Update User` voi body hop le
+Expected: `200`
+
+- [ ] Teacher goi `Update User`
+Expected: nen la `403`
+Canh bao: neu ra `200` thi bug security
+
+- [ ] `Update User` voi id khong ton tai
+Expected: `404`
+
+- [ ] `Update User` voi email duplicate
+Expected: `400`
+
+### Delete User
+
+- [ ] Admin goi `Delete User`
+Expected: nen la `204`
+
+- [ ] Teacher goi `Delete User`
+Expected: nen la `403`
+Canh bao: neu ra `204` thi bug security
+
+- [ ] `Delete User` voi id khong ton tai
+Expected: `404`
+
+## Folder: Question Banks
+
+### Get My Question Banks
+
+- [ ] Teacher goi `Get My Question Banks`
+Expected: `200`
+
+- [ ] Khong gui token
+Expected: `401`
+
+### Get Question Bank Detail
+
+- [ ] `Get Question Bank Detail` voi `bank_id` hop le
+Expected: `200`
+
+- [ ] `Get Question Bank Detail` voi `bank_id` khong ton tai
+Expected: `404`
+
+### Create Question Bank
+
+- [ ] `Create Question Bank` voi body hop le
+Expected: `201`
+
+- [ ] `Create Question Bank` voi `name = ""`
+Expected: `400`
+
+Body hop le:
 
 ```json
 {
@@ -120,7 +249,52 @@ Body mau trong collection dang dung `category`. Backend hien tai can:
 }
 ```
 
-### 4. Sua body `Generate AI Questions`
+### Update Question Bank
+
+- [ ] `Update Question Bank` voi id hop le
+Expected: `200`
+
+- [ ] `Update Question Bank` voi id khong ton tai
+Expected: `404`
+
+- [ ] `Update Question Bank` voi body thieu `name`
+Expected: `400`
+
+### Get Questions in Bank
+
+- [ ] `Get Questions in Bank` voi `bank_id` hop le
+Expected: `200`
+
+- [ ] `Get Questions in Bank` voi bank rong
+Expected: `200`, mang rong
+
+### Delete Question Bank
+
+- [ ] `Delete Question Bank` voi id hop le
+Expected: `204`
+
+- [ ] `Delete Question Bank` voi id khong ton tai
+Expected: `404`
+
+## Folder: Questions
+
+### Generate AI Questions
+
+- [ ] Neu CHUA set `GEMINI_API_KEY`, goi `Generate AI Questions`
+Expected: `502`
+Note: day la expected, khong phai bug startup
+
+- [ ] Neu DA set `GEMINI_API_KEY`, goi `Generate AI Questions` voi body hop le
+Expected: `200` neu `saveToDb=false`
+
+- [ ] `Generate AI Questions` voi `count = 0`
+Expected: `400`
+
+- [ ] `Generate AI Questions` voi thieu `bankId`
+Expected: `400`
+
+- [ ] `Generate AI Questions` voi `bankId` khong ton tai
+Expected: `404`
 
 Body dung:
 
@@ -136,9 +310,64 @@ Body dung:
 }
 ```
 
-Collection cu dang dung `level`, `quantity`, `questionBankId`, cac field nay khong con dung.
+### Update Question
 
-### 5. Sua request `Create Order`
+- [ ] Bo qua request nay trong collection
+Ly do: backend hien tai khong co endpoint `PUT /api/v1/questions/{id}`
+
+### Delete Question
+
+- [ ] `Delete Question` voi id hop le
+Expected: `204`
+
+- [ ] `Delete Question` voi id khong ton tai
+Expected: ghi nhan hanh vi that su
+Canh bao: co the ra `204`, `404` hoac `500`
+
+### Request thu cong can them
+
+- [ ] Tao request thu cong `GET {{base_url}}/api/{{api_version}}/questions/{{question_id}}`
+Expected: `200` neu ton tai, `404` neu khong ton tai
+
+- [ ] Tao request thu cong `POST {{base_url}}/api/{{api_version}}/questions/save-batch`
+Expected: `201` neu hop le
+
+- [ ] Test `save-batch` voi `bankId = null`
+Expected: nen la `400`
+Canh bao: hien tai co nguy co `500`
+
+- [ ] Test `save-batch` voi `type = "abc"` hoac `difficulty = "abc"`
+Expected: nen la `400`
+Canh bao: hien tai de ra `500` do `Enum.valueOf(...)`
+
+## Folder: Orders
+
+### Get All Orders
+
+- [ ] Admin goi `Get All Orders`
+Expected: `200`
+
+- [ ] Teacher goi `Get All Orders`
+Expected: `403`
+
+### Create Order
+
+- [ ] Teacher goi `Create Order` voi package active
+Expected: `200`
+
+- [ ] Admin goi `Create Order`
+Expected: `403`
+
+- [ ] `Create Order` voi `packageId` khong ton tai
+Expected: `404`
+
+- [ ] `Create Order` voi `packageId = null`
+Expected: nen la `400`
+Canh bao: hien tai co nguy co `500`
+
+- [ ] `Create Order` voi package da deactivate
+Expected: nen la `400` hoac `409`
+Canh bao: hien tai can theo doi xem co bi day thanh `500` khong
 
 Body dung:
 
@@ -149,236 +378,158 @@ Body dung:
 }
 ```
 
-Collection cu dang gui `subscriptionPackageId` va `price`, khong khop DTO hien tai.
+### Get Order Details
 
-### 6. Khong dung folder `Subscriptions` theo nguyen trang
+- [ ] Bo qua request nay trong collection
+Ly do: backend hien tai khong co `GET /api/v1/orders/{id}`
 
-Backend hien tai dung path:
+### Request thu cong can them
 
-- `GET /api/v1/packages`
-- `POST /api/v1/packages`
-- `PUT /api/v1/packages/{id}`
-- `DELETE /api/v1/packages/{id}`
+- [ ] Tao request thu cong `GET {{base_url}}/api/{{api_version}}/orders/my`
+Teacher expected: `200`
 
-Collection dang tro den `/subscriptions`, can sua thanh `/packages` neu muon test nhom nay.
+- [ ] Tao request thu cong `PUT {{base_url}}/api/{{api_version}}/orders/{{order_id}}/status`
+Admin expected: `200`
 
-### 7. Bo qua mot so request cu khong con dung
+- [ ] Test `PUT /orders/{id}/status` voi body `{ "status": "ACTIVE" }`
+Expected: `200`
 
-Khong nen dung ngay cac request duoi day neu chua tu sua lai:
+- [ ] Test `PUT /orders/{id}/status` voi body `{ "status": "abc" }`
+Expected: nen la `400`
+Canh bao: hien tai co nguy co `500` do `Enum.valueOf(...)`
 
-- `Questions > Update Question`
-- `Orders > Get Order Details`
-- `Subscriptions > ...` neu van de path `/subscriptions`
+## Folder: Subscriptions
 
-## Tai khoan seed co san de test
+Folder nay trong collection dang cu, backend hien tai da doi sang `/packages`.
 
-Neu `DataSeeder` chay thanh cong, ban co the login bang cac tai khoan sau:
+### Viec can lam truoc
 
-- `admin@planbookai.com` / `admin`
-- `manager@planbookai.com` / `admin`
-- `staff@planbookai.com` / `admin`
-- `teacher@planbookai.com` / `admin`
+- [ ] Duplicate hoac rename folder `Subscriptions` thanh `Packages`
+- [ ] Sua URL tu `/subscriptions` thanh `/packages`
 
-Nen test it nhat 2 role:
+### Get All Subscriptions
 
-- `teacher` de test Question Bank, AI Generate, tao order
-- `admin` de test Users, Orders, Packages
+- [ ] Sua request nay thanh `GET {{base_url}}/api/{{api_version}}/packages`
+Teacher/Admin expected: `200`
 
-## Thu tu smoke test de kiem tra API
+- [ ] Goi khong token
+Expected: `401`
 
-### A. Smoke test voi role Teacher
+### Create Subscription
 
-1. `Authentication > Login User`
+- [ ] Sua request nay thanh `POST {{base_url}}/api/{{api_version}}/packages`
+Manager/Admin expected: `200`
 
-Dung body:
+- [ ] Teacher goi request nay
+Expected: `403`
 
-```json
-{
-  "email": "teacher@planbookai.com",
-  "password": "admin"
-}
-```
+- [ ] Body hop le
+Expected: `200`
 
-Ky vong:
+- [ ] Body thieu `name`, `price`, `durationDays`
+Expected: nen la `400`
+Canh bao: hien tai co nguy co `500`
 
-- HTTP `200`
-- Response co `accessToken`, `refreshToken`, `user`
-
-2. `Authentication > Get Current User`
-
-Ky vong:
-
-- HTTP `200`
-- Response co field `role = TEACHER`
-
-3. `Question Banks > Get My Question Banks`
-
-Ky vong:
-
-- HTTP `200`
-- Co the la mang rong neu chua co du lieu
-
-4. `Question Banks > Create Question Bank`
-
-Dung body:
+Body hop le:
 
 ```json
 {
-  "name": "Math Questions - Chapter 1",
-  "subject": "Mathematics",
-  "gradeLevel": "10",
-  "description": "Algebra and geometry problems",
-  "isPublished": false
+  "name": "SCHOOL_PLAN",
+  "description": "Plan for schools",
+  "price": 199000,
+  "durationDays": 30,
+  "features": "{\"lesson_plans\":50}",
+  "isActive": true
 }
 ```
 
-Ky vong:
+### Request thu cong nen them trong folder Packages
 
-- HTTP `201`
-- Response tra ve `id`
+- [ ] `PUT {{base_url}}/api/{{api_version}}/packages/{{package_id}}`
+Manager/Admin expected: `200`
 
-Sau khi co `id`, luu vao environment `bank_id`.
+- [ ] `DELETE {{base_url}}/api/{{api_version}}/packages/{{package_id}}`
+Manager/Admin expected: `204`
 
-5. `Question Banks > Get Questions in Bank`
+- [ ] `PUT {{base_url}}/api/{{api_version}}/packages/{{package_id}}/deactivate`
+Manager/Admin expected: `200`
 
-Dung `{{bank_id}}`.
+- [ ] Test `package_id` khong ton tai cho 3 request tren
+Expected: `404`
 
-Ky vong:
+## Error checklist nhanh
 
-- HTTP `200`
-- Thuong la mang rong neu chua co cau hoi
+### 400
 
-6. `Questions > Generate AI Questions`
+- [ ] Body thieu field bat buoc
+- [ ] Sai format field
+- [ ] Validation no dung nhu ky vong
+- [ ] Neu dang ra `400` ma ra `500`, ghi lai payload gay loi
 
-Chi test neu ban da set `GEMINI_API_KEY`. Neu chua set, co the bo qua buoc nay.
+### 401
 
-Dung body:
+- [ ] Khong gui token
+- [ ] Gui token rac
+- [ ] Login sai email/password
 
-```json
-{
-  "bankId": {{bank_id}},
-  "subject": "Mathematics",
-  "topic": "Quadratic Equations",
-  "difficulty": "MEDIUM",
-  "type": "MULTIPLE_CHOICE",
-  "count": 3,
-  "saveToDb": false
-}
-```
+### 403
 
-Ky vong:
+- [ ] Teacher goi API admin
+- [ ] Teacher goi API manager
+- [ ] Neu teacher van tao/xoa/update user duoc, danh dau `BUG SECURITY`
 
-- HTTP `200` neu preview
-- Response la danh sach cau hoi AI sinh ra
+### 404
 
-7. `Orders > Create Order`
+- [ ] `bank_id` khong ton tai
+- [ ] `package_id` khong ton tai
+- [ ] `order_id` khong ton tai
+- [ ] `question_id` khong ton tai
 
-Dung body:
+### 500
 
-```json
-{
-  "packageId": 1,
-  "paymentMethod": "BANK_TRANSFER"
-}
-```
+- [ ] Test payload null/sai enum cho orders/packages/save-batch
+- [ ] Neu gap `500`, ghi ro:
+Endpoint
+Role
+Payload
+Expected
+Actual
+Log backend
 
-Ky vong:
+### 502
 
-- HTTP `200`
-- Response co `status = PENDING` hoac trang thai khoi tao tuong duong
+- [ ] `POST /questions/ai-generate` khi chua co `GEMINI_API_KEY`
+Expected: `502 AI_SERVICE_ERROR`
 
-8. Tao them request thu cong: `GET {{base_url}}/api/{{api_version}}/orders/my`
+### 503
 
-Ky vong:
+- [ ] Stop backend container roi goi lai request
+- [ ] Stop db container roi restart backend
+Note: `503` la bai test ha tang, khong phai business API
 
-- HTTP `200`
-- Tra ve danh sach order cua teacher
+## Dinh nghia "pass that su"
 
-### B. Smoke test voi role Admin
+- [ ] Dung status code
+- [ ] Dung role
+- [ ] Dung shape response
+- [ ] Khong mo nham quyen cho user role thap
+- [ ] Khong day input xau thanh `500`
 
-1. Login lai bang:
+## Uu tien chay truoc
 
-```json
-{
-  "email": "admin@planbookai.com",
-  "password": "admin"
-}
-```
-
-2. `Users > Get All Users (Admin)`
-
-Ky vong:
-
-- HTTP `200`
-- Tra ve danh sach user
-
-3. `Orders > Get All Orders`
-
-Ky vong:
-
-- HTTP `200`
-- Tra ve danh sach order
-
-4. Tao request thu cong: `GET {{base_url}}/api/{{api_version}}/packages`
-
-Ky vong:
-
-- HTTP `200`
-- Tra ve danh sach goi `FREE`, `PRO`, `PREMIUM`
-
-5. Tao request thu cong: `PUT {{base_url}}/api/{{api_version}}/orders/{{order_id}}/status`
-
-Body vi du:
-
-```json
-{
-  "status": "ACTIVE"
-}
-```
-
-Ky vong:
-
-- HTTP `200`
-- Order duoc cap nhat trang thai
-
-## Checklist dat yeu cau
-
-Co the xem backend da hoat dong on cho Postman neu dat duoc cac dieu kien sau:
-
-- Login teacher thanh cong
-- `GET /auth/me` thanh cong
-- Tao question bank thanh cong
-- Xem question bank cua teacher thanh cong
-- Tao order thanh cong
-- Login admin thanh cong
-- Lay danh sach user thanh cong
-- Lay danh sach packages thanh cong
-
-## Neu gap loi
-
-- `401 Unauthorized`
-  - Kiem tra env `token` da duoc cap nhat bang `accessToken` chua
-  - Login lai roi goi request can auth
-
-- `403 Forbidden`
-  - Ban dang dung sai role cho endpoint
-  - Thu doi token teacher/admin cho dung
-
-- `400 Bad Request`
-  - Kiem tra lai body co dung field moi hay khong
-  - Dac biet voi `Question Bank`, `AI Generate`, `Order`
-
-- `500 Internal Server Error`
-  - Xem log backend
-- Neu lien quan AI, kiem tra `GEMINI_API_KEY`
-- Neu lien quan DB, kiem tra MySQL da len chua
-
-- `502 AI_SERVICE_ERROR`
-  - Backend da boot duoc, nhung tinh nang AI dang chua co `GEMINI_API_KEY`
-  - Cac API khac van test binh thuong
-  - Neu muon test `questions/ai-generate`, them `GEMINI_API_KEY` vao `.env` roi rebuild backend container
+- [ ] Login teacher
+- [ ] `Get Current User`
+- [ ] `Get My Question Banks`
+- [ ] `Create Question Bank`
+- [ ] `Create Order`
+- [ ] Login admin
+- [ ] `Get All Users (Admin)`
+- [ ] `Get All Orders`
+- [ ] `GET /packages`
+- [ ] Negative tests cho `403`, `400`, `404`, `502`
 
 ## Ghi chu cuoi
 
-- File nay uu tien smoke test nhanh de xac nhan backend da song va endpoint chinh da dung.
-- Neu can test day du hon, nen tao them 1 Postman collection da duoc cap nhat theo endpoint hien tai thay vi dung nguyen collection cu.
+- Request nao khong khop backend hien tai thi khong tick pass chi vi Postman gui duoc.
+- Neu request "pass" nhung mo sai quyen, do la bug nghiem trong hon ca request fail.
+- Checklist nay nen duoc dung cung voi `POSTMAN_BACKEND_CHECK.md`.

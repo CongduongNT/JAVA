@@ -22,6 +22,7 @@ import java.util.List;
  * <p>Endpoints:
  * <ul>
  *   <li>GET  /question-banks          – Lấy ngân hàng của người dùng hiện tại</li>
+ *   <li>GET  /question-banks/{id}     – Lấy chi tiết ngân hàng</li>
  *   <li>POST /question-banks          – Tạo ngân hàng mới</li>
  *   <li>PUT  /question-banks/{id}     – Cập nhật ngân hàng</li>
  *   <li>DELETE /question-banks/{id}   – Xóa ngân hàng</li>
@@ -51,10 +52,22 @@ public class QuestionBankController {
     }
 
     /**
+     * Lấy chi tiết một ngân hàng câu hỏi.
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
+    @Operation(summary = "Lấy chi tiết ngân hàng câu hỏi")
+    public ResponseEntity<QuestionDTO.QuestionBankDTO> getBank(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.getBank(id, user));
+    }
+
+    /**
      * Tạo ngân hàng câu hỏi mới.
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Tạo ngân hàng câu hỏi mới")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> createBank(
             @Valid @RequestBody QuestionBankRequest request,
@@ -66,22 +79,25 @@ public class QuestionBankController {
      * Cập nhật thông tin ngân hàng câu hỏi.
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Cập nhật ngân hàng câu hỏi")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> updateBank(
             @PathVariable Integer id,
-            @Valid @RequestBody QuestionBankRequest request) {
-        return ResponseEntity.ok(questionService.updateBank(id, request));
+            @Valid @RequestBody QuestionBankRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.updateBank(id, request, user));
     }
 
     /**
      * Xóa ngân hàng câu hỏi (và toàn bộ câu hỏi bên trong).
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Xóa ngân hàng câu hỏi")
-    public ResponseEntity<Void> deleteBank(@PathVariable Integer id) {
-        questionService.deleteBank(id);
+    public ResponseEntity<Void> deleteBank(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal User user) {
+        questionService.deleteBank(id, user);
         return ResponseEntity.noContent().build();
     }
 
@@ -91,7 +107,9 @@ public class QuestionBankController {
     @GetMapping("/{id}/questions")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     @Operation(summary = "Lấy câu hỏi trong ngân hàng")
-    public ResponseEntity<List<QuestionDTO>> getQuestionsInBank(@PathVariable Integer id) {
-        return ResponseEntity.ok(questionService.getQuestionsByBank(id));
+    public ResponseEntity<List<QuestionDTO>> getQuestionsInBank(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.getQuestionsByBank(id, user));
     }
 }

@@ -3,8 +3,11 @@ package com.planbookai.backend.service;
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
 import com.planbookai.backend.dto.QuestionBankRequest;
 import com.planbookai.backend.dto.QuestionDTO;
+import com.planbookai.backend.exception.ForbiddenOperationException;
+import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.model.entity.Question;
 import com.planbookai.backend.model.entity.QuestionBank;
+import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.QuestionBankRepository;
 import com.planbookai.backend.repository.QuestionRepository;
@@ -54,6 +57,13 @@ public class QuestionService {
                 .toList();
     }
 
+    /** Lấy chi tiết 1 ngân hàng câu hỏi. */
+    public QuestionDTO.QuestionBankDTO getBank(Integer id, User user) {
+        QuestionBank bank = findBankOrThrow(id);
+        assertCanReadBank(bank, user);
+        return mapToBankDTO(bank);
+    }
+
     /** Lấy tất cả ngân hàng (admin/manager). */
     public List<QuestionDTO.QuestionBankDTO> getAllBanks() {
         return bankRepository.findAll().stream()
@@ -62,7 +72,9 @@ public class QuestionService {
     }
 
     /** Tạo ngân hàng câu hỏi mới. */
+    @Transactional
     public QuestionDTO.QuestionBankDTO createBank(QuestionBankRequest request, User user) {
+        assertCanCreateBank(user);
         QuestionBank bank = QuestionBank.builder()
                 .name(request.getName())
                 .subject(request.getSubject())
@@ -75,9 +87,10 @@ public class QuestionService {
     }
 
     /** Cập nhật ngân hàng câu hỏi. */
-    public QuestionDTO.QuestionBankDTO updateBank(Integer id, QuestionBankRequest request) {
-        QuestionBank bank = bankRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Question bank not found: " + id));
+    @Transactional
+    public QuestionDTO.QuestionBankDTO updateBank(Integer id, QuestionBankRequest request, User user) {
+        QuestionBank bank = findBankOrThrow(id);
+        assertCanManageBank(bank, user);
         bank.setName(request.getName());
         bank.setSubject(request.getSubject());
         bank.setGradeLevel(request.getGradeLevel());
@@ -87,8 +100,11 @@ public class QuestionService {
     }
 
     /** Xóa ngân hàng câu hỏi. */
-    public void deleteBank(Integer id) {
-        bankRepository.deleteById(id);
+    @Transactional
+    public void deleteBank(Integer id, User user) {
+        QuestionBank bank = findBankOrThrow(id);
+        assertCanManageBank(bank, user);
+        bankRepository.delete(bank);
     }
 
     // =====================================================================
@@ -96,7 +112,9 @@ public class QuestionService {
     // =====================================================================
 
     /** Lấy danh sách câu hỏi trong 1 ngân hàng. */
-    public List<QuestionDTO> getQuestionsByBank(Integer bankId) {
+    public List<QuestionDTO> getQuestionsByBank(Integer bankId, User user) {
+        QuestionBank bank = findBankOrThrow(bankId);
+        assertCanReadBank(bank, user);
         return questionRepository.findByBankId(bankId).stream()
                 .map(this::mapToQuestionDTO)
                 .toList();
@@ -130,11 +148,9 @@ public class QuestionService {
      */
     @Transactional
     public List<QuestionDTO> aiGenerateQuestions(AIGenerateQuestionsRequest request, User user) {
-        // 1. Validate bank exists
-        QuestionBank bank = bankRepository.findById(request.getBankId())
-                .orElseThrow(() -> new RuntimeException("Question bank not found: " + request.getBankId()));
+        QuestionBank bank = findBankOrThrow(request.getBankId());
+        assertCanManageBank(bank, user);
 
-        // 2. Call Gemini AI (sinh câu hỏi, chưa lưu DB)
         List<QuestionDTO> generated = geminiAIService.generateQuestions(
                 request.getSubject(),
                 request.getTopic(),
@@ -142,9 +158,7 @@ public class QuestionService {
                 request.getType(),
                 request.getCount());
 
-        // 3. Nếu chỉ preview → trả về luôn
         if (!request.isSaveToDb()) {
-            // Gắn thêm bankId và bankName vào preview
             generated.forEach(dto -> {
                 dto.setBankId(bank.getId());
                 dto.setBankName(bank.getName());
@@ -152,7 +166,6 @@ public class QuestionService {
             return generated;
         }
 
-        // 4. Lưu vào DB
         List<Question> toSave = generated.stream()
                 .map(dto -> buildQuestionEntity(dto, bank, user))
                 .toList();
@@ -171,8 +184,8 @@ public class QuestionService {
      */
     @Transactional
     public List<QuestionDTO> savePreviewedQuestions(Integer bankId, List<QuestionDTO> questions, User user) {
-        QuestionBank bank = bankRepository.findById(bankId)
-                .orElseThrow(() -> new RuntimeException("Question bank not found: " + bankId));
+        QuestionBank bank = findBankOrThrow(bankId);
+        assertCanManageBank(bank, user);
 
         List<Question> toSave = questions.stream()
                 .map(dto -> buildQuestionEntity(dto, bank, user))
@@ -180,6 +193,48 @@ public class QuestionService {
 
         List<Question> saved = questionRepository.saveAll(toSave);
         return saved.stream().map(this::mapToQuestionDTO).toList();
+    }
+
+    private QuestionBank findBankOrThrow(Integer id) {
+        return bankRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Question bank not found: " + id));
+    }
+
+    private void assertCanCreateBank(User user) {
+        if (hasRole(user, Role.RoleName.TEACHER) || hasRole(user, Role.RoleName.STAFF)) {
+            return;
+        }
+        throw new ForbiddenOperationException("You do not have permission to create question banks");
+    }
+
+    private void assertCanManageBank(QuestionBank bank, User user) {
+        if (hasRole(user, Role.RoleName.STAFF) || (hasRole(user, Role.RoleName.TEACHER) && isOwner(bank, user))) {
+            return;
+        }
+        throw new ForbiddenOperationException("You do not have permission to modify question bank: " + bank.getId());
+    }
+
+    private void assertCanReadBank(QuestionBank bank, User user) {
+        if (hasRole(user, Role.RoleName.ADMIN)
+                || hasRole(user, Role.RoleName.MANAGER)
+                || hasRole(user, Role.RoleName.STAFF)
+                || isOwner(bank, user)
+                || Boolean.TRUE.equals(bank.getIsPublished())) {
+            return;
+        }
+        throw new ForbiddenOperationException("You do not have permission to access question bank: " + bank.getId());
+    }
+
+    private boolean isOwner(QuestionBank bank, User user) {
+        return bank.getCreatedBy() != null
+                && user != null
+                && bank.getCreatedBy().getId().equals(user.getId());
+    }
+
+    private boolean hasRole(User user, Role.RoleName roleName) {
+        return user != null
+                && user.getRole() != null
+                && user.getRole().getName() == roleName;
     }
 
     // =====================================================================
