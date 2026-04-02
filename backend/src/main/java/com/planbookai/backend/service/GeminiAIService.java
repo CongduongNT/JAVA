@@ -10,6 +10,7 @@ import com.planbookai.backend.model.entity.Question;
 import com.planbookai.backend.util.PromptBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,15 +36,18 @@ public class GeminiAIService {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiAIService.class);
 
-    private final Client geminiClient;
+    private final ObjectProvider<Client> geminiClientProvider;
     private final PromptBuilder promptBuilder;
     private final ObjectMapper objectMapper;
+
+    @Value("${gemini.api-key:}")
+    private String apiKey;
 
     @Value("${gemini.model:gemini-2.0-flash}")
     private String model;
 
-    public GeminiAIService(Client geminiClient, PromptBuilder promptBuilder) {
-        this.geminiClient = geminiClient;
+    public GeminiAIService(ObjectProvider<Client> geminiClientProvider, PromptBuilder promptBuilder) {
+        this.geminiClientProvider = geminiClientProvider;
         this.promptBuilder = promptBuilder;
         this.objectMapper = new ObjectMapper();
     }
@@ -71,9 +75,15 @@ public class GeminiAIService {
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
                 count, subject, topic, difficulty, type);
 
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("[GeminiAI] AI request rejected because GEMINI_API_KEY is not configured.");
+            throw new AIServiceException("Gemini AI is not configured. Set GEMINI_API_KEY to enable AI endpoints.");
+        }
+
         // 2. Call Gemini API
         String rawResponse;
         try {
+            Client geminiClient = geminiClientProvider.getObject();
             GenerateContentResponse response = geminiClient.models.generateContent(
                     model, prompt, null);
             rawResponse = response.text();

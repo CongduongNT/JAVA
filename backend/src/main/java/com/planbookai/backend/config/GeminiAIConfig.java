@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * GeminiAIConfig – Cấu hình Google Gemini AI client.
@@ -15,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>Cách dùng: inject {@code Client geminiClient} vào service cần gọi AI.
  *
- * <p>Nếu {@code apiKey} trống, bean vẫn được tạo nhưng sẽ ném lỗi khi gọi API.
- * Hãy set biến môi trường {@code GEMINI_API_KEY} trước khi chạy.
+ * <p>Nếu {@code apiKey} trống, bean này sẽ không được khởi tạo ở startup do lazy initialization.
+ * Các endpoint AI sẽ tự kiểm tra cấu hình và trả lỗi rõ ràng khi được gọi.
  */
 @Configuration
 public class GeminiAIConfig {
@@ -30,16 +31,16 @@ public class GeminiAIConfig {
      * Tạo Gemini AI Client.
      *
      * <p>Client được cấu hình với API key từ application.yml.
-     * Nếu apiKey trống, in cảnh báo để dev biết cần cấu hình.
+     * Bean được đánh dấu lazy để không chặn quá trình boot nếu môi trường chưa cấu hình AI.
      *
      * @return Google GenAI Client instance
      */
     @Bean
+    @Lazy
     public Client geminiClient() {
         if (apiKey == null || apiKey.isBlank()) {
-            log.warn("[GeminiAI] GEMINI_API_KEY is not configured. AI features will fail at runtime.");
-            // Return client without key – sẽ fail gracefully tại runtime khi gọi API
-            return new Client.Builder().build();
+            log.warn("[GeminiAI] GEMINI_API_KEY is not configured. Gemini client bean will stay unavailable until AI is configured.");
+            throw new IllegalStateException("GEMINI_API_KEY is not configured");
         }
         log.info("[GeminiAI] Gemini client initialized successfully.");
         return new Client.Builder()
