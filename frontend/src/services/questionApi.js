@@ -11,6 +11,9 @@ export const questionApi = {
   /** Lấy danh sách ngân hàng câu hỏi của tôi */
   getMyBanks: () => api.get('/question-banks'),
 
+  /** Lấy chi tiết một ngân hàng câu hỏi */
+  getBank: (id) => api.get(`/question-banks/${id}`),
+
   /** Tạo ngân hàng câu hỏi mới */
   createBank: (data) => api.post('/question-banks', data),
 

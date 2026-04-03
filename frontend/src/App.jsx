@@ -23,6 +23,7 @@ import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
+import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
 import { Toaster } from 'sonner'
 
 function App() {
@@ -173,6 +174,14 @@ function App() {
           element={
             <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER', 'ADMIN']}>
               <QuestionBankPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/question-bank/:bankId"
+          element={
+            <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER', 'ADMIN']}>
+              <BankQuestionsPage />
             </RoleGuard>
           }
         />
