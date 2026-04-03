@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/prompt-templates")
+@RequestMapping("/api/v1/ai/prompt-templates")
 public class AiPromptTemplateController {
 
     private final AiPromptTemplateService service;

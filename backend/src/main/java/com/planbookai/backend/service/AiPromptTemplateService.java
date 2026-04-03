@@ -3,6 +3,7 @@ package com.planbookai.backend.service;
 import com.planbookai.backend.dto.PromptTemplateDTO;
 import com.planbookai.backend.dto.PromptTemplateRequest;
 import com.planbookai.backend.model.entity.AiPromptTemplate;
+import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.AiPromptTemplateRepository;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,6 +20,7 @@ public class AiPromptTemplateService {
 
     private final AiPromptTemplateRepository repository;
 
+    private static final Logger logger = Logger.getLogger(AiPromptTemplateService.class.getName());
     public AiPromptTemplateService(AiPromptTemplateRepository repository) {
         this.repository = repository;
     }
@@ -30,22 +33,43 @@ public class AiPromptTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<PromptTemplateDTO> getApprovedTemplatesByPurpose(String purpose) {
+    public List<PromptTemplateDTO> getTemplatesByPurpose(String purpose, boolean onlyApproved) {
+        logger.info("AiPromptTemplateService: Lọc templates - Mục đích: '" + purpose + "', Chỉ duyệt: " + onlyApproved);
         return repository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(t -> "APPROVED".equals(t.getStatus()))
-                .filter(t -> purpose == null || purpose.equalsIgnoreCase(t.getPurpose()))
+                .filter(t -> {
+                    boolean statusMatch = !onlyApproved || "APPROVED".equalsIgnoreCase(t.getStatus());
+                    if (!statusMatch) {
+                        logger.fine("AiPromptTemplateService: Loại bỏ template '" + t.getTitle() + "' vì trạng thái '" + t.getStatus() + "' không phải APPROVED (onlyApproved=" + onlyApproved + ")");
+                    }
+                    boolean purposeMatch = purpose == null || purpose.isBlank() || 
+                                         (t.getPurpose() != null && t.getPurpose().equalsIgnoreCase(purpose.trim()));
+                    if (!purposeMatch) {
+                        logger.fine("AiPromptTemplateService: Loại bỏ template '" + t.getTitle() + "' vì mục đích không khớp. Mong muốn: '" + purpose + "', Thực tế: '" + t.getPurpose() + "'");
+                    }
+                    return statusMatch && purposeMatch;
+                })
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    public List<PromptTemplateDTO> getApprovedTemplatesByPurpose(String purpose) {
+        return getTemplatesByPurpose(purpose, true);
     }
 
     @Transactional
     public PromptTemplateDTO createTemplate(PromptTemplateRequest request, User user) {
+        // Nếu là Admin hoặc Manager thì tự động duyệt luôn
+        String initialStatus = (user.getRole() != null && 
+                (user.getRole().getName() == Role.RoleName.ADMIN || user.getRole().getName() == Role.RoleName.MANAGER)) 
+                ? "APPROVED" : "PENDING";
+
         AiPromptTemplate template = AiPromptTemplate.builder()
                 .title(request.getTitle())
                 .purpose(request.getPurpose())
                 .promptText(request.getPromptText())
                 .variables(request.getVariables())
-                .status("PENDING")
+                .status(initialStatus)
                 .createdBy(user)
                 .build();
         
@@ -108,10 +132,16 @@ public class AiPromptTemplateService {
         }
 
         String fullPrompt = template.getPromptText();
+        if (fullPrompt == null || fullPrompt.isBlank()) {
+            throw new RuntimeException("Nội dung mẫu Prompt trống");
+        }
         
         // Thay thế các biến {{variable}} bằng giá trị thực tế
-        for (Map.Entry<String, String> entry : inputs.entrySet()) {
-            fullPrompt = fullPrompt.replace("{{" + entry.getKey() + "}}", entry.getValue());
+        if (inputs != null) {
+            for (Map.Entry<String, String> entry : inputs.entrySet()) {
+                String value = entry.getValue() != null ? entry.getValue() : "";
+                fullPrompt = fullPrompt.replace("{{" + entry.getKey() + "}}", value);
+            }
         }
 
         // Ở đây bạn sẽ gọi đến GeminiAiService (cần triển khai) để lấy kết quả

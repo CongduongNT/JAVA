@@ -17,7 +17,7 @@ export default function AiGenerator() {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await apiClient.get('/prompt-templates/approved');
+        const response = await apiClient.get('/prompt-templates');
         setTemplates(response.data);
         setLoadingTemplates(false);
       } catch (err) {

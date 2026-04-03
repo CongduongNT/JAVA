@@ -35,7 +35,7 @@ const ExamGenerator = () => {
     const fetchTemplates = async () => {
       try {
         // Gọi API với tham số lọc purpose trực tiếp từ Backend
-        const response = await apiClient.get('/prompt-templates/approved', { params: { purpose: 'QUESTION_GEN' } });
+        const response = await apiClient.get('/prompt-templates', { params: { purpose: 'QUESTION_GEN' } });
         setTemplates(response.data);
       } catch (err) {
         console.error('Lỗi khi tải AI templates:', err);
