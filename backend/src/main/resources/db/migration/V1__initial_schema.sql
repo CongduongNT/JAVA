@@ -54,3 +54,24 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (package_id) REFERENCES subscription_packages(id)
 );
+
+-- ============================================================
+-- QUESTIONS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS questions (
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+    type            ENUM('MULTIPLE_CHOICE','FILL_IN_BLANK','SHORT_ANSWER') NOT NULL,
+    difficulty      ENUM('EASY','MEDIUM','HARD') NOT NULL DEFAULT 'MEDIUM',
+    created_by      BIGINT NOT NULL,
+    content         TEXT NOT NULL,
+    topic           VARCHAR(255),
+    options         JSON,
+    correct_answer  TEXT NOT NULL,
+    explanation     TEXT,
+    ai_generated    BOOLEAN NOT NULL DEFAULT FALSE,
+    is_approved     BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
