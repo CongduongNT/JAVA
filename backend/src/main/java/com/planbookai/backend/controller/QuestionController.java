@@ -7,8 +7,6 @@ import com.planbookai.backend.dto.QuestionUpdateRequest;
 import com.planbookai.backend.dto.SavePreviewedQuestionsRequest;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.QuestionService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +38,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/questions")
-@Tag(name = "Questions", description = "Quản lý câu hỏi và sinh câu hỏi bằng AI")
 public class QuestionController {
 
     private final QuestionService questionService;
@@ -54,7 +51,6 @@ public class QuestionController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
-    @Operation(summary = "Tạo câu hỏi thủ công")
     public ResponseEntity<QuestionDTO> createQuestion(
             @Valid @RequestBody QuestionCreateRequest request,
             @AuthenticationPrincipal User user) {
@@ -66,7 +62,6 @@ public class QuestionController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(summary = "Xem chi tiết câu hỏi")
     public ResponseEntity<QuestionDTO> getQuestion(
             @PathVariable Long id,
             @AuthenticationPrincipal User user) {
@@ -78,7 +73,6 @@ public class QuestionController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
-    @Operation(summary = "Cập nhật câu hỏi")
     public ResponseEntity<QuestionDTO> updateQuestion(
             @PathVariable Long id,
             @Valid @RequestBody QuestionUpdateRequest request,
@@ -91,7 +85,6 @@ public class QuestionController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
-    @Operation(summary = "Xóa câu hỏi")
     public ResponseEntity<Void> deleteQuestion(
             @PathVariable Long id,
             @AuthenticationPrincipal User user) {
@@ -123,10 +116,6 @@ public class QuestionController {
      */
     @PostMapping("/ai-generate")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(
-            summary = "Sinh câu hỏi bằng AI (Gemini)",
-            description = "Sinh câu hỏi từ Gemini AI. saveToDb=false để preview, saveToDb=true để lưu ngay."
-    )
     public ResponseEntity<List<QuestionDTO>> aiGenerateQuestions(
             @Valid @RequestBody AIGenerateQuestionsRequest request,
             @AuthenticationPrincipal User user) {
@@ -153,10 +142,6 @@ public class QuestionController {
      */
     @PostMapping("/save-batch")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(
-            summary = "Lưu danh sách câu hỏi đã preview vào DB",
-            description = "Dùng sau khi user chỉnh sửa câu hỏi AI sinh ra, gọi để lưu vào ngân hàng."
-    )
     public ResponseEntity<List<QuestionDTO>> savePreviewedQuestions(
             @RequestBody SavePreviewedQuestionsRequest request,
             @AuthenticationPrincipal User user) {

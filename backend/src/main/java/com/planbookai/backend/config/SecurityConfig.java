@@ -39,12 +39,7 @@ public class SecurityConfig {
                     // =============================================================
                     // PUBLIC endpoints – không cần xác thực
                     // =============================================================
-                    .requestMatchers(
-                            "/api/v1/auth/**",
-                            "/api-docs/**",
-                            "/v3/api-docs/**",
-                            "/swagger-ui/**",
-                            "/swagger-ui.html")
+                    .requestMatchers("/api/v1/auth/**")
                     .permitAll()
 
                     // =============================================================

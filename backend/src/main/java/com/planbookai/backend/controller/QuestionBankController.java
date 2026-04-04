@@ -5,8 +5,6 @@ import com.planbookai.backend.dto.QuestionBankRequest;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.QuestionService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +30,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/question-banks")
-@Tag(name = "Question Bank", description = "Quản lý ngân hàng câu hỏi")
 public class QuestionBankController {
 
     private final QuestionService questionService;
@@ -46,7 +43,6 @@ public class QuestionBankController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(summary = "Lấy danh sách ngân hàng câu hỏi của tôi")
     public ResponseEntity<List<QuestionDTO.QuestionBankDTO>> getMyBanks(
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(questionService.getMyBanks(user));
@@ -57,7 +53,6 @@ public class QuestionBankController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(summary = "Lấy chi tiết ngân hàng câu hỏi")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> getBank(
             @PathVariable Integer id,
             @AuthenticationPrincipal User user) {
@@ -69,7 +64,6 @@ public class QuestionBankController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
-    @Operation(summary = "Tạo ngân hàng câu hỏi mới")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> createBank(
             @Valid @RequestBody QuestionBankRequest request,
             @AuthenticationPrincipal User user) {
@@ -81,7 +75,6 @@ public class QuestionBankController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
-    @Operation(summary = "Cập nhật ngân hàng câu hỏi")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> updateBank(
             @PathVariable Integer id,
             @Valid @RequestBody QuestionBankRequest request,
@@ -94,7 +87,6 @@ public class QuestionBankController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
-    @Operation(summary = "Xóa ngân hàng câu hỏi")
     public ResponseEntity<Void> deleteBank(
             @PathVariable Integer id,
             @AuthenticationPrincipal User user) {
@@ -107,7 +99,6 @@ public class QuestionBankController {
      */
     @GetMapping("/{id}/questions")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    @Operation(summary = "Lấy câu hỏi trong ngân hàng", description = "Hỗ trợ phân trang và filter theo topic, difficulty, type")
     public ResponseEntity<PageResponse<QuestionDTO>> getQuestionsInBank(
             @PathVariable Integer id,
             @RequestParam(defaultValue = "0") Integer page,

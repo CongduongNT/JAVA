@@ -25,13 +25,5 @@ supabase:
     region: ap-southeast-1
     accessKey: dummy
     secretKey: dummy
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: alpha
-    tags-sorter: alpha
-
 server:
   port: 8080
