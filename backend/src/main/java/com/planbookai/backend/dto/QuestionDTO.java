@@ -1,18 +1,20 @@
 package com.planbookai.backend.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * QuestionDTO – Response object đại diện cho 1 câu hỏi.
- *
- * <p>Dùng cho cả:
- * <ul>
- *   <li>GET /questions/{id} – xem chi tiết</li>
- *   <li>POST /questions/ai-generate – preview trước khi lưu</li>
- * </ul>
- */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class QuestionDTO {
 
     private Long id;
@@ -30,9 +32,6 @@ public class QuestionDTO {
     private Boolean aiGenerated;
     private Boolean isApproved;
     private LocalDateTime createdAt;
-
-    public QuestionDTO() {
-    }
 
     public Long getId() {
         return id;
@@ -142,8 +141,8 @@ public class QuestionDTO {
         return isApproved;
     }
 
-    public void setIsApproved(Boolean isApproved) {
-        this.isApproved = isApproved;
+    public void setIsApproved(Boolean approved) {
+        isApproved = approved;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -154,6 +153,11 @@ public class QuestionDTO {
         this.createdAt = createdAt;
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class QuestionBankDTO {
         private Integer id;
         private String name;
@@ -164,9 +168,6 @@ public class QuestionDTO {
         private String createdByName;
         private Boolean isPublished;
         private LocalDateTime createdAt;
-
-        public QuestionBankDTO() {
-        }
 
         public Integer getId() {
             return id;
@@ -228,8 +229,8 @@ public class QuestionDTO {
             return isPublished;
         }
 
-        public void setIsPublished(Boolean isPublished) {
-            this.isPublished = isPublished;
+        public void setIsPublished(Boolean published) {
+            isPublished = published;
         }
 
         public LocalDateTime getCreatedAt() {

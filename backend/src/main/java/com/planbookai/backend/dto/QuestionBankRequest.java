@@ -1,10 +1,11 @@
 package com.planbookai.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * QuestionBankRequest – Body để tạo / cập nhật ngân hàng câu hỏi.
- */
+@Getter
+@Setter
 public class QuestionBankRequest {
 
     @NotBlank(message = "name is required")
@@ -51,7 +52,7 @@ public class QuestionBankRequest {
         return isPublished;
     }
 
-    public void setIsPublished(Boolean isPublished) {
-        this.isPublished = isPublished;
+    public void setIsPublished(Boolean published) {
+        isPublished = published;
     }
 }

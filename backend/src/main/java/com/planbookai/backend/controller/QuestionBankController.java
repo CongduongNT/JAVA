@@ -6,51 +6,35 @@ import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.QuestionService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * QuestionBankController – REST API quản lý ngân hàng câu hỏi.
- *
- * <p>Base URL: /api/v1/question-banks
- *
- * <p>Endpoints:
- * <ul>
- *   <li>GET  /question-banks          – Lấy ngân hàng của người dùng hiện tại</li>
- *   <li>GET  /question-banks/{id}     – Lấy chi tiết ngân hàng</li>
- *   <li>POST /question-banks          – Tạo ngân hàng mới</li>
- *   <li>PUT  /question-banks/{id}     – Cập nhật ngân hàng</li>
- *   <li>DELETE /question-banks/{id}   – Xóa ngân hàng</li>
- *   <li>GET  /question-banks/{id}/questions – Lấy câu hỏi trong ngân hàng</li>
- * </ul>
- */
 @RestController
 @RequestMapping("/api/v1/question-banks")
+@RequiredArgsConstructor
 public class QuestionBankController {
 
     private final QuestionService questionService;
 
-    public QuestionBankController(QuestionService questionService) {
-        this.questionService = questionService;
-    }
-
-    /**
-     * Lấy danh sách ngân hàng câu hỏi của người dùng đang đăng nhập.
-     */
     @GetMapping
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
-    public ResponseEntity<List<QuestionDTO.QuestionBankDTO>> getMyBanks(
-            @AuthenticationPrincipal User user) {
+    public ResponseEntity<List<QuestionDTO.QuestionBankDTO>> getMyBanks(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(questionService.getMyBanks(user));
     }
 
-    /**
-     * Lấy chi tiết một ngân hàng câu hỏi.
-     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> getBank(
@@ -59,9 +43,6 @@ public class QuestionBankController {
         return ResponseEntity.ok(questionService.getBank(id, user));
     }
 
-    /**
-     * Tạo ngân hàng câu hỏi mới.
-     */
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> createBank(
@@ -70,9 +51,6 @@ public class QuestionBankController {
         return ResponseEntity.status(201).body(questionService.createBank(request, user));
     }
 
-    /**
-     * Cập nhật thông tin ngân hàng câu hỏi.
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     public ResponseEntity<QuestionDTO.QuestionBankDTO> updateBank(
@@ -82,9 +60,6 @@ public class QuestionBankController {
         return ResponseEntity.ok(questionService.updateBank(id, request, user));
     }
 
-    /**
-     * Xóa ngân hàng câu hỏi (và toàn bộ câu hỏi bên trong).
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     public ResponseEntity<Void> deleteBank(
@@ -94,9 +69,6 @@ public class QuestionBankController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Lấy danh sách câu hỏi trong một ngân hàng cụ thể.
-     */
     @GetMapping("/{id}/questions")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     public ResponseEntity<PageResponse<QuestionDTO>> getQuestionsInBank(

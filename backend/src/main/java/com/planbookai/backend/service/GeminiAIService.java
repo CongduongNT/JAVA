@@ -16,21 +16,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-/**
- * GeminiAIService – Gọi Gemini API, parse JSON response → danh sách QuestionDTO.
- *
- * <p>Luồng xử lý:
- * <ol>
- *   <li>PromptBuilder xây dựng prompt theo tham số.</li>
- *   <li>Gửi prompt lên Gemini (model: gemini-2.0-flash).</li>
- *   <li>Trích xuất text response và loại bỏ markdown code fence nếu có.</li>
- *   <li>Parse JSON array → List&lt;QuestionDTO&gt; (chưa có id, chưa lưu DB).</li>
- * </ol>
- *
- * <p>Nếu Gemini trả về dữ liệu không hợp lệ, ném {@link AIServiceException}.
- */
 @Service
 public class GeminiAIService {
 
@@ -52,90 +40,72 @@ public class GeminiAIService {
         this.objectMapper = new ObjectMapper();
     }
 
-    /**
-     * Sinh danh sách câu hỏi thông qua Gemini AI (chưa lưu DB).
-     *
-     * @param subject    Môn học
-     * @param topic      Chủ đề
-     * @param difficulty Độ khó
-     * @param type       Loại câu hỏi
-     * @param count      Số câu cần sinh
-     * @return Danh sách QuestionDTO chưa có id (preview)
-     * @throws AIServiceException nếu Gemini trả về lỗi hoặc JSON không hợp lệ
-     */
     public List<QuestionDTO> generateQuestions(
             String subject,
             String topic,
             Question.Difficulty difficulty,
             Question.QuestionType type,
             int count) {
+        Question.Difficulty requestedDifficulty = difficulty != null ? difficulty : Question.Difficulty.MEDIUM;
+        Question.QuestionType requestedType = type != null ? type : Question.QuestionType.MULTIPLE_CHOICE;
 
-        // 1. Build prompt
-        String prompt = promptBuilder.buildQuestionPrompt(subject, topic, difficulty, type, count);
+        String prompt = promptBuilder.buildQuestionPrompt(subject, topic, requestedDifficulty, requestedType, count);
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
-                count, subject, topic, difficulty, type);
+                count, subject, topic, requestedDifficulty, requestedType);
 
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("[GeminiAI] AI request rejected because GEMINI_API_KEY is not configured.");
             throw new AIServiceException("Gemini AI is not configured. Set GEMINI_API_KEY to enable AI endpoints.");
         }
 
-        // 2. Call Gemini API
         String rawResponse;
         try {
             Client geminiClient = geminiClientProvider.getObject();
-            GenerateContentResponse response = geminiClient.models.generateContent(
-                    model, prompt, null);
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
             rawResponse = response.text();
-        } catch (Exception e) {
-            log.error("[GeminiAI] API call failed: {}", e.getMessage(), e);
-            throw new AIServiceException("Gemini AI service is unavailable: " + e.getMessage());
+        } catch (Exception exception) {
+            log.error("[GeminiAI] API call failed: {}", exception.getMessage(), exception);
+            throw new AIServiceException("Gemini AI service is unavailable: " + exception.getMessage());
         }
 
         log.debug("[GeminiAI] Raw response: {}", rawResponse);
 
-        // 3. Clean response – strip markdown code fence if present
         String cleanedJson = cleanJsonResponse(rawResponse);
 
-        // 4. Parse JSON array → list of raw maps
         List<Map<String, Object>> rawQuestions;
         try {
             rawQuestions = objectMapper.readValue(cleanedJson, new TypeReference<>() {});
-        } catch (Exception e) {
+        } catch (Exception exception) {
             log.error("[GeminiAI] Failed to parse JSON response: {}", cleanedJson);
             throw new AIServiceException("AI returned invalid JSON. Please try again.");
         }
 
-        // 5. Convert raw maps → QuestionDTO
         return rawQuestions.stream()
-                .map(raw -> mapRawToDTO(raw, subject, topic, difficulty, type))
+                .map(raw -> mapRawToDTO(raw, subject, topic, requestedDifficulty, requestedType))
                 .toList();
     }
 
-    /**
-     * Loại bỏ markdown code fence (```json ... ```) nếu Gemini thêm vào.
-     */
     private String cleanJsonResponse(String raw) {
-        if (raw == null) return "[]";
+        if (raw == null) {
+            return "[]";
+        }
+
         String trimmed = raw.trim();
-        // Remove ```json or ``` at start
+        if (trimmed.isEmpty()) {
+            return "[]";
+        }
         if (trimmed.startsWith("```")) {
             int firstNewline = trimmed.indexOf('\n');
             if (firstNewline > 0) {
                 trimmed = trimmed.substring(firstNewline + 1);
             }
         }
-        // Remove ``` at end
         if (trimmed.endsWith("```")) {
             trimmed = trimmed.substring(0, trimmed.lastIndexOf("```")).trim();
         }
         return trimmed;
     }
 
-    /**
-     * Map một raw JSON object → QuestionDTO.
-     * Fallback về tham số truyền vào nếu Gemini thiếu field.
-     */
     @SuppressWarnings("unchecked")
     private QuestionDTO mapRawToDTO(
             Map<String, Object> raw,
@@ -149,13 +119,11 @@ public class GeminiAIService {
         String explanation = getStr(raw, "explanation", "");
         String topicVal = getStr(raw, "topic", topic);
 
-        // Parse type & difficulty safely
         Question.QuestionType parsedType = parseEnum(
                 Question.QuestionType.class, getStr(raw, "type", type.name()), type);
         Question.Difficulty parsedDifficulty = parseEnum(
                 Question.Difficulty.class, getStr(raw, "difficulty", difficulty.name()), difficulty);
 
-        // Parse options (only for MULTIPLE_CHOICE)
         List<Map<String, Object>> options = null;
         Object rawOptions = raw.get("options");
         if (rawOptions instanceof List<?> list && !list.isEmpty()) {
@@ -181,14 +149,17 @@ public class GeminiAIService {
     }
 
     private String getStr(Map<String, Object> map, String key, String defaultVal) {
-        Object val = map.get(key);
-        return val != null ? val.toString() : defaultVal;
+        Object value = map.get(key);
+        return value != null ? value.toString() : defaultVal;
     }
 
     private <T extends Enum<T>> T parseEnum(Class<T> enumClass, String value, T defaultVal) {
+        if (value == null || value.isBlank()) {
+            return defaultVal;
+        }
         try {
-            return Enum.valueOf(enumClass, value.toUpperCase());
-        } catch (Exception e) {
+            return Enum.valueOf(enumClass, value.trim().toUpperCase(Locale.ROOT));
+        } catch (Exception exception) {
             return defaultVal;
         }
     }

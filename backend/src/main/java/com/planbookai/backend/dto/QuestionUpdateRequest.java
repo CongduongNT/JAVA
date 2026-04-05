@@ -3,10 +3,14 @@ package com.planbookai.backend.dto;
 import com.planbookai.backend.model.entity.Question;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Setter
 public class QuestionUpdateRequest {
     @NotBlank(message = "content is required")
     private String content;

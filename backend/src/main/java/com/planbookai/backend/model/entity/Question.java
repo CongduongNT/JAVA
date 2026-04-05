@@ -1,7 +1,21 @@
 package com.planbookai.backend.model.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -9,18 +23,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Question – Câu hỏi trong ngân hàng câu hỏi.
- *
- * <p>Hỗ trợ 3 loại câu hỏi:
- * <ul>
- *   <li>MULTIPLE_CHOICE – trắc nghiệm (options là JSON array có is_correct)</li>
- *   <li>SHORT_ANSWER – trả lời ngắn</li>
- *   <li>FILL_IN_BLANK – điền vào chỗ trống</li>
- * </ul>
- *
- * <p>Trường {@code aiGenerated} đánh dấu câu hỏi được tạo bởi Gemini AI.
- */
 @Entity
 @Table(name = "questions")
 @Getter
@@ -54,10 +56,6 @@ public class Question {
 
     private String topic;
 
-    /**
-     * JSON lưu danh sách đáp án cho câu trắc nghiệm.
-     * Cấu trúc: [{label: "A", text: "...", isCorrect: true/false}, ...]
-     */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON")
     private List<Map<String, Object>> options;
@@ -85,6 +83,10 @@ public class Question {
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public QuestionBank getBank() {
@@ -171,12 +173,24 @@ public class Question {
         return isApproved;
     }
 
-    public void setIsApproved(Boolean isApproved) {
-        this.isApproved = isApproved;
+    public void setIsApproved(Boolean approved) {
+        isApproved = approved;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public enum QuestionType {

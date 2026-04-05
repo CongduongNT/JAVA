@@ -1,15 +1,22 @@
 package com.planbookai.backend.model.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * QuestionBank – Ngân hàng câu hỏi (nhóm các câu hỏi theo môn/chủ đề).
- *
- * <p>Mỗi ngân hàng có thể chứa nhiều {@link Question}. Được tạo bởi Staff hoặc Teacher.
- */
 @Entity
 @Table(name = "question_banks")
 @Getter
@@ -47,6 +54,10 @@ public class QuestionBank {
 
     public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -93,11 +104,15 @@ public class QuestionBank {
         return isPublished;
     }
 
-    public void setIsPublished(Boolean isPublished) {
-        this.isPublished = isPublished;
+    public void setIsPublished(Boolean published) {
+        isPublished = published;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
