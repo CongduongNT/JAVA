@@ -27,6 +27,15 @@ export const questionApi = {
   // QUESTIONS & AI GENERATE
   // ==========================================
 
+  /**
+   * Lấy danh sách câu hỏi với filter (Manager/Admin)
+   * approved=false → chờ duyệt | approved=true → đã duyệt | undefined → tất cả
+   */
+  getQuestions: (approved) => {
+    const params = approved !== undefined ? { approved } : {};
+    return api.get('/questions', { params });
+  },
+
   /** 
    * Sinh câu hỏi bằng AI (Preview)
    * data: { bankId, subject, topic, difficulty, type, count, saveToDb: false }
@@ -46,6 +55,18 @@ export const questionApi = {
 
   /** Xóa câu hỏi */
   deleteQuestion: (id) => api.delete(`/questions/${id}`),
+
+  // ==========================================
+  // APPROVAL (Manager only)
+  // ==========================================
+
+  /**
+   * Duyệt hoặc huỷ duyệt câu hỏi (chỉ Manager)
+   * @param {number} id - ID câu hỏi
+   * @param {boolean} approve - true = duyệt, false = huỷ duyệt
+   */
+  approveQuestion: (id, approve) => api.put(`/questions/${id}/approve`, { approve }),
 };
 
 export default questionApi;
+

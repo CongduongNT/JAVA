@@ -102,6 +102,22 @@ public class QuestionService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách câu hỏi lọc theo trạng thái phê duyệt.
+     *
+     * @param approved null = tất cả, true = đã duyệt, false = chờ duyệt
+     * @return Danh sách QuestionDTO
+     */
+    public List<QuestionDTO> getQuestionsByApprovalStatus(Boolean approved) {
+        List<Question> questions;
+        if (approved == null) {
+            questions = questionRepository.findAll();
+        } else {
+            questions = questionRepository.findByIsApproved(approved);
+        }
+        return questions.stream().map(this::mapToQuestionDTO).toList();
+    }
+
     /** Lấy chi tiết 1 câu hỏi. */
     public QuestionDTO getQuestionById(Long id) {
         Question q = questionRepository.findById(id)

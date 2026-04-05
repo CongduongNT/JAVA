@@ -46,6 +46,29 @@ public class QuestionController {
     }
 
     /**
+     * Lấy danh sách câu hỏi, có thể lọc theo trạng thái phê duyệt.
+     *
+     * <p>Query params:
+     * <ul>
+     *   <li>{@code approved=false} – Câu hỏi chờ duyệt (pending)</li>
+     *   <li>{@code approved=true}  – Câu hỏi đã duyệt</li>
+     *   <li>(không truyền)          – Tất cả câu hỏi</li>
+     * </ul>
+     *
+     * <p>Yêu cầu role MANAGER hoặc ADMIN.
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    @Operation(
+            summary = "Lấy danh sách câu hỏi (có lọc theo trạng thái duyệt)",
+            description = "?approved=false = chờ duyệt, ?approved=true = đã duyệt, bỏ qua = tất cả. (Manager/Admin only)"
+    )
+    public ResponseEntity<List<QuestionDTO>> getQuestions(
+            @RequestParam(required = false) Boolean approved) {
+        return ResponseEntity.ok(questionService.getQuestionsByApprovalStatus(approved));
+    }
+
+    /**
      * Lấy chi tiết câu hỏi theo ID.
      */
     @GetMapping("/{id}")
