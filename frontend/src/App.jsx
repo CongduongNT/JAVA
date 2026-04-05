@@ -14,7 +14,7 @@ import UnauthorizedPage from './pages/UnauthorizedPage'
 // Dashboard (all authenticated users)
 import DashboardPage from './pages/DashboardPage'
 
-// Placeholder pages
+// Features
 import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage'
 import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
@@ -52,9 +52,9 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
-
         <Route path="/settings" element={<SettingsPage />} />
 
+        {/* ADMIN routes */}
         <Route
           path="/admin/users"
           element={
@@ -80,6 +80,7 @@ function App() {
           }
         />
 
+        {/* MANAGER routes */}
         <Route
           path="/manager/teachers"
           element={
@@ -117,6 +118,7 @@ function App() {
           }
         />
 
+        {/* STAFF routes */}
         <Route
           path="/prompt-templates"
           element={
@@ -142,6 +144,7 @@ function App() {
           }
         />
 
+        {/* TEACHER routes */}
         <Route
           path="/lesson-plans"
           element={
@@ -187,13 +190,12 @@ function App() {
           }
         />
 
+        {/* Question Bank – TEACHER + STAFF */}
         <Route
           path="/question-bank"
           element={
             <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER', 'ADMIN']}>
-              <div className="p-8">
-                <h2 className="text-2xl font-bold">Question Bank</h2>
-              </div>
+              <QuestionBankPage />
             </RoleGuard>
           }
         />
