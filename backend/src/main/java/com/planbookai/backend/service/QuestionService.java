@@ -216,6 +216,8 @@ public class QuestionService {
                 .explanation(q.getExplanation())
                 .aiGenerated(q.getAiGenerated())
                 .isApproved(q.getIsApproved())
+                .approvedById(q.getApprovedBy() != null ? q.getApprovedBy().getId() : null)
+                .approvedByName(q.getApprovedBy() != null ? q.getApprovedBy().getFullName() : null)
                 .createdAt(q.getCreatedAt())
                 .build();
     }
@@ -234,5 +236,32 @@ public class QuestionService {
                 .aiGenerated(dto.getAiGenerated() != null ? dto.getAiGenerated() : false)
                 .isApproved(false)
                 .build();
+    }
+
+    // =====================================================================
+    // APPROVAL
+    // =====================================================================
+
+    /**
+     * Duyệt hoặc huỷ duyệt một câu hỏi.
+     *
+     * <p>Khi approve: đặt {@code isApproved = true} và lưu lại ngườị duyệt.
+     * <p>Khi unapprove: đặt {@code isApproved = false} và xóa {@code approvedBy}.
+     *
+     * @param questionId ID câu hỏi cần duyệt
+     * @param approve    true = duyệt, false = hủy duyệt
+     * @param manager    Người thực hiện duyệt (Manager)
+     * @return QuestionDTO sau khi cập nhật
+     */
+    @Transactional
+    public QuestionDTO approveQuestion(Long questionId, boolean approve, User manager) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found: " + questionId));
+
+        question.setIsApproved(approve);
+        question.setApprovedBy(approve ? manager : null);
+
+        Question saved = questionRepository.save(question);
+        return mapToQuestionDTO(saved);
     }
 }

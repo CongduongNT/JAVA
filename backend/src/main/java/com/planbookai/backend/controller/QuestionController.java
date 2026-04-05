@@ -118,6 +118,19 @@ public class QuestionController {
      * }
      * </pre>
      */
+    /**
+     * [SAVE BATCH] Lưu danh sách câu hỏi đã được preview và chỉnh sửa vào DB.
+     *
+     * <p>FE gọi endpoint này sau khi user review + chỉnh sửa câu hỏi AI sinh ra.
+     *
+     * <p>Request body ví dụ:
+     * <pre>
+     * {
+     *   "bankId": 5,
+     *   "questions": [ { "content": "...", "type": "MULTIPLE_CHOICE", ... } ]
+     * }
+     * </pre>
+     */
     @PostMapping("/save-batch")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     @Operation(
@@ -136,4 +149,33 @@ public class QuestionController {
         return ResponseEntity.status(201)
                 .body(questionService.savePreviewedQuestions(bankId, questions, user));
     }
+
+    /**
+     * [APPROVE] Duyệt hoặc huỷ duyệt một câu hỏi.
+     *
+     * <p>Chỉ Manager mới có quyền thực hiện.
+     *
+     * <p>Request body:
+     * <pre>
+     * { "approve": true }   // Duyệt
+     * { "approve": false }  // Huỷ duyệt
+     * </pre>
+     *
+     * <p>Response trả về QuestionDTO đã cập nhật (kèm approvedById, approvedByName).
+     */
+    @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('MANAGER')")
+    @Operation(
+            summary = "Duyệt / huỷ duyệt câu hỏi",
+            description = "Chỉ Manager mới có quyền. Body: {\"approve\": true/false}"
+    )
+    public ResponseEntity<QuestionDTO> approveQuestion(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> body,
+            @AuthenticationPrincipal User manager) {
+
+        boolean approve = Boolean.TRUE.equals(body.get("approve"));
+        return ResponseEntity.ok(questionService.approveQuestion(id, approve, manager));
+    }
 }
+
