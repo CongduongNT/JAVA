@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { User, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { loginSuccess } from '../features/auth/authSlice';
-
-import api from '../services/api';
+import { apiClient as api } from '../features/auth/authApi';
 
 const Register = () => {
   const [formData, setFormData] = useState({

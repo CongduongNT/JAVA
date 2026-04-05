@@ -22,15 +22,26 @@ import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
 import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
 import SettingsPage from './pages/settings/SettingsPage'
-import QuestionBankPage from './features/question-bank/QuestionBankPage'
+import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
+import PromptTemplateForm from './pages/staff/PromptTemplateForm'
+import ExamGenerator from './pages/teacher/ExamGenerator'
 import { Toaster } from 'sonner'
+
+// Component cho trang 404 đơn giản
+const NotFound = () => (
+  <div className="flex h-screen flex-col items-center justify-center">
+    <h1 className="text-4xl font-bold">404 - Not Found</h1>
+    <p className="mt-2 text-muted-foreground">Trang bạn tìm kiếm không tồn tại.</p>
+  </div>
+);
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       <Route
@@ -112,9 +123,23 @@ function App() {
           path="/prompt-templates"
           element={
             <RoleGuard roles={['STAFF', 'MANAGER', 'ADMIN']}>
-              <div className="p-8">
-                <h2 className="text-2xl font-bold">Staff – AI Prompt Templates</h2>
-              </div>
+              <PromptTemplatesPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/prompt-templates/new"
+          element={
+            <RoleGuard roles={['STAFF']}>
+              <PromptTemplateForm />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/prompt-templates/:id/edit"
+          element={
+            <RoleGuard roles={['STAFF']}>
+              <PromptTemplateForm />
             </RoleGuard>
           }
         />
@@ -150,9 +175,7 @@ function App() {
           path="/exam-generator"
           element={
             <RoleGuard roles={['TEACHER']}>
-              <div className="p-8">
-                <h2 className="text-2xl font-bold">Teacher – Exam Generator</h2>
-              </div>
+              <ExamGenerator />
             </RoleGuard>
           }
         />
@@ -177,10 +200,12 @@ function App() {
           }
         />
       </Route>
-
-      {/* Global toast */}
-      <Toaster position="top-right" richColors closeButton />
+      
+      <Route path="*" element={<NotFound />} />
     </Routes>
+    {/* Global toast - Phải nằm ngoài Routes */}
+    <Toaster position="top-right" richColors closeButton />
+    </>
   )
 }
 
