@@ -8,9 +8,7 @@ import com.planbookai.backend.repository.QuestionsRepository;
 import com.planbookai.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-
+import java.util.List;
 @Service
 public class QuestionService {
 
@@ -24,28 +22,29 @@ public class QuestionService {
 
     @Transactional
     public QuestionResponse create(QuestionRequest request) {
+
         Questions question = Questions.builder()
                 .content(request.getContent())
                 .type(request.getType())
                 .difficulty(request.getDifficulty())
                 .topic(request.getTopic())
+                .options(request.getOptions()) // FIX
                 .correctAnswer(request.getCorrectAnswer())
                 .explanation(request.getExplanation())
-                .aiGenerated(request.getAiGenerated() != null ? request.getAiGenerated() : false)
-                .isApproved(request.getIsApproved() != null ? request.getIsApproved() : false)
+                .aiGenerated(Boolean.TRUE.equals(request.getAiGenerated()))
+                .isApproved(Boolean.TRUE.equals(request.getIsApproved()))
                 .build();
-
-        if (request.getOptions() != null) {
-            question.setOptions(request.getOptions());
-        }
 
         User creator = userRepository.findById(request.getCreatedBy())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getCreatedBy()));
+
         question.setCreatedBy(creator);
 
         if (request.getApprovedBy() != null) {
             User approver = userRepository.findById(request.getApprovedBy())
-                    .orElseThrow(() -> new IllegalArgumentException("Approver not found with ID: " + request.getApprovedBy()));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Approver not found with ID: " + request.getApprovedBy()));
+
             question.setApprovedBy(approver);
         }
 
@@ -54,25 +53,25 @@ public class QuestionService {
     }
 
     @Transactional
-    public Optional<QuestionResponse> approve(Long questionId, Long approverId) {
-        return questionsRepository.findById(questionId).map(question -> {
-            User approver = userRepository.findById(approverId)
-                    .orElseThrow(() -> new IllegalArgumentException("Approver not found with ID: " + approverId));
-            question.setApprovedBy(approver);
-            question.setIsApproved(true);
-            Questions saved = questionsRepository.save(question);
-            return mapToResponse(saved);
-        });
-    }
+    public QuestionResponse approve(Long questionId, Long approverId) {
 
-    public java.util.List<QuestionResponse> getQuestions(Boolean approved) {
-        java.util.List<Questions> questions;
-        if (approved != null) {
-            questions = questionsRepository.findByIsApproved(approved);
-        } else {
-            questions = questionsRepository.findAll();
+        Questions question = questionsRepository.findById(questionId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Question not found with ID: " + questionId));
+
+        if (question.isApproved()) {
+            throw new IllegalStateException("Question already approved");
         }
-        return questions.stream().map(this::mapToResponse).toList();
+
+        User approver = userRepository.findById(approverId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Approver not found with ID: " + approverId));
+
+        question.setApprovedBy(approver);
+        question.setApproved(true);
+
+        Questions saved = questionsRepository.save(question);
+        return mapToResponse(saved);
     }
 
     private QuestionResponse mapToResponse(Questions question) {
@@ -87,8 +86,29 @@ public class QuestionService {
                 .explanation(question.getExplanation())
                 .aiGenerated(question.isAiGenerated())
                 .isApproved(question.isApproved())
-                .approvedBy(question.getApprovedBy() != null ? question.getApprovedBy().getId() : null)
-                .createdBy(question.getCreatedBy().getId())
+                .approvedBy(
+                        question.getApprovedBy() != null
+                                ? question.getApprovedBy().getId()
+                                : null)
+                .createdBy(
+                        question.getCreatedBy() != null
+                                ? question.getCreatedBy().getId()
+                                : null)
                 .build();
+    }
+
+    public List<QuestionResponse> getQuestions(Boolean approved) {
+
+        List<Questions> list;
+
+        if (approved == null) {
+            list = questionsRepository.findAll();
+        } else {
+            list = questionsRepository.findByIsApproved(approved);
+        }
+
+        return list.stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 }

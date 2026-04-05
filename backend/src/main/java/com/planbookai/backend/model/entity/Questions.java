@@ -1,34 +1,23 @@
 package com.planbookai.backend.model.entity;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "questions")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
+@Builder
 public class Questions {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,6 +35,10 @@ public class Questions {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedBy; // FIX
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -54,7 +47,7 @@ public class Questions {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private Object options;
+    private List<String> options; // FIX
 
     @Column(name = "correct_answer", nullable = false)
     private String correctAnswer;
@@ -70,25 +63,21 @@ public class Questions {
     @Builder.Default
     private boolean isApproved = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by")
-    private User approvedBy;
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt; // FIX
 
-    @Column(name = "created_at",insertable = false, updatable = false)
-    private LocalDate createdAt;
-
-    @Column(name = "updated_at",insertable = false, updatable = false)
-    private LocalDate updatedAt;
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private LocalDateTime updatedAt; // FIX
 
     public enum QuestionType {
         MULTIPLE_CHOICE,
-         FILL_IN_BLANK, 
-         SHORT_ANSWER
-    }
-    public enum QuestionDifficulty {
-        EASY, 
-        MEDIUM, 
-        HARD
+        FILL_IN_BLANK,
+        SHORT_ANSWER
     }
 
+    public enum QuestionDifficulty {
+        EASY,
+        MEDIUM,
+        HARD
+    }
 }
