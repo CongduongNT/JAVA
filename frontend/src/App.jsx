@@ -17,6 +17,7 @@ import DashboardPage from './pages/DashboardPage'
 // Features
 import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage'
 import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
+import ManagerQuestionApprovalPage from './pages/manager/ManagerQuestionApprovalPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
 import UsersPage from './pages/users/UsersPage'
@@ -27,7 +28,8 @@ import { Toaster } from 'sonner'
 
 function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -93,6 +95,14 @@ function App() {
           element={
             <RoleGuard roles={['MANAGER', 'ADMIN']}>
               <ManagerOrdersPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/manager/questions/approval"
+          element={
+            <RoleGuard roles={['MANAGER', 'ADMIN']}>
+              <ManagerQuestionApprovalPage />
             </RoleGuard>
           }
         />
@@ -178,9 +188,10 @@ function App() {
         />
       </Route>
 
-      {/* Global toast */}
-      <Toaster position="top-right" richColors closeButton />
     </Routes>
+    {/* Global toast */}
+    <Toaster position="top-right" richColors closeButton />
+    </>
   )
 }
 
