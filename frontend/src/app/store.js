@@ -3,6 +3,7 @@ import authReducer from '../features/auth/authSlice'
 import usersReducer from '../features/users/usersSlice'
 import settingsReducer from '../features/settings/settingsSlice'
 import promptTemplatesReducer from '../features/promptTemplates/promptTemplateSlice'
+import questionBankReducer from '../features/question-bank/questionBankSlice'
 
 export const store = configureStore({
   reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
     users: usersReducer,
     settings: settingsReducer,
     promptTemplates: promptTemplatesReducer,
+    questionBank: questionBankReducer,
   },
 })
