@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage'
 
 import ManagerSubscriptionsPage from './pages/manager/ManagerSubscriptionsPage'
 import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
+import ManagerQuestionApprovalPage from './pages/manager/ManagerQuestionApprovalPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
 import UsersPage from './pages/users/UsersPage'
@@ -75,12 +76,13 @@ function App() {
             }
           />
 
+          {/* MANAGER routes */}
           <Route
             path="/manager/teachers"
             element={
               <RoleGuard roles={['MANAGER', 'ADMIN']}>
                 <div className="p-8">
-                  <h2 className="text-2xl font-bold">Manager - Danh sach giao vien</h2>
+                  <h2 className="text-2xl font-bold">Manager – Danh sách giáo viên</h2>
                 </div>
               </RoleGuard>
             }
@@ -102,11 +104,19 @@ function App() {
             }
           />
           <Route
+            path="/manager/questions/approval"
+            element={
+              <RoleGuard roles={['MANAGER', 'ADMIN']}>
+                <ManagerQuestionApprovalPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="/manager/analytics"
             element={
               <RoleGuard roles={['MANAGER', 'ADMIN']}>
                 <div className="p-8">
-                  <h2 className="text-2xl font-bold">Manager - Analytics</h2>
+                  <h2 className="text-2xl font-bold">Manager – Analytics</h2>
                 </div>
               </RoleGuard>
             }

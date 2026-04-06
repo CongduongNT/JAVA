@@ -22,6 +22,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     /** Lấy câu hỏi theo ngân hàng và topic. */
     List<Question> findByBankIdAndTopic(Integer bankId, String topic);
 
+    /** Lấy câu hỏi theo trạng thái phê duyệt (dùng cho Manager duyệt). */
+    List<Question> findByIsApproved(Boolean isApproved);
+
     @Query("""
             select q
             from Question q

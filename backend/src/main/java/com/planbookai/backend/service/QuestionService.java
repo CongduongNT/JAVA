@@ -99,6 +99,22 @@ public class QuestionService {
         bankRepository.delete(bank);
     }
 
+    /**
+     * Lấy danh sách câu hỏi lọc theo trạng thái phê duyệt.
+     *
+     * @param approved null = tất cả, true = đã duyệt, false = chờ duyệt
+     * @return Danh sách QuestionDTO
+     */
+    public List<QuestionDTO> getQuestionsByApprovalStatus(Boolean approved) {
+        List<Question> questions;
+        if (approved == null) {
+            questions = questionRepository.findAll();
+        } else {
+            questions = questionRepository.findByIsApproved(approved);
+        }
+        return questions.stream().map(this::mapToQuestionDTO).toList();
+    }
+
     public PageResponse<QuestionDTO> getQuestionsByBank(
             Integer bankId,
             User user,
@@ -226,127 +242,6 @@ public class QuestionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Question bank not found: " + id));
     }
 
-    private Question findQuestionOrThrow(Long id) {
-        return questionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + id));
-    }
-
-    private void validatePageRequest(Integer page, Integer size) {
-        if (page == null || page < 0) {
-            throw new IllegalArgumentException("page must be greater than or equal to 0");
-        }
-        if (size == null || size < 1 || size > 100) {
-            throw new IllegalArgumentException("size must be between 1 and 100");
-        }
-    }
-
-    private void validatePreviewSaveRequest(Integer bankId, List<QuestionDTO> questions) {
-        if (bankId == null) {
-            throw new IllegalArgumentException("bankId is required");
-        }
-        if (questions == null || questions.isEmpty()) {
-            throw new IllegalArgumentException("questions must not be empty");
-        }
-    }
-
-    private String normalizeFilter(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-        return value.trim();
-    }
-
-    private Question.Difficulty parseDifficulty(String value) {
-        return parseEnum(value, Question.Difficulty.class, "difficulty");
-    }
-
-    private Question.QuestionType parseQuestionType(String value) {
-        return parseEnum(value, Question.QuestionType.class, "type");
-    }
-
-    private <E extends Enum<E>> E parseEnum(String value, Class<E> enumType, String fieldName) {
-        String normalized = normalizeFilter(value);
-        if (normalized == null) {
-            return null;
-        }
-
-        try {
-            return Enum.valueOf(enumType, normalized.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Invalid " + fieldName + ": " + value);
-        }
-    }
-
-    private <E extends Enum<E>> E parseRequiredEnum(String value, Class<E> enumType, String fieldName) {
-        E parsed = parseEnum(value, enumType, fieldName);
-        if (parsed == null) {
-            throw new IllegalArgumentException(fieldName + " is required");
-        }
-        return parsed;
-    }
-
-    private void assertCanCreateBank(User user) {
-        if (hasRole(user, Role.RoleName.TEACHER) || hasRole(user, Role.RoleName.STAFF)) {
-            return;
-        }
-        throw new ForbiddenOperationException("You do not have permission to create question banks");
-    }
-
-    private void assertCanManageBank(QuestionBank bank, User user) {
-        if (hasRole(user, Role.RoleName.ADMIN)
-                || hasRole(user, Role.RoleName.MANAGER)
-                || hasRole(user, Role.RoleName.STAFF)
-                || (hasRole(user, Role.RoleName.TEACHER) && isOwner(bank, user))) {
-            return;
-        }
-        throw new ForbiddenOperationException("You do not have permission to modify question bank: " + bank.getId());
-    }
-
-    private void assertCanReadBank(QuestionBank bank, User user) {
-        if (hasRole(user, Role.RoleName.ADMIN)
-                || hasRole(user, Role.RoleName.MANAGER)
-                || hasRole(user, Role.RoleName.STAFF)
-                || isOwner(bank, user)
-                || Boolean.TRUE.equals(bank.getIsPublished())) {
-            return;
-        }
-        throw new ForbiddenOperationException("You do not have permission to access question bank: " + bank.getId());
-    }
-
-    private void assertCanReadQuestion(Question question, User user) {
-        assertCanReadBank(question.getBank(), user);
-    }
-
-    private void assertCanManageQuestion(Question question, User user) {
-        assertCanManageBank(question.getBank(), user);
-    }
-
-    private boolean isOwner(QuestionBank bank, User user) {
-        return bank.getCreatedBy() != null
-                && user != null
-                && bank.getCreatedBy().getId().equals(user.getId());
-    }
-
-    private boolean hasRole(User user, Role.RoleName roleName) {
-        return user != null
-                && user.getRole() != null
-                && user.getRole().getName() == roleName;
-    }
-
-    private QuestionDTO.QuestionBankDTO mapToBankDTO(QuestionBank bank) {
-        QuestionDTO.QuestionBankDTO dto = new QuestionDTO.QuestionBankDTO();
-        dto.setId(bank.getId());
-        dto.setName(bank.getName());
-        dto.setSubject(bank.getSubject());
-        dto.setGradeLevel(bank.getGradeLevel());
-        dto.setDescription(bank.getDescription());
-        dto.setCreatedById(bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null);
-        dto.setCreatedByName(bank.getCreatedBy() != null ? bank.getCreatedBy().getFullName() : null);
-        dto.setIsPublished(bank.getIsPublished());
-        dto.setCreatedAt(bank.getCreatedAt());
-        return dto;
-    }
-
     public QuestionDTO mapToQuestionDTO(Question question) {
         QuestionDTO dto = new QuestionDTO();
         dto.setId(question.getId());
@@ -363,6 +258,8 @@ public class QuestionService {
         dto.setExplanation(question.getExplanation());
         dto.setAiGenerated(question.getAiGenerated());
         dto.setIsApproved(question.getIsApproved());
+        dto.setApprovedById(question.getApprovedBy() != null ? question.getApprovedBy().getId() : null);
+        dto.setApprovedByName(question.getApprovedBy() != null ? question.getApprovedBy().getFullName() : null);
         dto.setCreatedAt(question.getCreatedAt());
         return dto;
     }
@@ -401,5 +298,32 @@ public class QuestionService {
         question.setOptions(request.getType() == Question.QuestionType.MULTIPLE_CHOICE ? request.getOptions() : null);
         question.setCorrectAnswer(request.getCorrectAnswer());
         question.setExplanation(request.getExplanation());
+    }
+
+    // =====================================================================
+    // APPROVAL
+    // =====================================================================
+
+    /**
+     * Duyệt hoặc huỷ duyệt một câu hỏi.
+     *
+     * <p>Khi approve: đặt {@code isApproved = true} và lưu lại ngườị duyệt.
+     * <p>Khi unapprove: đặt {@code isApproved = false} và xóa {@code approvedBy}.
+     *
+     * @param questionId ID câu hỏi cần duyệt
+     * @param approve    true = duyệt, false = hủy duyệt
+     * @param manager    Người thực hiện duyệt (Manager)
+     * @return QuestionDTO sau khi cập nhật
+     */
+    @Transactional
+    public QuestionDTO approveQuestion(Long questionId, boolean approve, User manager) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found: " + questionId));
+
+        question.setIsApproved(approve);
+        question.setApprovedBy(approve ? manager : null);
+
+        Question saved = questionRepository.save(question);
+        return mapToQuestionDTO(saved);
     }
 }

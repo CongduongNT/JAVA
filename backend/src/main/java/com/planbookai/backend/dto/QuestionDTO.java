@@ -64,6 +64,12 @@ public class QuestionDTO {
     /** true nếu đã được Manager phê duyệt. */
     private Boolean isApproved;
 
+    /** ID của Manager đã phê duyệt. Null nếu chưa được duyệt. */
+    private Long approvedById;
+
+    /** Tên của Manager đã phê duyệt. Null nếu chưa được duyệt. */
+    private String approvedByName;
+
     private LocalDateTime createdAt;
 
     // ----------------------------------------------------------

@@ -12,6 +12,7 @@ import {
   Package,
   BookOpen,
   Shield,
+  ClipboardCheck,
 } from 'lucide-react';
 
 const ALL_NAV_ITEMS = [
@@ -79,6 +80,12 @@ const ALL_NAV_ITEMS = [
     name: 'Orders',
     icon: BookCopy,
     path: '/manager/orders',
+    roles: ['MANAGER', 'ADMIN'],
+  },
+  {
+    name: 'Duyệt câu hỏi',
+    icon: ClipboardCheck,
+    path: '/manager/questions/approval',
     roles: ['MANAGER', 'ADMIN'],
   },
   {
