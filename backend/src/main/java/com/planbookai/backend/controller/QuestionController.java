@@ -1,7 +1,10 @@
 package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
+import com.planbookai.backend.dto.QuestionCreateRequest;
 import com.planbookai.backend.dto.QuestionDTO;
+import com.planbookai.backend.dto.QuestionUpdateRequest;
+import com.planbookai.backend.dto.SavePreviewedQuestionsRequest;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,10 +15,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +41,8 @@ import java.util.Map;
  * <ul>
  *   <li>GET    /questions               – Lấy danh sách câu hỏi (lọc theo trạng thái duyệt, Manager/Admin)</li>
  *   <li>GET    /questions/{id}          – Xem chi tiết 1 câu hỏi</li>
+ *   <li>POST   /questions               – Tạo câu hỏi mới</li>
+ *   <li>PUT    /questions/{id}          – Cập nhật câu hỏi</li>
  *   <li>DELETE /questions/{id}          – Xóa câu hỏi</li>
  *   <li>POST   /questions/ai-generate   – Sinh câu hỏi bằng AI (preview hoặc lưu)</li>
  *   <li>POST   /questions/save-batch    – Lưu danh sách câu hỏi đã preview/chỉnh sửa</li>
@@ -50,12 +64,23 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/questions")
 @Tag(name = "Questions", description = "Quản lý câu hỏi, sinh câu hỏi bằng AI, và phê duyệt nội dung (Manager)")
+@RequiredArgsConstructor
 public class QuestionController {
 
     private final QuestionService questionService;
 
-    public QuestionController(QuestionService questionService) {
-        this.questionService = questionService;
+    @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
+    @Operation(summary = "Tạo câu hỏi mới", description = "Tạo câu hỏi mới trong ngân hàng câu hỏi")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Tạo câu hỏi thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không đủ quyền", content = @Content),
+    })
+    public ResponseEntity<QuestionDTO> createQuestion(
+            @Valid @RequestBody QuestionCreateRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(201).body(questionService.createQuestion(request, user));
     }
 
     // =========================================================================
@@ -109,8 +134,29 @@ public class QuestionController {
     })
     public ResponseEntity<QuestionDTO> getQuestion(
             @Parameter(description = "ID của câu hỏi", example = "1", required = true)
-            @PathVariable Long id) {
-        return ResponseEntity.ok(questionService.getQuestionById(id));
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.getQuestionById(id, user));
+    }
+
+    // =========================================================================
+    // PUT /questions/{id}   – Cập nhật câu hỏi
+    // =========================================================================
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
+    @Operation(summary = "Cập nhật câu hỏi", description = "Cập nhật nội dung câu hỏi")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy câu hỏi", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không đủ quyền", content = @Content),
+    })
+    public ResponseEntity<QuestionDTO> updateQuestion(
+            @Parameter(description = "ID của câu hỏi", example = "1", required = true)
+            @PathVariable Long id,
+            @Valid @RequestBody QuestionUpdateRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.updateQuestion(id, request, user));
     }
 
     // =========================================================================
@@ -127,8 +173,9 @@ public class QuestionController {
     })
     public ResponseEntity<Void> deleteQuestion(
             @Parameter(description = "ID của câu hỏi cần xóa", example = "1", required = true)
-            @PathVariable Long id) {
-        questionService.deleteQuestion(id);
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        questionService.deleteQuestion(id, user);
         return ResponseEntity.noContent().build();
     }
 
@@ -168,7 +215,6 @@ public class QuestionController {
     public ResponseEntity<List<QuestionDTO>> aiGenerateQuestions(
             @Valid @RequestBody AIGenerateQuestionsRequest request,
             @AuthenticationPrincipal User user) {
-
         List<QuestionDTO> result = questionService.aiGenerateQuestions(request, user);
         return request.isSaveToDb()
                 ? ResponseEntity.status(201).body(result)
@@ -208,15 +254,13 @@ public class QuestionController {
             @ApiResponse(responseCode = "403", description = "Không đủ quyền", content = @Content),
     })
     public ResponseEntity<List<QuestionDTO>> savePreviewedQuestions(
-            @RequestBody Map<String, Object> body,
+            @RequestBody SavePreviewedQuestionsRequest request,
             @AuthenticationPrincipal User user) {
-
-        Integer bankId = (Integer) body.get("bankId");
-        @SuppressWarnings("unchecked")
-        List<QuestionDTO> questions = (List<QuestionDTO>) body.get("questions");
-
         return ResponseEntity.status(201)
-                .body(questionService.savePreviewedQuestions(bankId, questions, user));
+                .body(questionService.savePreviewedQuestions(
+                        request.getBankId(),
+                        request.getQuestions(),
+                        user));
     }
 
     // =========================================================================

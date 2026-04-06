@@ -1,33 +1,29 @@
 package com.planbookai.backend.service;
 
 import com.planbookai.backend.dto.AIGenerateQuestionsRequest;
+import com.planbookai.backend.dto.PageResponse;
 import com.planbookai.backend.dto.QuestionBankRequest;
+import com.planbookai.backend.dto.QuestionCreateRequest;
 import com.planbookai.backend.dto.QuestionDTO;
+import com.planbookai.backend.dto.QuestionUpdateRequest;
+import com.planbookai.backend.exception.ForbiddenOperationException;
+import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.model.entity.Question;
 import com.planbookai.backend.model.entity.QuestionBank;
+import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.QuestionBankRepository;
 import com.planbookai.backend.repository.QuestionRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Locale;
 
-/**
- * QuestionService – Business logic cho Question Bank &amp; Question.
- *
- * <p>Chức năng chính:
- * <ol>
- *   <li>CRUD ngân hàng câu hỏi (QuestionBank).</li>
- *   <li>CRUD câu hỏi thủ công (Question).</li>
- *   <li>Sinh câu hỏi bằng AI (delegate sang GeminiAIService) – có 2 mode:
- *       <ul>
- *         <li>Preview (saveToDb=false): chỉ trả về danh sách, không lưu.</li>
- *         <li>Save (saveToDb=true): lưu vào DB và trả về danh sách đã lưu.</li>
- *       </ul>
- *   </li>
- * </ol>
- */
 @Service
 public class QuestionService {
 
@@ -35,71 +31,72 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final GeminiAIService geminiAIService;
 
-    public QuestionService(QuestionBankRepository bankRepository,
-                           QuestionRepository questionRepository,
-                           GeminiAIService geminiAIService) {
+    public QuestionService(
+            QuestionBankRepository bankRepository,
+            QuestionRepository questionRepository,
+            GeminiAIService geminiAIService) {
         this.bankRepository = bankRepository;
         this.questionRepository = questionRepository;
         this.geminiAIService = geminiAIService;
     }
 
-    // =====================================================================
-    // QUESTION BANK – CRUD
-    // =====================================================================
-
-    /** Lấy danh sách ngân hàng câu hỏi của người dùng hiện tại. */
     public List<QuestionDTO.QuestionBankDTO> getMyBanks(User user) {
+        if (hasRole(user, Role.RoleName.ADMIN) || hasRole(user, Role.RoleName.MANAGER)) {
+            return getAllBanks();
+        }
         return bankRepository.findByCreatedById(user.getId()).stream()
                 .map(this::mapToBankDTO)
                 .toList();
     }
 
-    /** Lấy tất cả ngân hàng (admin/manager). */
+    public QuestionDTO.QuestionBankDTO getBank(Integer id, User user) {
+        QuestionBank bank = findBankOrThrow(id);
+        assertCanReadBank(bank, user);
+        return mapToBankDTO(bank);
+    }
+
     public List<QuestionDTO.QuestionBankDTO> getAllBanks() {
         return bankRepository.findAll().stream()
                 .map(this::mapToBankDTO)
                 .toList();
     }
 
-    /** Tạo ngân hàng câu hỏi mới. */
+    @Transactional
     public QuestionDTO.QuestionBankDTO createBank(QuestionBankRequest request, User user) {
-        QuestionBank bank = QuestionBank.builder()
-                .name(request.getName())
-                .subject(request.getSubject())
-                .gradeLevel(request.getGradeLevel())
-                .description(request.getDescription())
-                .createdBy(user)
-                .isPublished(request.getIsPublished() != null ? request.getIsPublished() : false)
-                .build();
-        return mapToBankDTO(bankRepository.save(bank));
-    }
+        assertCanCreateBank(user);
 
-    /** Cập nhật ngân hàng câu hỏi. */
-    public QuestionDTO.QuestionBankDTO updateBank(Integer id, QuestionBankRequest request) {
-        QuestionBank bank = bankRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Question bank not found: " + id));
+        QuestionBank bank = new QuestionBank();
         bank.setName(request.getName());
         bank.setSubject(request.getSubject());
         bank.setGradeLevel(request.getGradeLevel());
         bank.setDescription(request.getDescription());
-        if (request.getIsPublished() != null) bank.setIsPublished(request.getIsPublished());
+        bank.setCreatedBy(user);
+        bank.setIsPublished(Boolean.TRUE.equals(request.getIsPublished()));
+
         return mapToBankDTO(bankRepository.save(bank));
     }
 
-    /** Xóa ngân hàng câu hỏi. */
-    public void deleteBank(Integer id) {
-        bankRepository.deleteById(id);
+    @Transactional
+    public QuestionDTO.QuestionBankDTO updateBank(Integer id, QuestionBankRequest request, User user) {
+        QuestionBank bank = findBankOrThrow(id);
+        assertCanManageBank(bank, user);
+
+        bank.setName(request.getName());
+        bank.setSubject(request.getSubject());
+        bank.setGradeLevel(request.getGradeLevel());
+        bank.setDescription(request.getDescription());
+        if (request.getIsPublished() != null) {
+            bank.setIsPublished(request.getIsPublished());
+        }
+
+        return mapToBankDTO(bankRepository.save(bank));
     }
 
-    // =====================================================================
-    // QUESTIONS – CRUD
-    // =====================================================================
-
-    /** Lấy danh sách câu hỏi trong 1 ngân hàng. */
-    public List<QuestionDTO> getQuestionsByBank(Integer bankId) {
-        return questionRepository.findByBankId(bankId).stream()
-                .map(this::mapToQuestionDTO)
-                .toList();
+    @Transactional
+    public void deleteBank(Integer id, User user) {
+        QuestionBank bank = findBankOrThrow(id);
+        assertCanManageBank(bank, user);
+        bankRepository.delete(bank);
     }
 
     /**
@@ -118,39 +115,90 @@ public class QuestionService {
         return questions.stream().map(this::mapToQuestionDTO).toList();
     }
 
-    /** Lấy chi tiết 1 câu hỏi. */
-    public QuestionDTO getQuestionById(Long id) {
-        Question q = questionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Question not found: " + id));
-        return mapToQuestionDTO(q);
+    public PageResponse<QuestionDTO> getQuestionsByBank(
+            Integer bankId,
+            User user,
+            Integer page,
+            Integer size,
+            String topic,
+            String difficulty,
+            String type) {
+        QuestionBank bank = findBankOrThrow(bankId);
+        assertCanReadBank(bank, user);
+
+        validatePageRequest(page, size);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var questionsPage = questionRepository.findByBankIdWithFilters(
+                bankId,
+                normalizeFilter(topic),
+                parseDifficulty(difficulty),
+                parseQuestionType(type),
+                pageable);
+
+        return PageResponse.from(questionsPage.map(this::mapToQuestionDTO));
     }
 
-    /** Xóa câu hỏi. */
-    public void deleteQuestion(Long id) {
-        questionRepository.deleteById(id);
+    @Transactional
+    public QuestionDTO createQuestion(QuestionCreateRequest request, User user) {
+        QuestionBank bank = findBankOrThrow(request.getBankId());
+        assertCanManageBank(bank, user);
+
+        Question question = new Question();
+        question.setBank(bank);
+        question.setCreatedBy(user);
+        question.setAiGenerated(false);
+        question.setIsApproved(false);
+        applyCreateRequest(question, request);
+
+        return mapToQuestionDTO(questionRepository.save(question));
     }
 
-    // =====================================================================
-    // AI GENERATION
-    // =====================================================================
+    public QuestionDTO getQuestionById(Long id, User user) {
+        Question question = findQuestionOrThrow(id);
+        assertCanReadQuestion(question, user);
+        return mapToQuestionDTO(question);
+    }
 
-    /**
-     * Sinh câu hỏi bằng Gemini AI.
-     *
-     * <p>Nếu {@code request.isSaveToDb() == false}: chỉ trả về preview, không lưu DB.
-     * Nếu {@code request.isSaveToDb() == true}: lưu vào DB rồi trả về danh sách đã lưu.
-     *
-     * @param request Tham số sinh câu hỏi (bank, subject, topic, difficulty, type, count)
-     * @param user    Người dùng đang đăng nhập (Teacher)
-     * @return Danh sách QuestionDTO (có id nếu đã lưu, null nếu chỉ preview)
-     */
+    @Transactional
+    public QuestionDTO updateQuestion(Long id, QuestionUpdateRequest request, User user) {
+        Question question = findQuestionOrThrow(id);
+        assertCanManageQuestion(question, user);
+
+        question.setContent(request.getContent());
+        question.setType(request.getType());
+
+        if (request.getDifficulty() != null) {
+            question.setDifficulty(request.getDifficulty());
+        }
+        if (request.getTopic() != null) {
+            question.setTopic(request.getTopic());
+        }
+        if (request.getOptions() != null || request.getType() != Question.QuestionType.MULTIPLE_CHOICE) {
+            question.setOptions(request.getType() == Question.QuestionType.MULTIPLE_CHOICE ? request.getOptions() : null);
+        }
+        if (request.getCorrectAnswer() != null) {
+            question.setCorrectAnswer(request.getCorrectAnswer());
+        }
+        if (request.getExplanation() != null) {
+            question.setExplanation(request.getExplanation());
+        }
+
+        return mapToQuestionDTO(questionRepository.save(question));
+    }
+
+    @Transactional
+    public void deleteQuestion(Long id, User user) {
+        Question question = findQuestionOrThrow(id);
+        assertCanManageQuestion(question, user);
+        questionRepository.delete(question);
+    }
+
     @Transactional
     public List<QuestionDTO> aiGenerateQuestions(AIGenerateQuestionsRequest request, User user) {
-        // 1. Validate bank exists
-        QuestionBank bank = bankRepository.findById(request.getBankId())
-                .orElseThrow(() -> new RuntimeException("Question bank not found: " + request.getBankId()));
+        QuestionBank bank = findBankOrThrow(request.getBankId());
+        assertCanManageBank(bank, user);
 
-        // 2. Call Gemini AI (sinh câu hỏi, chưa lưu DB)
         List<QuestionDTO> generated = geminiAIService.generateQuestions(
                 request.getSubject(),
                 request.getTopic(),
@@ -158,9 +206,7 @@ public class QuestionService {
                 request.getType(),
                 request.getCount());
 
-        // 3. Nếu chỉ preview → trả về luôn
         if (!request.isSaveToDb()) {
-            // Gắn thêm bankId và bankName vào preview
             generated.forEach(dto -> {
                 dto.setBankId(bank.getId());
                 dto.setBankName(bank.getName());
@@ -168,7 +214,6 @@ public class QuestionService {
             return generated;
         }
 
-        // 4. Lưu vào DB
         List<Question> toSave = generated.stream()
                 .map(dto -> buildQuestionEntity(dto, bank, user))
                 .toList();
@@ -177,18 +222,12 @@ public class QuestionService {
         return saved.stream().map(this::mapToQuestionDTO).toList();
     }
 
-    /**
-     * Lưu danh sách câu hỏi đã được preview (FE gửi lại sau khi chỉnh sửa).
-     *
-     * @param bankId    ID ngân hàng cần lưu vào
-     * @param questions Danh sách câu hỏi đã điều chỉnh từ FE
-     * @param user      Người dùng tạo
-     * @return Danh sách QuestionDTO đã lưu (có id)
-     */
     @Transactional
     public List<QuestionDTO> savePreviewedQuestions(Integer bankId, List<QuestionDTO> questions, User user) {
-        QuestionBank bank = bankRepository.findById(bankId)
-                .orElseThrow(() -> new RuntimeException("Question bank not found: " + bankId));
+        validatePreviewSaveRequest(bankId, questions);
+
+        QuestionBank bank = findBankOrThrow(bankId);
+        assertCanManageBank(bank, user);
 
         List<Question> toSave = questions.stream()
                 .map(dto -> buildQuestionEntity(dto, bank, user))
@@ -198,60 +237,67 @@ public class QuestionService {
         return saved.stream().map(this::mapToQuestionDTO).toList();
     }
 
-    // =====================================================================
-    // MAPPERS
-    // =====================================================================
-
-    private QuestionDTO.QuestionBankDTO mapToBankDTO(QuestionBank bank) {
-        return QuestionDTO.QuestionBankDTO.builder()
-                .id(bank.getId())
-                .name(bank.getName())
-                .subject(bank.getSubject())
-                .gradeLevel(bank.getGradeLevel())
-                .description(bank.getDescription())
-                .createdById(bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null)
-                .createdByName(bank.getCreatedBy() != null ? bank.getCreatedBy().getFullName() : null)
-                .isPublished(bank.getIsPublished())
-                .createdAt(bank.getCreatedAt())
-                .build();
+    private QuestionBank findBankOrThrow(Integer id) {
+        return bankRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Question bank not found: " + id));
     }
 
-    public QuestionDTO mapToQuestionDTO(Question q) {
-        return QuestionDTO.builder()
-                .id(q.getId())
-                .bankId(q.getBank() != null ? q.getBank().getId() : null)
-                .bankName(q.getBank() != null ? q.getBank().getName() : null)
-                .createdById(q.getCreatedBy() != null ? q.getCreatedBy().getId() : null)
-                .createdByName(q.getCreatedBy() != null ? q.getCreatedBy().getFullName() : null)
-                .content(q.getContent())
-                .type(q.getType() != null ? q.getType().name() : null)
-                .difficulty(q.getDifficulty() != null ? q.getDifficulty().name() : null)
-                .topic(q.getTopic())
-                .options(q.getOptions())
-                .correctAnswer(q.getCorrectAnswer())
-                .explanation(q.getExplanation())
-                .aiGenerated(q.getAiGenerated())
-                .isApproved(q.getIsApproved())
-                .approvedById(q.getApprovedBy() != null ? q.getApprovedBy().getId() : null)
-                .approvedByName(q.getApprovedBy() != null ? q.getApprovedBy().getFullName() : null)
-                .createdAt(q.getCreatedAt())
-                .build();
+    public QuestionDTO mapToQuestionDTO(Question question) {
+        QuestionDTO dto = new QuestionDTO();
+        dto.setId(question.getId());
+        dto.setBankId(question.getBank() != null ? question.getBank().getId() : null);
+        dto.setBankName(question.getBank() != null ? question.getBank().getName() : null);
+        dto.setCreatedById(question.getCreatedBy() != null ? question.getCreatedBy().getId() : null);
+        dto.setCreatedByName(question.getCreatedBy() != null ? question.getCreatedBy().getFullName() : null);
+        dto.setContent(question.getContent());
+        dto.setType(question.getType() != null ? question.getType().name() : null);
+        dto.setDifficulty(question.getDifficulty() != null ? question.getDifficulty().name() : null);
+        dto.setTopic(question.getTopic());
+        dto.setOptions(question.getOptions());
+        dto.setCorrectAnswer(question.getCorrectAnswer());
+        dto.setExplanation(question.getExplanation());
+        dto.setAiGenerated(question.getAiGenerated());
+        dto.setIsApproved(question.getIsApproved());
+        dto.setApprovedById(question.getApprovedBy() != null ? question.getApprovedBy().getId() : null);
+        dto.setApprovedByName(question.getApprovedBy() != null ? question.getApprovedBy().getFullName() : null);
+        dto.setCreatedAt(question.getCreatedAt());
+        return dto;
     }
 
     private Question buildQuestionEntity(QuestionDTO dto, QuestionBank bank, User user) {
-        return Question.builder()
-                .bank(bank)
-                .createdBy(user)
-                .content(dto.getContent())
-                .type(Question.QuestionType.valueOf(dto.getType()))
-                .difficulty(Question.Difficulty.valueOf(dto.getDifficulty()))
-                .topic(dto.getTopic())
-                .options(dto.getOptions())
-                .correctAnswer(dto.getCorrectAnswer())
-                .explanation(dto.getExplanation())
-                .aiGenerated(dto.getAiGenerated() != null ? dto.getAiGenerated() : false)
-                .isApproved(false)
-                .build();
+        if (dto == null) {
+            throw new IllegalArgumentException("Question payload must not be null");
+        }
+        if (!StringUtils.hasText(dto.getContent())) {
+            throw new IllegalArgumentException("Question content is required");
+        }
+
+        Question.QuestionType questionType = parseRequiredEnum(dto.getType(), Question.QuestionType.class, "type");
+        Question.Difficulty questionDifficulty = parseEnum(dto.getDifficulty(), Question.Difficulty.class, "difficulty");
+
+        Question question = new Question();
+        question.setBank(bank);
+        question.setCreatedBy(user);
+        question.setContent(dto.getContent());
+        question.setType(questionType);
+        question.setDifficulty(questionDifficulty != null ? questionDifficulty : Question.Difficulty.MEDIUM);
+        question.setTopic(dto.getTopic());
+        question.setOptions(dto.getOptions());
+        question.setCorrectAnswer(dto.getCorrectAnswer());
+        question.setExplanation(dto.getExplanation());
+        question.setAiGenerated(dto.getAiGenerated() != null ? dto.getAiGenerated() : false);
+        question.setIsApproved(false);
+        return question;
+    }
+
+    private void applyCreateRequest(Question question, QuestionCreateRequest request) {
+        question.setContent(request.getContent());
+        question.setType(request.getType());
+        question.setDifficulty(request.getDifficulty() != null ? request.getDifficulty() : Question.Difficulty.MEDIUM);
+        question.setTopic(request.getTopic());
+        question.setOptions(request.getType() == Question.QuestionType.MULTIPLE_CHOICE ? request.getOptions() : null);
+        question.setCorrectAnswer(request.getCorrectAnswer());
+        question.setExplanation(request.getExplanation());
     }
 
     // =====================================================================

@@ -1,27 +1,20 @@
-import api from './api';
+import api from './api'
 
-/**
- * Question API – Kết nối với backend để quản lý ngân hàng câu hỏi và sinh câu hỏi AI.
- */
 export const questionApi = {
-  // ==========================================
-  // QUESTION BANK
-  // ==========================================
-
-  /** Lấy danh sách ngân hàng câu hỏi của tôi */
   getMyBanks: () => api.get('/question-banks'),
-
-  /** Tạo ngân hàng câu hỏi mới */
+  getBank: (id) => api.get(`/question-banks/${id}`),
   createBank: (data) => api.post('/question-banks', data),
-
-  /** Cập nhật ngân hàng câu hỏi */
   updateBank: (id, data) => api.put(`/question-banks/${id}`, data),
-
-  /** Xóa ngân hàng câu hỏi */
   deleteBank: (id) => api.delete(`/question-banks/${id}`),
+  getBankQuestions: (id, params = {}) => api.get(`/question-banks/${id}/questions`, { params }),
 
-  /** Lấy câu hỏi trong ngân hàng */
-  getBankQuestions: (id) => api.get(`/question-banks/${id}/questions`),
+  // ==========================================
+  // QUESTIONS CRUD
+  // ==========================================
+  createQuestion: (data) => api.post('/questions', data),
+  getQuestion: (id) => api.get(`/questions/${id}`),
+  updateQuestion: (id, data) => api.put(`/questions/${id}`, data),
+  deleteQuestion: (id) => api.delete(`/questions/${id}`),
 
   // ==========================================
   // QUESTIONS & AI GENERATE
@@ -53,9 +46,6 @@ export const questionApi = {
    */
   saveBatch: (data) => api.post('/questions/save-batch', data),
 
-  /** Xóa câu hỏi */
-  deleteQuestion: (id) => api.delete(`/questions/${id}`),
-
   // ==========================================
   // APPROVAL (Manager only)
   // ==========================================
@@ -66,7 +56,6 @@ export const questionApi = {
    * @param {boolean} approve - true = duyệt, false = huỷ duyệt
    */
   approveQuestion: (id, approve) => api.put(`/questions/${id}/approve`, { approve }),
-};
+}
 
-export default questionApi;
-
+export default questionApi
