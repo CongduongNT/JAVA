@@ -2,6 +2,7 @@ package com.planbookai.backend.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,29 +14,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * GlobalExceptionHandler – Xử lý tập trung các exception trong ứng dụng.
- *
- * <p>Mỗi loại exception được map sang HTTP status phù hợp:
- * <ul>
- *   <li>{@link AIServiceException} → 502 Bad Gateway</li>
- *   <li>{@link MethodArgumentNotValidException} → 400 Bad Request (validation)</li>
- *   <li>{@link RuntimeException} → tự suy ra status từ message</li>
- * </ul>
+ * GlobalExceptionHandler - xu ly tap trung cac exception trong ung dung.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * Xử lý lỗi từ Gemini AI (API không khả dụng, JSON không hợp lệ, v.v.).
-     */
     @ExceptionHandler(AIServiceException.class)
     public ResponseEntity<Map<String, Object>> handleAIServiceException(AIServiceException e) {
         return buildErrorResponse(HttpStatus.BAD_GATEWAY, "AI_SERVICE_ERROR", e.getMessage());
     }
 
-    /**
-     * Xử lý lỗi validation từ @Valid annotation.
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
         String details = e.getBindingResult().getFieldErrors().stream()
@@ -44,9 +32,27 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", details);
     }
 
-    /**
-     * Fallback – xử lý các RuntimeException chưa được bắt cụ thể.
-     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        String message = e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : "Malformed request body";
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", message);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException e) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", e.getMessage());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException e) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", e.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleForbiddenOperationException(ForbiddenOperationException e) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "FORBIDDEN", e.getMessage());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException e) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;

@@ -1,183 +1,223 @@
-import React, { useState, useEffect } from 'react';
-import { PlusCircle, Search, Trash2, Brain, MoreHorizontal, Layout, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
-import questionApi from '../../services/questionApi';
-import AIQuestionGenerator from './AIQuestionGenerator';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { BookOpen, Brain, Loader2, Pencil, PlusCircle, Search, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { clearFilter, deleteBank, fetchMyBanks, setFilter } from './questionBankSlice'
+import QuestionBankFormModal from './QuestionBankFormModal'
+import AIQuestionGenerator from './AIQuestionGenerator'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
-/**
- * QuestionBankPage – Trang chính quản lý Ngân hàng câu hỏi.
- * Hỗ trợ các chức năng:
- * - Xem danh sách ngân hàng
- * - Tạo / Xóa ngân hàng câu hỏi
- * - Mở bộ tạo câu hỏi AI (Generator)
- */
-const QuestionBankPage = () => {
-  const [banks, setBanks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showGenerator, setShowGenerator] = useState(false);
-  const [selectedBankId, setSelectedBankId] = useState(null);
+const GRADES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 
-  useEffect(() => {
-    fetchBanks();
-  }, []);
-
-  const fetchBanks = async () => {
-    try {
-      setLoading(true);
-      const res = await questionApi.getMyBanks();
-      setBanks(res.data);
-    } catch (err) {
-      console.error("Failed to fetch banks:", err);
-      toast.error("Không thể tải danh sách ngân hàng câu hỏi.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateBank = async () => {
-    const bankName = prompt("Nhập tên ngân hàng câu hỏi:");
-    if (!bankName) return;
-
-    try {
-      await questionApi.createBank({ name: bankName, isPublished: false });
-      toast.success("Đã tạo ngân hàng câu hỏi mới!");
-      fetchBanks();
-    } catch (err) {
-      toast.error("Không thể tạo ngân hàng.");
-    }
-  };
-
-  const handleDeleteBank = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm("Bạn có chắc muốn xóa ngân hàng này? Tất cả câu hỏi bên trong sẽ bị mất!")) return;
-
-    try {
-      await questionApi.deleteBank(id);
-      toast.success("Đã xóa ngân hàng!");
-      fetchBanks();
-    } catch (err) {
-      toast.error("Không thể xóa ngân hàng.");
-    }
-  };
-
-  if (showGenerator) {
-    return (
-      <AIQuestionGenerator 
-        banks={banks} 
-        initialBankId={selectedBankId}
-        onClose={() => {
-          setShowGenerator(false);
-          fetchBanks();
-        }} 
-      />
-    );
-  }
-
+function BankCard({ bank, deleting, onDelete, onEdit, onAI, onClick }) {
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">Ngân hàng câu hỏi</h1>
-          <p className="text-slate-500 mt-1">Quản lý và tổ chức các câu hỏi của bạn.</p>
+    <div
+      className="group relative flex cursor-pointer flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between">
+        <div className="rounded-lg bg-accent p-2.5 text-accent-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+          <BookOpen className="size-5" />
         </div>
-        
-        <div className="flex gap-2">
-          <button 
-            onClick={handleCreateBank}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-100 transition-all active:scale-95"
+        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            onClick={onAI}
+            title="Sinh cau hoi AI"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
           >
-            <PlusCircle size={20} />
-            Tạo ngân hàng
+            <Brain className="size-3.5" />
           </button>
-          
-          <button 
-            onClick={() => {
-              setSelectedBankId(null);
-              setShowGenerator(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-100 transition-all active:scale-95"
+          <button
+            onClick={onEdit}
+            title="Chinh sua"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <Brain size={20} />
-            <span className="hidden sm:inline">Sinh câu hỏi bằng AI</span>
-            <span className="sm:hidden text-xs font-bold uppercase tracking-wider">Sinh AI</span>
+            <Pencil className="size-3.5" />
+          </button>
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            title="Xoa"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+          >
+            <Trash2 className="size-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Main Grid View */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <Loader2 className="animate-spin text-indigo-600" size={40} />
-          <p className="text-slate-500 font-medium animate-pulse">Đang nạp ngân hàng câu hỏi...</p>
+      <div className="flex-1">
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
+          {bank.name}
+        </h3>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {bank.subject && <Badge variant="secondary" className="text-[10px]">{bank.subject}</Badge>}
+          {bank.gradeLevel && <Badge variant="outline" className="text-[10px]">Lop {bank.gradeLevel}</Badge>}
+          {bank.isPublished && (
+            <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
+              Cong khai
+            </span>
+          )}
         </div>
-      ) : banks.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {banks.map((bank) => (
-            <div 
+      </div>
+
+      <div className="border-t border-border pt-3">
+        <p className="line-clamp-1 text-xs text-muted-foreground">
+          {bank.description || 'Nhan de xem danh sach cau hoi ->'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function EmptyState({ hasFilter, onClear, onCreate }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-card px-4 py-20 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Search className="size-7" />
+      </div>
+      {hasFilter ? (
+        <>
+          <h3 className="text-base font-semibold">Khong tim thay ket qua</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Thu thay doi bo loc hoac xoa bo loc hien tai.</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={onClear}>Xoa bo loc</Button>
+        </>
+      ) : (
+        <>
+          <h3 className="text-base font-semibold">Chua co ngan hang cau hoi</h3>
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">Tao ngan hang dau tien hoac dung AI de bat dau.</p>
+          <Button className="mt-4" onClick={onCreate}>
+            <PlusCircle className="size-4" /> Tao ngan hang
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default function QuestionBankPage() {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { list, status, deletingId, filter } = useSelector((state) => state.questionBank)
+
+  const [formModal, setFormModal] = useState({ open: false, bank: null })
+  const [generator, setGenerator] = useState({ open: false, bankId: null })
+
+  useEffect(() => {
+    dispatch(fetchMyBanks())
+  }, [dispatch])
+
+  const filteredBanks = list.filter((bank) => {
+    const okSubject = !filter.subject || bank.subject?.toLowerCase().includes(filter.subject.toLowerCase())
+    const okGrade = !filter.gradeLevel || String(bank.gradeLevel) === String(filter.gradeLevel)
+    return okSubject && okGrade
+  })
+
+  const handleDelete = (id, event) => {
+    event.stopPropagation()
+    if (!window.confirm('Ban co chac muon xoa ngan hang nay? Tat ca cau hoi ben trong se bi mat!')) return
+
+    dispatch(deleteBank(id)).then((result) => {
+      if (!result.error) toast.success('Da xoa ngan hang!')
+      else toast.error(result.payload || 'Khong the xoa ngan hang.')
+    })
+  }
+
+  if (generator.open) {
+    return (
+      <AIQuestionGenerator
+        banks={list}
+        initialBankId={generator.bankId}
+        onClose={() => {
+          setGenerator({ open: false, bankId: null })
+          dispatch(fetchMyBanks())
+        }}
+      />
+    )
+  }
+
+  const hasFilter = Boolean(filter.subject || filter.gradeLevel)
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="page-header">Ngan hang cau hoi</h1>
+          <p className="page-subheader">Quan ly va to chuc cac cau hoi cua ban.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setFormModal({ open: true, bank: null })}>
+            <PlusCircle className="size-4" /> Tao ngan hang
+          </Button>
+          <Button onClick={() => setGenerator({ open: true, bankId: null })}>
+            <Brain className="size-4" /> Sinh cau hoi AI
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
+        <Input
+          className="min-w-[160px] flex-1"
+          placeholder="Loc theo mon hoc..."
+          value={filter.subject}
+          onChange={(event) => dispatch(setFilter({ subject: event.target.value }))}
+        />
+        <select
+          className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus:border-ring"
+          value={filter.gradeLevel}
+          onChange={(event) => dispatch(setFilter({ gradeLevel: event.target.value }))}
+        >
+          <option value="">Tat ca lop</option>
+          {GRADES.map((grade) => <option key={grade} value={grade}>Lop {grade}</option>)}
+        </select>
+        {hasFilter && (
+          <Button variant="ghost" size="sm" onClick={() => dispatch(clearFilter())}>Xoa bo loc</Button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground">{filteredBanks.length} ngan hang</span>
+      </div>
+
+      {status === 'loading' ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-20">
+          <Loader2 className="size-9 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Dang tai ngan hang cau hoi...</p>
+        </div>
+      ) : filteredBanks.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredBanks.map((bank) => (
+            <BankCard
               key={bank.id}
-              className="group relative bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-300 cursor-pointer p-5 flex flex-col justify-between"
-              onClick={() => {
-                setSelectedBankId(bank.id);
-                setShowGenerator(true);
+              bank={bank}
+              deleting={deletingId === bank.id}
+              onDelete={(event) => handleDelete(bank.id, event)}
+              onEdit={(event) => {
+                event.stopPropagation()
+                setFormModal({ open: true, bank })
               }}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 rounded-lg transition-colors duration-300">
-                  <BookOpen size={24} />
-                </div>
-                <button 
-                  onClick={(e) => handleDeleteBank(bank.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-700 transition-colors truncate">
-                  {bank.name}
-                </h3>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">
-                    {bank.subject || "Chưa có môn"}
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">
-                    Lớp {bank.gradeLevel || "?"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-slate-500">
-                  <Layout size={14} className="opacity-60" />
-                  <span className="text-xs font-medium uppercase tracking-tight">Vào ngân hàng</span>
-                </div>
-                <button className="text-slate-300 group-hover:text-indigo-500 transition-colors">
-                  <PlusCircle size={18} />
-                </button>
-              </div>
-            </div>
+              onAI={(event) => {
+                event.stopPropagation()
+                setGenerator({ open: true, bankId: bank.id })
+              }}
+              onClick={() => navigate(`/question-bank/${bank.id}`)}
+            />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 px-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-center">
-          <div className="w-16 h-16 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-4">
-            <Search size={32} />
-          </div>
-          <h3 className="text-xl font-bold text-slate-800">Chưa có ngân hàng câu hỏi</h3>
-          <p className="text-slate-500 mt-2 max-w-sm mx-auto font-medium">Bạn chưa tạo ngân hàng câu hỏi nào. Hãy nhấn “Tạo ngân hàng” hoặc dùng AI để bắt đầu ngay!</p>
-          <button 
-            onClick={handleCreateBank}
-            className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all hover:-translate-y-0.5"
-          >
-            <PlusCircle size={20} />
-            Tạo ngân hàng đầu tiên
-          </button>
-        </div>
+        <EmptyState
+          hasFilter={hasFilter}
+          onClear={() => dispatch(clearFilter())}
+          onCreate={() => setFormModal({ open: true, bank: null })}
+        />
+      )}
+
+      {formModal.open && (
+        <QuestionBankFormModal
+          initialData={formModal.bank}
+          onClose={() => setFormModal({ open: false, bank: null })}
+          onSuccess={() => setFormModal({ open: false, bank: null })}
+        />
       )}
     </div>
-  );
-};
-
-export default QuestionBankPage;
+  )
+}

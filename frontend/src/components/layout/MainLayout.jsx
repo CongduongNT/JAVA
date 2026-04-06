@@ -63,6 +63,9 @@ const ROLE_LABELS = {
 }
 
 function useBreadcrumb(pathname) {
+  if (pathname.startsWith('/question-bank')) {
+    return 'Question Bank'
+  }
   const map = {
     '/dashboard': 'Dashboard',
     '/lesson-plans': 'Lesson Plans',
