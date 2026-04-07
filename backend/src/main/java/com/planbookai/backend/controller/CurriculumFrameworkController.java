@@ -20,11 +20,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/frameworks")
 @RequiredArgsConstructor
+@Tag(name = "Curriculum Frameworks", description = "Các API quản lý Chương trình khung")
 public class CurriculumFrameworkController {
 
     private final CurriculumFrameworkService frameworkService;
@@ -33,6 +37,7 @@ public class CurriculumFrameworkController {
      * GET /api/v1/frameworks
      * Lấy danh sách frameworks (Admin: tất cả, Others: chỉ published)
      */
+    @Operation(summary = "Lấy danh sách frameworks", description = "Admin có thể xem tất cả, các role khác chỉ xem frameworks đã publish")
     @GetMapping
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     public ResponseEntity<PageResponse<CurriculumFrameworkDTO>> getFrameworks(
@@ -54,6 +59,7 @@ public class CurriculumFrameworkController {
      * GET /api/v1/frameworks/published
      * Lấy danh sách tất cả frameworks đã publish (public endpoint)
      */
+    @Operation(summary = "Lấy danh sách tất cả frameworks đã publish không phân trang", description = "Public endpoint, dành cho dropdown list")
     @GetMapping("/published")
     public ResponseEntity<List<CurriculumFrameworkDTO>> getPublishedFrameworks() {
         return ResponseEntity.ok(frameworkService.getAllPublishedFrameworks());
@@ -63,6 +69,7 @@ public class CurriculumFrameworkController {
      * GET /api/v1/frameworks/{id}
      * Lấy chi tiết framework theo ID
      */
+    @Operation(summary = "Lấy chi tiết framework theo ID")
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','STAFF','MANAGER','ADMIN')")
     public ResponseEntity<CurriculumFrameworkDTO> getFramework(@PathVariable Integer id) {
@@ -73,6 +80,7 @@ public class CurriculumFrameworkController {
      * POST /api/v1/frameworks
      * Tạo mới framework (Admin only)
      */
+    @Operation(summary = "Tạo mới framework", description = "Chỉ Admin có quyền tạo. Trạng thái mặc định là DRAFT.")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CurriculumFrameworkDTO> createFramework(
@@ -85,6 +93,7 @@ public class CurriculumFrameworkController {
      * PUT /api/v1/frameworks/{id}
      * Cập nhật framework (Admin only)
      */
+    @Operation(summary = "Cập nhật framework", description = "Chỉ Admin có quyền thực hiện.")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CurriculumFrameworkDTO> updateFramework(
@@ -97,6 +106,7 @@ public class CurriculumFrameworkController {
      * DELETE /api/v1/frameworks/{id}
      * Xóa framework (Admin only)
      */
+    @Operation(summary = "Xóa framework", description = "Chỉ Admin có quyền thực hiện. Xóa cứng (hard delete).")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteFramework(@PathVariable Integer id) {
@@ -108,6 +118,7 @@ public class CurriculumFrameworkController {
      * PUT /api/v1/frameworks/{id}/publish
      * Publish framework (Admin only)
      */
+    @Operation(summary = "Publish framework", description = "Chỉ Admin có quyền thực hiện. Đổi trạng thái từ DRAFT thành PUBLISHED.")
     @PutMapping("/{id}/publish")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CurriculumFrameworkDTO> publishFramework(@PathVariable Integer id) {
@@ -118,6 +129,7 @@ public class CurriculumFrameworkController {
      * PUT /api/v1/frameworks/{id}/unpublish
      * Unpublish framework (Admin only)
      */
+    @Operation(summary = "Unpublish framework", description = "Chỉ Admin có quyền thực hiện. Đổi trạng thái từ PUBLISHED thành DRAFT.")
     @PutMapping("/{id}/unpublish")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CurriculumFrameworkDTO> unpublishFramework(@PathVariable Integer id) {
