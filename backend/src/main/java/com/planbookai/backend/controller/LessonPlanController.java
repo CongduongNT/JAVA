@@ -1,6 +1,8 @@
 package com.planbookai.backend.controller;
 
+import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.LessonPlanListItemDTO;
+import com.planbookai.backend.dto.LessonPlanRequest;
 import com.planbookai.backend.dto.PageResponse;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.LessonPlanService;
@@ -10,11 +12,17 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -63,5 +71,68 @@ public class LessonPlanController {
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(
                 lessonPlanService.getMyLessonPlans(user, page, size, status, subject, gradeLevel, keyword));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Create lesson plan", description = "Creates a new manual lesson plan for the current teacher.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Lesson plan created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Only teacher can access this endpoint", content = @Content),
+    })
+    public ResponseEntity<LessonPlanDTO> createLessonPlan(
+            @Valid @RequestBody LessonPlanRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(201).body(lessonPlanService.createLessonPlan(request, user));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Get lesson plan detail", description = "Returns the full detail of a lesson plan owned by the current teacher.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lesson plan fetched successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Only owner teacher can access this lesson plan", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Lesson plan not found", content = @Content),
+    })
+    public ResponseEntity<LessonPlanDTO> getLessonPlan(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(lessonPlanService.getLessonPlan(id, user));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Update lesson plan", description = "Updates the editable content of a lesson plan owned by the current teacher.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lesson plan updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Only owner teacher can update this lesson plan", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Lesson plan not found", content = @Content),
+    })
+    public ResponseEntity<LessonPlanDTO> updateLessonPlan(
+            @PathVariable Long id,
+            @Valid @RequestBody LessonPlanRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(lessonPlanService.updateLessonPlan(id, request, user));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Delete lesson plan", description = "Deletes a lesson plan owned by the current teacher.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Lesson plan deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Only owner teacher can delete this lesson plan", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Lesson plan not found", content = @Content),
+    })
+    public ResponseEntity<Void> deleteLessonPlan(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        lessonPlanService.deleteLessonPlan(id, user);
+        return ResponseEntity.noContent().build();
     }
 }

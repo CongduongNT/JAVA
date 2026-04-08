@@ -1,7 +1,10 @@
 package com.planbookai.backend.controller;
 
+import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.LessonPlanListItemDTO;
+import com.planbookai.backend.dto.LessonPlanRequest;
 import com.planbookai.backend.dto.PageResponse;
+import com.planbookai.backend.model.entity.LessonPlan;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.LessonPlanRepository;
 import com.planbookai.backend.service.LessonPlanService;
@@ -15,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 class LessonPlanControllerTest {
@@ -31,7 +35,8 @@ class LessonPlanControllerTest {
                 true,
                 true,
                 false);
-        RecordingLessonPlanService service = new RecordingLessonPlanService(expected);
+        RecordingLessonPlanService service = new RecordingLessonPlanService();
+        service.listResponse = expected;
         LessonPlanController controller = new LessonPlanController(service);
 
         ResponseEntity<PageResponse<LessonPlanListItemDTO>> response = controller.getMyLessonPlans(
@@ -55,9 +60,74 @@ class LessonPlanControllerTest {
     }
 
     @Test
-    void getMyLessonPlansRequiresTeacherRole() throws NoSuchMethodException {
-        Method method = LessonPlanController.class.getMethod(
-                "getMyLessonPlans",
+    void createLessonPlanDelegatesToService() {
+        User teacher = User.builder().id(5L).build();
+        LessonPlanRequest request = LessonPlanRequest.builder().title("Lesson").build();
+        LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).title("Lesson").status(LessonPlan.LessonPlanStatus.DRAFT).build();
+        RecordingLessonPlanService service = new RecordingLessonPlanService();
+        service.detailResponse = expected;
+        LessonPlanController controller = new LessonPlanController(service);
+
+        ResponseEntity<LessonPlanDTO> response = controller.createLessonPlan(request, teacher);
+
+        assertEquals(201, response.getStatusCode().value());
+        assertSame(expected, response.getBody());
+        assertSame(request, service.request);
+        assertSame(teacher, service.user);
+    }
+
+    @Test
+    void getLessonPlanDelegatesToService() {
+        User teacher = User.builder().id(5L).build();
+        LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).title("Lesson").build();
+        RecordingLessonPlanService service = new RecordingLessonPlanService();
+        service.detailResponse = expected;
+        LessonPlanController controller = new LessonPlanController(service);
+
+        ResponseEntity<LessonPlanDTO> response = controller.getLessonPlan(10L, teacher);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertSame(expected, response.getBody());
+        assertEquals(10L, service.id);
+        assertSame(teacher, service.user);
+    }
+
+    @Test
+    void updateLessonPlanDelegatesToService() {
+        User teacher = User.builder().id(5L).build();
+        LessonPlanRequest request = LessonPlanRequest.builder().title("Lesson").build();
+        LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).title("Lesson").build();
+        RecordingLessonPlanService service = new RecordingLessonPlanService();
+        service.detailResponse = expected;
+        LessonPlanController controller = new LessonPlanController(service);
+
+        ResponseEntity<LessonPlanDTO> response = controller.updateLessonPlan(10L, request, teacher);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertSame(expected, response.getBody());
+        assertEquals(10L, service.id);
+        assertSame(request, service.request);
+        assertSame(teacher, service.user);
+    }
+
+    @Test
+    void deleteLessonPlanDelegatesToService() {
+        User teacher = User.builder().id(5L).build();
+        RecordingLessonPlanService service = new RecordingLessonPlanService();
+        LessonPlanController controller = new LessonPlanController(service);
+
+        ResponseEntity<Void> response = controller.deleteLessonPlan(10L, teacher);
+
+        assertEquals(204, response.getStatusCode().value());
+        assertNull(response.getBody());
+        assertEquals(10L, service.id);
+        assertSame(teacher, service.user);
+        assertTrue(service.deleteCalled);
+    }
+
+    @Test
+    void lessonPlanEndpointsRequireTeacherRole() throws NoSuchMethodException {
+        assertTeacherRole("getMyLessonPlans",
                 Integer.class,
                 Integer.class,
                 String.class,
@@ -65,15 +135,22 @@ class LessonPlanControllerTest {
                 String.class,
                 String.class,
                 User.class);
+        assertTeacherRole("createLessonPlan", LessonPlanRequest.class, User.class);
+        assertTeacherRole("getLessonPlan", Long.class, User.class);
+        assertTeacherRole("updateLessonPlan", Long.class, LessonPlanRequest.class, User.class);
+        assertTeacherRole("deleteLessonPlan", Long.class, User.class);
+    }
 
+    private void assertTeacherRole(String methodName, Class<?>... parameterTypes) throws NoSuchMethodException {
+        Method method = LessonPlanController.class.getMethod(methodName, parameterTypes);
         PreAuthorize preAuthorize = method.getAnnotation(PreAuthorize.class);
-
         assertNotNull(preAuthorize);
         assertEquals("hasRole('TEACHER')", preAuthorize.value());
     }
 
     private static final class RecordingLessonPlanService extends LessonPlanService {
-        private final PageResponse<LessonPlanListItemDTO> response;
+        private PageResponse<LessonPlanListItemDTO> listResponse;
+        private LessonPlanDTO detailResponse;
         private User user;
         private Integer page;
         private Integer size;
@@ -81,10 +158,12 @@ class LessonPlanControllerTest {
         private String subject;
         private String gradeLevel;
         private String keyword;
+        private Long id;
+        private LessonPlanRequest request;
+        private boolean deleteCalled;
 
-        private RecordingLessonPlanService(PageResponse<LessonPlanListItemDTO> response) {
+        private RecordingLessonPlanService() {
             super(createNoOpRepository());
-            this.response = response;
         }
 
         @Override
@@ -103,7 +182,36 @@ class LessonPlanControllerTest {
             this.subject = subject;
             this.gradeLevel = gradeLevel;
             this.keyword = keyword;
-            return response;
+            return listResponse;
+        }
+
+        @Override
+        public LessonPlanDTO createLessonPlan(LessonPlanRequest request, User user) {
+            this.request = request;
+            this.user = user;
+            return detailResponse;
+        }
+
+        @Override
+        public LessonPlanDTO getLessonPlan(Long id, User user) {
+            this.id = id;
+            this.user = user;
+            return detailResponse;
+        }
+
+        @Override
+        public LessonPlanDTO updateLessonPlan(Long id, LessonPlanRequest request, User user) {
+            this.id = id;
+            this.request = request;
+            this.user = user;
+            return detailResponse;
+        }
+
+        @Override
+        public void deleteLessonPlan(Long id, User user) {
+            this.id = id;
+            this.user = user;
+            this.deleteCalled = true;
         }
     }
 
@@ -123,5 +231,11 @@ class LessonPlanControllerTest {
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });
+    }
+
+    private static void assertTrue(boolean condition) {
+        if (!condition) {
+            throw new AssertionError("Expected condition to be true");
+        }
     }
 }
