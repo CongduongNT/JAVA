@@ -9,6 +9,7 @@ import com.planbookai.backend.repository.SubscriptionPackageRepository;
 import com.planbookai.backend.repository.UserRepository;
 import com.planbookai.backend.repository.AiPromptTemplateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
+@ConditionalOnProperty(value = "app.seed.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 

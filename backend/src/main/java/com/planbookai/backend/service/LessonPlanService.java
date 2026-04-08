@@ -10,6 +10,7 @@ import com.planbookai.backend.model.entity.LessonPlan;
 import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.LessonPlanRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
@@ -26,9 +28,19 @@ import java.util.stream.Collectors;
 public class LessonPlanService {
 
     private final LessonPlanRepository lessonPlanRepository;
+    private final LessonPlanFrameworkValidator lessonPlanFrameworkValidator;
 
     public LessonPlanService(LessonPlanRepository lessonPlanRepository) {
+        this(lessonPlanRepository, frameworkId -> {
+        });
+    }
+
+    @Autowired
+    public LessonPlanService(
+            LessonPlanRepository lessonPlanRepository,
+            LessonPlanFrameworkValidator lessonPlanFrameworkValidator) {
         this.lessonPlanRepository = lessonPlanRepository;
+        this.lessonPlanFrameworkValidator = lessonPlanFrameworkValidator;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +74,7 @@ public class LessonPlanService {
     @Transactional
     public LessonPlanDTO createLessonPlan(LessonPlanRequest request, User user) {
         assertCanViewOwnLessonPlans(user);
+        lessonPlanFrameworkValidator.validateFrameworkIdIfAvailable(request.getFrameworkId());
 
         LessonPlan lessonPlan = LessonPlan.builder()
                 .teacher(user)
@@ -93,6 +106,7 @@ public class LessonPlanService {
     public LessonPlanDTO updateLessonPlan(Long id, LessonPlanRequest request, User user) {
         LessonPlan lessonPlan = findLessonPlanOrThrow(id);
         assertOwnsLessonPlan(lessonPlan, user);
+        lessonPlanFrameworkValidator.validateFrameworkIdIfAvailable(request.getFrameworkId());
 
         lessonPlan.setFrameworkId(request.getFrameworkId());
         lessonPlan.setTitle(normalizeRequiredText(request.getTitle(), "title"));
@@ -115,6 +129,21 @@ public class LessonPlanService {
         lessonPlanRepository.delete(lessonPlan);
     }
 
+    @Transactional
+    public LessonPlanDTO publishLessonPlan(Long id, User user) {
+        LessonPlan lessonPlan = findLessonPlanOrThrow(id);
+        assertOwnsLessonPlan(lessonPlan, user);
+
+        if (lessonPlan.getStatus() == LessonPlan.LessonPlanStatus.PUBLISHED) {
+            return mapToDTO(lessonPlan);
+        }
+
+        lessonPlanFrameworkValidator.validateFrameworkIdIfAvailable(lessonPlan.getFrameworkId());
+        assertCanPublishLessonPlan(lessonPlan);
+        lessonPlan.setStatus(LessonPlan.LessonPlanStatus.PUBLISHED);
+        return mapToDTO(lessonPlanRepository.save(lessonPlan));
+    }
+
     private void assertCanViewOwnLessonPlans(User user) {
         requireAuthenticatedUser(user);
         if (hasRole(user, Role.RoleName.TEACHER)) {
@@ -135,6 +164,44 @@ public class LessonPlanService {
     private LessonPlan findLessonPlanOrThrow(Long id) {
         return lessonPlanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson plan not found: " + id));
+    }
+
+    private void assertCanPublishLessonPlan(LessonPlan lessonPlan) {
+        List<String> missingFields = new java.util.ArrayList<>();
+
+        if (!StringUtils.hasText(lessonPlan.getTitle())) {
+            missingFields.add("title");
+        }
+        if (!StringUtils.hasText(lessonPlan.getSubject())) {
+            missingFields.add("subject");
+        }
+        if (!StringUtils.hasText(lessonPlan.getGradeLevel())) {
+            missingFields.add("gradeLevel");
+        }
+        if (!StringUtils.hasText(lessonPlan.getTopic())) {
+            missingFields.add("topic");
+        }
+        if (!StringUtils.hasText(lessonPlan.getObjectives())) {
+            missingFields.add("objectives");
+        }
+        if (!StringUtils.hasText(lessonPlan.getActivities())) {
+            missingFields.add("activities");
+        }
+        if (!StringUtils.hasText(lessonPlan.getAssessment())) {
+            missingFields.add("assessment");
+        }
+        if (!StringUtils.hasText(lessonPlan.getMaterials())) {
+            missingFields.add("materials");
+        }
+        if (lessonPlan.getDurationMinutes() == null || lessonPlan.getDurationMinutes() <= 0) {
+            missingFields.add("durationMinutes");
+        }
+
+        if (!missingFields.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Lesson plan is not ready to publish. Missing required fields: "
+                            + String.join(", ", missingFields));
+        }
     }
 
     private void requireAuthenticatedUser(User user) {

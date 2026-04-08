@@ -135,4 +135,19 @@ public class LessonPlanController {
         lessonPlanService.deleteLessonPlan(id, user);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/publish")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Publish lesson plan", description = "Publishes a lesson plan owned by the current teacher.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lesson plan published successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Only owner teacher can publish this lesson plan", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Lesson plan not found", content = @Content),
+    })
+    public ResponseEntity<LessonPlanDTO> publishLessonPlan(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(lessonPlanService.publishLessonPlan(id, user));
+    }
 }

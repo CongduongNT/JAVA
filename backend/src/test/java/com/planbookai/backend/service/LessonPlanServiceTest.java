@@ -154,6 +154,29 @@ class LessonPlanServiceTest {
     }
 
     @Test
+    void createLessonPlanRejectsUnknownFrameworkWhenValidatorFails() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        RepositoryState state = new RepositoryState();
+        LessonPlanService lessonPlanService = new LessonPlanService(
+                createRepository(state),
+                frameworkId -> {
+                    throw new IllegalArgumentException("frameworkId not found: " + frameworkId);
+                });
+
+        LessonPlanRequest request = LessonPlanRequest.builder()
+                .frameworkId(999)
+                .title("Lesson with missing framework")
+                .build();
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonPlanService.createLessonPlan(request, teacher));
+
+        assertEquals("frameworkId not found: 999", exception.getMessage());
+        assertNull(state.lastSaved);
+    }
+
+    @Test
     void getLessonPlanReturnsOwnedDetail() {
         User teacher = buildUser(7L, Role.RoleName.TEACHER);
         RepositoryState state = new RepositoryState();
@@ -248,6 +271,107 @@ class LessonPlanServiceTest {
 
         assertEquals(20L, state.deletedId);
         assertNull(state.store.get(20L));
+    }
+
+    @Test
+    void publishLessonPlanChangesDraftToPublished() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        RepositoryState state = new RepositoryState();
+        LessonPlan lessonPlan = buildLessonPlan(30L, teacher, LessonPlan.LessonPlanStatus.DRAFT, false);
+        state.store.put(30L, lessonPlan);
+        LessonPlanService lessonPlanService = new LessonPlanService(createRepository(state));
+
+        LessonPlanDTO response = lessonPlanService.publishLessonPlan(30L, teacher);
+
+        assertEquals(LessonPlan.LessonPlanStatus.PUBLISHED, lessonPlan.getStatus());
+        assertNotNull(state.lastSaved);
+        assertEquals(30L, state.lastSaved.getId());
+        assertEquals(LessonPlan.LessonPlanStatus.PUBLISHED, response.getStatus());
+    }
+
+    @Test
+    void publishLessonPlanIsIdempotentWhenAlreadyPublished() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        RepositoryState state = new RepositoryState();
+        LessonPlan lessonPlan = buildLessonPlan(31L, teacher, LessonPlan.LessonPlanStatus.PUBLISHED, false);
+        state.store.put(31L, lessonPlan);
+        LessonPlanService lessonPlanService = new LessonPlanService(createRepository(state));
+
+        LessonPlanDTO response = lessonPlanService.publishLessonPlan(31L, teacher);
+
+        assertEquals(LessonPlan.LessonPlanStatus.PUBLISHED, response.getStatus());
+        assertNull(state.lastSaved);
+    }
+
+    @Test
+    void publishLessonPlanRejectsOtherTeacher() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        User otherTeacher = buildUser(8L, Role.RoleName.TEACHER);
+        RepositoryState state = new RepositoryState();
+        state.store.put(32L, buildLessonPlan(32L, otherTeacher, LessonPlan.LessonPlanStatus.DRAFT, false));
+        LessonPlanService lessonPlanService = new LessonPlanService(createRepository(state));
+
+        ForbiddenOperationException exception = assertThrows(
+                ForbiddenOperationException.class,
+                () -> lessonPlanService.publishLessonPlan(32L, teacher));
+
+        assertEquals("You do not have permission to access this lesson plan", exception.getMessage());
+    }
+
+    @Test
+    void publishLessonPlanThrowsNotFoundWhenMissing() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        LessonPlanService lessonPlanService = new LessonPlanService(createRepository(new RepositoryState()));
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> lessonPlanService.publishLessonPlan(404L, teacher));
+
+        assertEquals("Lesson plan not found: 404", exception.getMessage());
+    }
+
+    @Test
+    void publishLessonPlanRejectsIncompleteDraft() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        RepositoryState state = new RepositoryState();
+        LessonPlan lessonPlan = buildLessonPlan(33L, teacher, LessonPlan.LessonPlanStatus.DRAFT, false);
+        lessonPlan.setSubject(null);
+        lessonPlan.setObjectives(" ");
+        lessonPlan.setDurationMinutes(null);
+        state.store.put(33L, lessonPlan);
+        LessonPlanService lessonPlanService = new LessonPlanService(createRepository(state));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonPlanService.publishLessonPlan(33L, teacher));
+
+        assertEquals(
+                "Lesson plan is not ready to publish. Missing required fields: subject, objectives, durationMinutes",
+                exception.getMessage());
+        assertNull(state.lastSaved);
+        assertEquals(LessonPlan.LessonPlanStatus.DRAFT, lessonPlan.getStatus());
+    }
+
+    @Test
+    void publishLessonPlanRejectsUnknownFrameworkWhenValidatorFails() {
+        User teacher = buildUser(7L, Role.RoleName.TEACHER);
+        RepositoryState state = new RepositoryState();
+        LessonPlan lessonPlan = buildLessonPlan(34L, teacher, LessonPlan.LessonPlanStatus.DRAFT, false);
+        lessonPlan.setFrameworkId(404);
+        state.store.put(34L, lessonPlan);
+        LessonPlanService lessonPlanService = new LessonPlanService(
+                createRepository(state),
+                frameworkId -> {
+                    throw new IllegalArgumentException("frameworkId not found: " + frameworkId);
+                });
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonPlanService.publishLessonPlan(34L, teacher));
+
+        assertEquals("frameworkId not found: 404", exception.getMessage());
+        assertNull(state.lastSaved);
+        assertEquals(LessonPlan.LessonPlanStatus.DRAFT, lessonPlan.getStatus());
     }
 
     private LessonPlanRepository createRepository(RepositoryState state) {

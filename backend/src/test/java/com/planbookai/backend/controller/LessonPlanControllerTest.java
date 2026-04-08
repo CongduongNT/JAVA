@@ -126,6 +126,23 @@ class LessonPlanControllerTest {
     }
 
     @Test
+    void publishLessonPlanDelegatesToService() {
+        User teacher = User.builder().id(5L).build();
+        LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).status(LessonPlan.LessonPlanStatus.PUBLISHED).build();
+        RecordingLessonPlanService service = new RecordingLessonPlanService();
+        service.detailResponse = expected;
+        LessonPlanController controller = new LessonPlanController(service);
+
+        ResponseEntity<LessonPlanDTO> response = controller.publishLessonPlan(10L, teacher);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertSame(expected, response.getBody());
+        assertEquals(10L, service.id);
+        assertSame(teacher, service.user);
+        assertTrue(service.publishCalled);
+    }
+
+    @Test
     void lessonPlanEndpointsRequireTeacherRole() throws NoSuchMethodException {
         assertTeacherRole("getMyLessonPlans",
                 Integer.class,
@@ -139,6 +156,7 @@ class LessonPlanControllerTest {
         assertTeacherRole("getLessonPlan", Long.class, User.class);
         assertTeacherRole("updateLessonPlan", Long.class, LessonPlanRequest.class, User.class);
         assertTeacherRole("deleteLessonPlan", Long.class, User.class);
+        assertTeacherRole("publishLessonPlan", Long.class, User.class);
     }
 
     private void assertTeacherRole(String methodName, Class<?>... parameterTypes) throws NoSuchMethodException {
@@ -161,6 +179,7 @@ class LessonPlanControllerTest {
         private Long id;
         private LessonPlanRequest request;
         private boolean deleteCalled;
+        private boolean publishCalled;
 
         private RecordingLessonPlanService() {
             super(createNoOpRepository());
@@ -212,6 +231,14 @@ class LessonPlanControllerTest {
             this.id = id;
             this.user = user;
             this.deleteCalled = true;
+        }
+
+        @Override
+        public LessonPlanDTO publishLessonPlan(Long id, User user) {
+            this.id = id;
+            this.user = user;
+            this.publishCalled = true;
+            return detailResponse;
         }
     }
 
