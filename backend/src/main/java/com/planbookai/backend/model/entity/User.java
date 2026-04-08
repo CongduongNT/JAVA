@@ -6,9 +6,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.hibernate.annotations.UpdateTimestamp;
+import java.util.List;
+import java.util.Collections;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.Collection;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,9 +22,22 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+/**
+ * @param id
+ * @param role
+ * @param fullName
+ * @param email
+ * @param passwordHash
+ * @param phone
+ * @param avatarUrl
+ * @param isActive
+ * @param emailVerified
+ * @param createdAt
+ * @param updatedAt
+ */
 @AllArgsConstructor
 @Builder
-public class User {
+public class User implements UserDetails { // Implement UserDetails interface
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,4 +79,42 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (this.role == null || this.role.getName() == null) {
+            return Collections.emptyList();
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.getName().name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.passwordHash;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.isActive != null && this.isActive;
+    }
 }

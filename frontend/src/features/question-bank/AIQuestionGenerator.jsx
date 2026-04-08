@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Brain, Sparkles, Send, Check, Edit3, Trash2, X, PlusCircle, Book, Layout, Loader2 } from 'lucide-react';
 import questionApi from '../../services/questionApi';
 import { toast } from 'sonner';
+import ApprovalStatusBadge from '../../components/ui/ApprovalStatusBadge';
 
 /**
  * AIQuestionGenerator – Bộ tạo câu hỏi thông minh.
@@ -313,6 +314,10 @@ const AIQuestionGenerator = ({ banks, initialBankId, onClose }) => {
                    <div className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1">
                       <Sparkles size={12}/> {q.difficulty}
                    </div>
+                   {/* Approval status badge – hiển thị cho Staff biết trạng thái duyệt */}
+                   {q.id && (
+                     <ApprovalStatusBadge isApproved={q.isApproved} approvedByName={q.approvedByName} />
+                   )}
                 </div>
 
                 {q.explanation && (

@@ -14,6 +14,7 @@ import {
   Settings,
   Shield,
   Users,
+  Loader2,
 } from 'lucide-react'
 
 import { logout } from '../../features/auth/authSlice'
@@ -62,6 +63,9 @@ const ROLE_LABELS = {
 }
 
 function useBreadcrumb(pathname) {
+  if (pathname.startsWith('/question-bank')) {
+    return 'Question Bank'
+  }
   const map = {
     '/dashboard': 'Dashboard',
     '/lesson-plans': 'Lesson Plans',
@@ -85,7 +89,7 @@ function AppSidebar() {
   const location = useLocation()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const user = useSelector((state) => state.auth.user)
+  const user = useSelector((state) => state.auth?.user)
   const role = user?.role?.toUpperCase() || ''
 
   const isActive = (href) => {
@@ -94,7 +98,7 @@ function AppSidebar() {
   }
 
   const initials = user?.fullName
-    ? user.fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    ? user.fullName.trim().split(/\s+/).map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'AD'
 
   const handleLogout = () => {
@@ -107,7 +111,8 @@ function AppSidebar() {
     return item.roles.map((r) => r.toUpperCase()).includes(role)
   })
 
-  const roleInfo = ROLE_LABELS[role] || { label: role || 'User', color: 'bg-slate-100 text-slate-600' }
+  const currentRoleKey = role.toUpperCase();
+  const roleInfo = ROLE_LABELS[currentRoleKey] || { label: role || 'User', color: 'bg-slate-100 text-slate-600' }
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -130,13 +135,15 @@ function AppSidebar() {
             {visibleItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
-                  render={<Link to={item.href} />}
+                  asChild
                   isActive={isActive(item.href)}
                   tooltip={item.title}
                   className="transition-colors duration-150"
                 >
-                  <item.icon className="size-4 shrink-0" />
-                  <span className="truncate">{item.title}</span>
+                  <Link to={item.href}>
+                    <item.icon className="size-4 shrink-0" />
+                    <span className="truncate">{item.title}</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
@@ -206,7 +213,7 @@ function TopHeader() {
   const location = useLocation()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const user = useSelector((state) => state.auth.user)
+  const user = useSelector((state) => state.auth?.user)
   const breadcrumb = useBreadcrumb(location.pathname)
 
   const handleLogout = () => {
@@ -249,6 +256,17 @@ function AppFooter() {
 }
 
 export default function MainLayout() {
+  // Kiểm tra an toàn: nếu state._persist tồn tại thì mới đợi rehydrated, nếu không thì render luôn
+  const isRehydrated = useSelector((state) => state._persist?.rehydrated ?? true);
+
+  if (!isRehydrated) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="size-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <SidebarProvider>

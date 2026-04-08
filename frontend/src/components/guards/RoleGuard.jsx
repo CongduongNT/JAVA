@@ -34,7 +34,9 @@ const RoleGuard = ({ roles = [], children, redirectTo = '/unauthorized' }) => {
 
   // Kiểm tra role của user có nằm trong danh sách roles cho phép không
   const userRole = user.role?.toUpperCase();
-  const hasAccess = roles.map((r) => r.toUpperCase()).includes(userRole);
+  
+  // Mặc định ADMIN luôn có quyền truy cập vào các trang quản trị/nhân sự
+  const hasAccess = userRole === 'ADMIN' || roles.map((r) => r.toUpperCase()).includes(userRole);
 
   if (!hasAccess) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />;

@@ -76,6 +76,14 @@ public class Question {
     @Builder.Default
     private Boolean isApproved = false;
 
+    /**
+     * Người phê duyệt câu hỏi (Manager).
+     * Null nếu câu hỏi chưa được duyệt.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
+
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
