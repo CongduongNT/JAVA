@@ -23,6 +23,9 @@ import PromptTemplateForm from './pages/staff/PromptTemplateForm'
 import ExamGenerator from './pages/teacher/ExamGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
+import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
+import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
+import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -151,9 +154,31 @@ function App() {
             path="/lesson-plans"
             element={
               <RoleGuard roles={['TEACHER']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Teacher - Lesson Plans</h2>
-                </div>
+                <LessonPlansPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/new"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanDetailPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id/edit"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
               </RoleGuard>
             }
           />
