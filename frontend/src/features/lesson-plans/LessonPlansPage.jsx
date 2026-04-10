@@ -2,7 +2,12 @@ import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen, Eye, Loader2, Pencil, PlusCircle, Search, Trash2,
+  BookOpen,
+  Eye,
+  Pencil,
+  PlusCircle,
+  Search,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -13,21 +18,29 @@ import {
   setFilter,
   setPage,
 } from './lessonPlanSlice'
+import { GRADES } from './lessonPlanMeta'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
-import {
-  Pagination, PaginationContent, PaginationEllipsis, PaginationItem,
-  PaginationLink, PaginationNext, PaginationPrevious,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
 } from '@/components/ui/pagination'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const GRADES = ['1','2','3','4','5','6','7','8','9','10','11','12']
 const PAGE_SIZE = 10
 
 const STATUS_OPTIONS = [
@@ -39,8 +52,6 @@ const STATUS_OPTIONS = [
 const selectCls =
   'h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus:border-ring'
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
 function StatusBadge({ status }) {
   if (status === 'PUBLISHED') {
     return (
@@ -49,14 +60,13 @@ function StatusBadge({ status }) {
       </span>
     )
   }
+
   return (
     <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
       Nháp
     </span>
   )
 }
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyState({ hasFilter, onClear, onCreate }) {
   return (
@@ -67,15 +77,22 @@ function EmptyState({ hasFilter, onClear, onCreate }) {
       {hasFilter ? (
         <>
           <h3 className="text-base font-semibold">Không tìm thấy kết quả</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Thử thay đổi bộ lọc hoặc xóa bộ lọc hiện tại.</p>
-          <Button variant="outline" size="sm" className="mt-4" onClick={onClear}>Xóa bộ lọc</Button>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Thử thay đổi bộ lọc hoặc xóa bộ lọc hiện tại.
+          </p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={onClear}>
+            Xóa bộ lọc
+          </Button>
         </>
       ) : (
         <>
           <h3 className="text-base font-semibold">Chưa có giáo án nào</h3>
-          <p className="mt-1 max-w-xs text-sm text-muted-foreground">Tạo giáo án đầu tiên của bạn để bắt đầu.</p>
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+            Tạo giáo án đầu tiên của bạn để bắt đầu.
+          </p>
           <Button className="mt-4" onClick={onCreate}>
-            <PlusCircle className="size-4" /> Tạo giáo án
+            <PlusCircle className="size-4" />
+            Tạo giáo án
           </Button>
         </>
       )}
@@ -83,40 +100,51 @@ function EmptyState({ hasFilter, onClear, onCreate }) {
   )
 }
 
-// ─── Table Skeleton ───────────────────────────────────────────────────────────
+function ErrorState({ message, onRetry }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-16 text-center">
+      <h3 className="text-base font-semibold text-foreground">Không thể tải danh sách giáo án</h3>
+      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+        {message || 'Đã có lỗi khi tải dữ liệu. Hãy thử lại sau hoặc tải lại trang.'}
+      </p>
+      <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
+        Thử lại
+      </Button>
+    </div>
+  )
+}
 
 function TableSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="p-4 space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="space-y-3 p-4">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Skeleton key={index} className="h-10 w-full" />
         ))}
       </div>
     </div>
   )
 }
 
-// ─── Pagination Controls ──────────────────────────────────────────────────────
-
 function PaginationControls({ page, totalPages, onPageChange }) {
   if (totalPages <= 1) return null
 
   const pages = []
-  for (let i = 0; i < totalPages; i++) {
-    if (i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1) {
-      pages.push(i)
+  for (let index = 0; index < totalPages; index += 1) {
+    if (index === 0 || index === totalPages - 1 || Math.abs(index - page) <= 1) {
+      pages.push(index)
     }
   }
 
   const rendered = []
-  let prev = -1
-  for (const p of pages) {
-    if (prev !== -1 && p - prev > 1) {
-      rendered.push('ellipsis-' + p)
+  let previousPage = -1
+  for (const currentPage of pages) {
+    if (previousPage !== -1 && currentPage - previousPage > 1) {
+      rendered.push(`ellipsis-${currentPage}`)
     }
-    rendered.push(p)
-    prev = p
+
+    rendered.push(currentPage)
+    previousPage = currentPage
   }
 
   return (
@@ -125,7 +153,7 @@ function PaginationControls({ page, totalPages, onPageChange }) {
         <PaginationItem>
           <PaginationPrevious onClick={() => onPageChange(page - 1)} disabled={page === 0} />
         </PaginationItem>
-        {rendered.map((item) =>
+        {rendered.map((item) => (
           typeof item === 'string' ? (
             <PaginationItem key={item}>
               <PaginationEllipsis />
@@ -137,7 +165,7 @@ function PaginationControls({ page, totalPages, onPageChange }) {
               </PaginationLink>
             </PaginationItem>
           )
-        )}
+        ))}
         <PaginationItem>
           <PaginationNext onClick={() => onPageChange(page + 1)} disabled={page >= totalPages - 1} />
         </PaginationItem>
@@ -146,106 +174,103 @@ function PaginationControls({ page, totalPages, onPageChange }) {
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function LessonPlansPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { list, status, totalElements, totalPages, currentPage, filter, submitStatus } =
-    useSelector((state) => state.lessonPlans)
 
-  // Fetch whenever filter or page changes
+  const {
+    list,
+    status,
+    error,
+    totalElements,
+    totalPages,
+    currentPage,
+    filter,
+    submitStatus,
+  } = useSelector((state) => state.lessonPlans)
+
+  const buildParams = () => ({
+    page: currentPage,
+    size: PAGE_SIZE,
+    ...(filter.keyword && { keyword: filter.keyword }),
+    ...(filter.subject && { subject: filter.subject }),
+    ...(filter.gradeLevel && { gradeLevel: filter.gradeLevel }),
+    ...(filter.status && { status: filter.status }),
+  })
+
   useEffect(() => {
-    const params = {
-      page: currentPage,
-      size: PAGE_SIZE,
-    }
-    if (filter.keyword) params.keyword = filter.keyword
-    if (filter.subject) params.subject = filter.subject
-    if (filter.gradeLevel) params.gradeLevel = filter.gradeLevel
-    if (filter.status) params.status = filter.status
-
-    dispatch(fetchLessonPlans(params))
+    dispatch(fetchLessonPlans(buildParams()))
   }, [dispatch, currentPage, filter])
 
   const hasFilter = Boolean(filter.keyword || filter.subject || filter.gradeLevel || filter.status)
-
-  const handleDelete = (id, title) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa giáo án "${title}"?`)) return
-    dispatch(deleteLessonPlan(id)).then((result) => {
-      if (!result.error) {
-        toast.success('Đã xóa giáo án!')
-        // Re-fetch after delete
-        const params = {
-          page: currentPage,
-          size: PAGE_SIZE,
-          ...(filter.keyword && { keyword: filter.keyword }),
-          ...(filter.subject && { subject: filter.subject }),
-          ...(filter.gradeLevel && { gradeLevel: filter.gradeLevel }),
-          ...(filter.status && { status: filter.status }),
-        }
-        dispatch(fetchLessonPlans(params))
-      } else {
-        toast.error(result.payload || 'Không thể xóa giáo án.')
-      }
-    })
-  }
-
-  const handlePageChange = (newPage) => {
-    if (newPage < 0 || newPage >= totalPages) return
-    dispatch(setPage(newPage))
-  }
-
   const isLoading = status === 'loading'
   const isDeleting = submitStatus === 'loading'
 
+  const handleDelete = (id, title) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa giáo án "${title}"?`)) return
+
+    dispatch(deleteLessonPlan(id)).then((result) => {
+      if (result.error) {
+        toast.error(result.payload || 'Không thể xóa giáo án.')
+        return
+      }
+
+      toast.success('Đã xóa giáo án!')
+      dispatch(fetchLessonPlans(buildParams()))
+    })
+  }
+
+  const handlePageChange = (nextPage) => {
+    if (nextPage < 0 || nextPage >= totalPages) return
+    dispatch(setPage(nextPage))
+  }
+
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="page-header">Giáo án của tôi</h1>
-          <p className="page-subheader">Quản lý và tổ chức các giáo án của bạn.</p>
+          <p className="page-subheader">Quản lý bản nháp, bản đã xuất bản và tiếp tục hoàn thiện giáo án của bạn.</p>
         </div>
         <Button onClick={() => navigate('/lesson-plans/new')}>
-          <PlusCircle className="size-4" /> Tạo giáo án
+          <PlusCircle className="size-4" />
+          Tạo giáo án
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
         <div className="relative min-w-[200px] flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-8"
             placeholder="Tìm theo tiêu đề, chủ đề..."
             value={filter.keyword}
-            onChange={(e) => dispatch(setFilter({ keyword: e.target.value }))}
+            onChange={(event) => dispatch(setFilter({ keyword: event.target.value }))}
           />
         </div>
         <Input
           className="min-w-[140px] max-w-[180px]"
           placeholder="Môn học..."
           value={filter.subject}
-          onChange={(e) => dispatch(setFilter({ subject: e.target.value }))}
+          onChange={(event) => dispatch(setFilter({ subject: event.target.value }))}
         />
         <select
           className={selectCls}
           value={filter.gradeLevel}
-          onChange={(e) => dispatch(setFilter({ gradeLevel: e.target.value }))}
+          onChange={(event) => dispatch(setFilter({ gradeLevel: event.target.value }))}
         >
           <option value="">Tất cả lớp</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>Lớp {g}</option>
+          {GRADES.map((grade) => (
+            <option key={grade} value={grade}>Lớp {grade}</option>
           ))}
         </select>
         <select
           className={selectCls}
           value={filter.status}
-          onChange={(e) => dispatch(setFilter({ status: e.target.value }))}
+          onChange={(event) => dispatch(setFilter({ status: event.target.value }))}
         >
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
         {hasFilter && (
@@ -253,17 +278,21 @@ export default function LessonPlansPage() {
             Xóa bộ lọc
           </Button>
         )}
-        {!isLoading && (
+        {!isLoading && status !== 'failed' && (
           <span className="ml-auto text-xs text-muted-foreground">{totalElements} giáo án</span>
         )}
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <TableSkeleton />
+      ) : status === 'failed' ? (
+        <ErrorState
+          message={error}
+          onRetry={() => dispatch(fetchLessonPlans(buildParams()))}
+        />
       ) : list.length > 0 ? (
         <>
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40">
@@ -282,7 +311,8 @@ export default function LessonPlansPage() {
                   <TableRow key={plan.id} className="group">
                     <TableCell>
                       <button
-                        className="text-left font-medium text-foreground hover:text-primary transition-colors line-clamp-2 max-w-[260px] whitespace-normal"
+                        type="button"
+                        className="max-w-[260px] whitespace-normal text-left font-medium text-foreground transition-colors hover:text-primary line-clamp-2"
                         onClick={() => navigate(`/lesson-plans/${plan.id}`)}
                       >
                         {plan.title}
@@ -292,18 +322,18 @@ export default function LessonPlansPage() {
                       {plan.subject ? (
                         <Badge variant="secondary" className="text-[10px]">{plan.subject}</Badge>
                       ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {plan.gradeLevel ? (
                         <span className="text-xs">Lớp {plan.gradeLevel}</span>
                       ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="line-clamp-1 text-xs text-muted-foreground max-w-[160px] whitespace-normal">
+                      <span className="max-w-[160px] whitespace-normal text-xs text-muted-foreground line-clamp-1">
                         {plan.topic || '—'}
                       </span>
                     </TableCell>
@@ -323,8 +353,9 @@ export default function LessonPlansPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <button
+                          type="button"
                           title="Xem chi tiết"
                           onClick={() => navigate(`/lesson-plans/${plan.id}`)}
                           className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -332,6 +363,7 @@ export default function LessonPlansPage() {
                           <Eye className="size-3.5" />
                         </button>
                         <button
+                          type="button"
                           title="Chỉnh sửa"
                           onClick={() => navigate(`/lesson-plans/${plan.id}/edit`)}
                           className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -339,6 +371,7 @@ export default function LessonPlansPage() {
                           <Pencil className="size-3.5" />
                         </button>
                         <button
+                          type="button"
                           title="Xóa"
                           disabled={isDeleting}
                           onClick={() => handleDelete(plan.id, plan.title)}

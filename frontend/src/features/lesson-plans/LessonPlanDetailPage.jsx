@@ -1,19 +1,28 @@
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, BookOpen, CheckCircle2, ClipboardList, Clock, FileText,
-  Loader2, Package, Pencil, Send, Trash2,
+  AlertTriangle,
+  ArrowLeft,
+  BookOpen,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  FileText,
+  Loader2,
+  Package,
+  Pencil,
+  Send,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { deleteLessonPlan, publishLessonPlan } from './lessonPlanSlice'
 import lessonPlanApi from '@/services/lessonPlanApi'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
+import { getFrameworkLabel, getPublishMissingFields } from './lessonPlanMeta'
 
 function StatusBadge({ status }) {
   if (status === 'PUBLISHED') {
@@ -24,6 +33,7 @@ function StatusBadge({ status }) {
       </span>
     )
   }
+
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
       <FileText className="size-3" />
@@ -32,38 +42,113 @@ function StatusBadge({ status }) {
   )
 }
 
-// ─── Info Row ─────────────────────────────────────────────────────────────────
-
 function InfoRow({ label, value }) {
   return (
     <div className="flex items-start gap-3">
       <span className="min-w-[120px] text-xs font-medium text-muted-foreground">{label}</span>
-      <span className="flex-1 text-sm text-foreground">{value || <span className="text-muted-foreground italic">Chưa điền</span>}</span>
+      <span className="flex-1 text-sm text-foreground">
+        {value || <span className="italic text-muted-foreground">Chưa điền</span>}
+      </span>
     </div>
   )
 }
 
-// ─── Content Section ──────────────────────────────────────────────────────────
-
 function ContentSection({ icon: Icon, title, content }) {
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-4 py-3">
         <Icon className="size-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       <div className="px-4 py-4">
         {content ? (
-          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{content}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{content}</p>
         ) : (
-          <p className="text-sm text-muted-foreground italic">Chưa có nội dung.</p>
+          <p className="text-sm italic text-muted-foreground">Chưa có nội dung.</p>
         )}
       </div>
     </div>
   )
 }
 
-// ─── Skeleton Loader ──────────────────────────────────────────────────────────
+function PublishReadinessPanel({ plan, onEdit, onPublish, isActionLoading }) {
+  if (!plan) return null
+
+  if (plan.status === 'PUBLISHED') {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50/80 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 size-4 text-green-700" />
+            <div>
+              <h2 className="text-sm font-semibold text-green-900">Giáo án đã được xuất bản</h2>
+              <p className="text-sm text-green-800">
+                Bạn vẫn có thể vào màn chỉnh sửa để cập nhật nội dung nếu cần.
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={onEdit} disabled={isActionLoading}>
+            <Pencil className="size-3.5" />
+            Chỉnh sửa
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const missingFields = getPublishMissingFields(plan)
+  const canPublish = missingFields.length === 0
+
+  return (
+    <div
+      className={
+        canPublish
+          ? 'rounded-xl border border-green-200 bg-green-50/80 px-5 py-4'
+          : 'rounded-xl border border-amber-200 bg-amber-50/80 px-5 py-4'
+      }
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {canPublish ? (
+              <CheckCircle2 className="size-4 text-green-700" />
+            ) : (
+              <AlertTriangle className="size-4 text-amber-700" />
+            )}
+            <h2 className={canPublish ? 'text-sm font-semibold text-green-900' : 'text-sm font-semibold text-amber-900'}>
+              {canPublish ? 'Bản nháp đã sẵn sàng để xuất bản' : 'Bản nháp chưa thể xuất bản'}
+            </h2>
+          </div>
+          <p className={canPublish ? 'text-sm text-green-800' : 'text-sm text-amber-800'}>
+            {canPublish
+              ? 'Tất cả thông tin bắt buộc đã có. Bạn có thể xuất bản ngay.'
+              : 'Cần hoàn thiện các mục dưới đây trước khi gọi hành động xuất bản.'}
+          </p>
+          {!canPublish && (
+            <div className="flex flex-wrap gap-2">
+              {missingFields.map(({ field, label }) => (
+                <Badge key={field} variant="outline" className="border-amber-300 bg-white/80 text-amber-900">
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onEdit} disabled={isActionLoading}>
+            <Pencil className="size-3.5" />
+            Chỉnh sửa bản nháp
+          </Button>
+          <Button size="sm" onClick={onPublish} disabled={isActionLoading || !canPublish}>
+            {isActionLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+            Xuất bản
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function DetailSkeleton() {
   return (
@@ -76,22 +161,11 @@ function DetailSkeleton() {
   )
 }
 
-// ─── Confirm Delete Dialog ────────────────────────────────────────────────────
-
-function useConfirm() {
-  const confirm = (message) => window.confirm(message)
-  return confirm
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function LessonPlanDetailPage() {
   const { id } = useParams()
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { submitStatus } = useSelector((state) => state.lessonPlans)
-  const confirm = useConfirm()
 
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -110,59 +184,59 @@ export default function LessonPlanDetailPage() {
 
   useEffect(() => {
     fetchDetail()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  // Auto-publish if redirected from form with ?action=publish
-  useEffect(() => {
-    if (searchParams.get('action') === 'publish' && plan && plan.status === 'DRAFT') {
-      handlePublish(plan)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, searchParams])
+  const handlePublish = async () => {
+    if (!plan || plan.status === 'PUBLISHED') return
 
-  const handlePublish = async (currentPlan = plan) => {
-    if (!currentPlan || currentPlan.status === 'PUBLISHED') return
+    const missingFields = getPublishMissingFields(plan)
+    if (missingFields.length > 0) {
+      toast.error('Giáo án chưa đủ thông tin để xuất bản.')
+      return
+    }
+
     setPublishing(true)
     try {
       const result = await dispatch(publishLessonPlan(Number(id)))
-      if (!result.error) {
-        toast.success('Đã xuất bản giáo án thành công!')
-        setPlan((prev) => ({ ...prev, status: 'PUBLISHED' }))
-      } else {
+      if (result.error) {
         toast.error(result.payload || 'Không thể xuất bản giáo án.')
+        return
       }
+
+      toast.success('Đã xuất bản giáo án thành công!')
+      setPlan(result.payload)
     } finally {
       setPublishing(false)
     }
   }
 
-  const handleSaveDraft = () => {
+  const handleEdit = () => {
     navigate(`/lesson-plans/${id}/edit`)
   }
 
   const handleDelete = async () => {
-    if (!confirm(`Bạn có chắc muốn xóa giáo án "${plan?.title}"?`)) return
+    if (!window.confirm(`Bạn có chắc muốn xóa giáo án "${plan?.title}"?`)) return
+
     const result = await dispatch(deleteLessonPlan(Number(id)))
-    if (!result.error) {
-      toast.success('Đã xóa giáo án!')
-      navigate('/lesson-plans')
-    } else {
+    if (result.error) {
       toast.error(result.payload || 'Không thể xóa giáo án.')
+      return
     }
+
+    toast.success('Đã xóa giáo án!')
+    navigate('/lesson-plans')
   }
 
   const isActionLoading = publishing || submitStatus === 'loading'
 
   if (loading) return <DetailSkeleton />
-
   if (!plan) return null
 
-  const frameworkLabel = plan.frameworkId ? `Framework #${plan.frameworkId}` : null
+  const frameworkLabel = getFrameworkLabel(plan.frameworkId)
+  const missingPublishFields = getPublishMissingFields(plan)
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/lesson-plans')} aria-label="Quay lại">
@@ -170,7 +244,7 @@ export default function LessonPlanDetailPage() {
           </Button>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold text-foreground leading-tight">{plan.title}</h1>
+              <h1 className="text-xl font-bold leading-tight text-foreground">{plan.title}</h1>
               <StatusBadge status={plan.status} />
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -191,21 +265,15 @@ export default function LessonPlanDetailPage() {
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="flex shrink-0 items-center gap-2 pl-10 sm:pl-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/lesson-plans/${id}/edit`)}
-            disabled={isActionLoading}
-          >
+          <Button variant="outline" size="sm" onClick={handleEdit} disabled={isActionLoading}>
             <Pencil className="size-3.5" />
             Chỉnh sửa
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={handleDelete}
             disabled={isActionLoading}
           >
@@ -215,48 +283,15 @@ export default function LessonPlanDetailPage() {
         </div>
       </div>
 
-      {/* Publish / Save Draft action bar */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Trạng thái:</span>
-          <StatusBadge status={plan.status} />
-        </div>
-        <div className="flex items-center gap-2">
-          {plan.status === 'DRAFT' ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveDraft}
-                disabled={isActionLoading}
-              >
-                <Pencil className="size-3.5" />
-                Sửa &amp; Lưu nháp
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => handlePublish()}
-                disabled={isActionLoading}
-              >
-                {isActionLoading
-                  ? <Loader2 className="size-3.5 animate-spin" />
-                  : <Send className="size-3.5" />
-                }
-                Xuất bản
-              </Button>
-            </>
-          ) : (
-            <div className="flex items-center gap-1.5 text-sm text-green-700 font-medium">
-              <CheckCircle2 className="size-4" />
-              Giáo án đã được xuất bản
-            </div>
-          )}
-        </div>
-      </div>
+      <PublishReadinessPanel
+        plan={plan}
+        onEdit={handleEdit}
+        onPublish={handlePublish}
+        isActionLoading={isActionLoading}
+      />
 
-      {/* Metadata card */}
-      <div className="rounded-xl border border-border bg-card px-5 py-4 space-y-3">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+      <div className="space-y-3 rounded-xl border border-border bg-card px-5 py-4">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
           <BookOpen className="size-4 text-primary" />
           Thông tin chung
         </h2>
@@ -266,42 +301,32 @@ export default function LessonPlanDetailPage() {
           <InfoRow label="Khối lớp" value={plan.gradeLevel ? `Lớp ${plan.gradeLevel}` : null} />
           <InfoRow label="Thời lượng" value={plan.durationMinutes ? `${plan.durationMinutes} phút` : null} />
           <InfoRow label="Framework" value={frameworkLabel} />
-          <InfoRow
-            label="Ngày tạo"
-            value={plan.createdAt ? new Date(plan.createdAt).toLocaleString('vi-VN') : null}
-          />
-          <InfoRow
-            label="Cập nhật"
-            value={plan.updatedAt ? new Date(plan.updatedAt).toLocaleString('vi-VN') : null}
-          />
+          <InfoRow label="Ngày tạo" value={plan.createdAt ? new Date(plan.createdAt).toLocaleString('vi-VN') : null} />
+          <InfoRow label="Cập nhật" value={plan.updatedAt ? new Date(plan.updatedAt).toLocaleString('vi-VN') : null} />
         </div>
       </div>
 
-      {/* Content sections */}
       <ContentSection icon={ClipboardList} title="Mục tiêu học tập" content={plan.objectives} />
       <ContentSection icon={FileText} title="Hoạt động dạy học" content={plan.activities} />
       <ContentSection icon={Send} title="Kiểm tra & Đánh giá" content={plan.assessment} />
       <ContentSection icon={Package} title="Tài liệu & Thiết bị" content={plan.materials} />
 
-      {/* Bottom action bar */}
-      <div className="flex items-center justify-end gap-2 rounded-xl border border-border bg-card px-5 py-3">
+      <div className="flex flex-wrap items-center justify-end gap-2 rounded-xl border border-border bg-card px-5 py-3">
         <Button variant="outline" onClick={() => navigate('/lesson-plans')}>
           Quay lại danh sách
         </Button>
+        <Button variant="outline" onClick={handleEdit} disabled={isActionLoading}>
+          <Pencil className="size-3.5" />
+          Chỉnh sửa
+        </Button>
         {plan.status === 'DRAFT' && (
-          <>
-            <Button variant="outline" onClick={handleSaveDraft} disabled={isActionLoading}>
-              <Pencil className="size-3.5" />
-              Chỉnh sửa
-            </Button>
-            <Button onClick={() => handlePublish()} disabled={isActionLoading}>
-              {isActionLoading
-                ? <Loader2 className="size-3.5 animate-spin" />
-                : <Send className="size-3.5" />
-              }
-              Xuất bản
-            </Button>
-          </>
+          <Button
+            onClick={handlePublish}
+            disabled={isActionLoading || missingPublishFields.length > 0}
+          >
+            {isActionLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+            Xuất bản
+          </Button>
         )}
       </div>
     </div>
