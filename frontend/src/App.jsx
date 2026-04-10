@@ -15,6 +15,8 @@ import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
 import ManagerQuestionApprovalPage from './pages/manager/ManagerQuestionApprovalPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
+import AdminFrameworksPage from './pages/admin/FrameworksPage'
+import FrameworkForm from './pages/admin/FrameworkForm'
 import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -72,6 +74,32 @@ function App() {
             element={
               <RoleGuard roles={['ADMIN']}>
                 <UserFormPage />
+              </RoleGuard>
+            }
+          />
+
+          {/* ADMIN - Frameworks */}
+          <Route
+            path="/admin/frameworks"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <AdminFrameworksPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/frameworks/new"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <FrameworkForm />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/frameworks/:id/edit"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <FrameworkForm />
               </RoleGuard>
             }
           />
