@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/ai/lesson-plans")
 public class LessonPlanController {
@@ -18,7 +20,9 @@ public class LessonPlanController {
     }
 
     /**
-     * Sinh giáo án bằng AI (chỉ trả về preview, chưa lưu DB).
+     * Sinh giáo án bằng AI.
+     * Nếu saveToDb=true → lưu vào DB và trả về LessonPlanDTO có id.
+     * Nếu saveToDb=false → chỉ trả về preview, không lưu.
      *
      * POST /api/v1/ai/lesson-plans/generate
      */
@@ -26,5 +30,28 @@ public class LessonPlanController {
     public ResponseEntity<LessonPlanDTO> generate(@Valid @RequestBody LessonPlanGenerateRequest request) {
         LessonPlanDTO result = service.generateLessonPlan(request);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Lấy tất cả giáo án đã lưu của current user.
+     *
+     * GET /api/v1/ai/lesson-plans
+     */
+    @GetMapping
+    public ResponseEntity<List<LessonPlanDTO>> getAll() {
+        List<LessonPlanDTO> all = service.getAllLessonPlans();
+        return ResponseEntity.ok(all);
+    }
+
+    /**
+     * Lấy giáo án theo ID.
+     *
+     * GET /api/v1/ai/lesson-plans/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<LessonPlanDTO> getById(@PathVariable Long id) {
+        return service.getLessonPlanById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

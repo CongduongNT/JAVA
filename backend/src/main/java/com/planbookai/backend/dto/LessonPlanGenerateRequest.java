@@ -43,4 +43,11 @@ public class LessonPlanGenerateRequest {
      * Mặc định E5.
      */
     private String framework = "E5";
+
+    /**
+     * Nếu true → sinh và lưu vào DB, trả về LessonPlanDTO có id.
+     * Nếu false → chỉ sinh preview, không lưu DB.
+     * Mặc định false.
+     */
+    private boolean saveToDb = false;
 }
