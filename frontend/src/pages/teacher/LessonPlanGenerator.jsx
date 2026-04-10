@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ArrowLeft,
   BookOpen,
@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   Home,
   StickyNote,
+  FileEdit,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import lessonPlanApi from '../../services/lessonPlanApi'
@@ -24,14 +25,24 @@ import lessonPlanApi from '../../services/lessonPlanApi'
 /**
  * LessonPlanGenerator – Trang sinh giáo án bằng AI.
  *
- * Luồng state:
- * 1. form → nhập input → bấm "Tạo với AI"
- * 2. generating → loading + disable inputs
- * 3. generated → editor editable + hiện "Tạo lại" + "Lưu"
- * 4. saving → loading save + disable buttons
+ * Luồng state rõ ràng:
+ * - form               → input form (subject, gradeLevel, topic, ...)
+ * - aiGeneratedData    → raw AI response, không bind trực tiếp vào editor
+ * - editorValue        → state dùng cho editor (clone của aiGeneratedData sau map)
+ * - isGenerating       → đang gọi AI
+ * - isSaving           → đang save
+ * - isDirty            → user đã sửa khác với bản AI gần nhất
+ * - generateError      → lỗi generate
+ * - saveError          → lỗi save
+ *
+ * Luồng UX:
+ * 1. User nhập form → bấm "Tạo với AI"
+ * 2. AI sinh → hiện trong editor, user sửa được
+ * 3. User bấm "Tạo lại" → confirm nếu dirty → gọi lại AI → cập nhật editor
+ * 4. User bấm "Lưu" → lưu editorValue hiện tại (sau chỉnh sửa)
  */
 const LessonPlanGenerator = ({ onBack }) => {
-  // --- Form State ---
+  // --- Form State (input fields) ---
   const [form, setForm] = useState({
     subject: '',
     gradeLevel: '',
@@ -41,17 +52,29 @@ const LessonPlanGenerator = ({ onBack }) => {
     framework: 'E5',
   })
 
-  // --- Generation State ---
+  // --- AI Generation State ---
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState('')
 
-  // --- Editor State (editable lesson plan) ---
+  // --- Raw AI response (không bind trực tiếp vào editor) ---
+  const [aiGeneratedData, setAiGeneratedData] = useState(null)
+
+  // --- Editor State (working state - what user edits) ---
   const [hasGenerated, setHasGenerated] = useState(false)
-  const [lessonPlan, setLessonPlan] = useState(null)
+  const [editorValue, setEditorValue] = useState(null)
 
   // --- Save State ---
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+
+  // --- Dirty State ---
+  const [isDirty, setIsDirty] = useState(false)
+
+  // --- Confirm dialog state ---
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false)
+
+  // --- Ref để so sánh deep compare editorValue vs AI response ---
+  const lastAiDataRef = useRef(null)
 
   // --- Expanded sections in preview ---
   const [expandedSections, setExpandedSections] = useState({
@@ -63,21 +86,73 @@ const LessonPlanGenerator = ({ onBack }) => {
     notes: false,
   })
 
+  // --- Map AI response → editor value (clone để editor không bind trực tiếp vào raw response) ---
+  const mapAiToEditor = useCallback((data) => {
+    if (!data) return null
+    return {
+      title: data.title || '',
+      subject: data.subject || form.subject || '',
+      gradeLevel: data.gradeLevel || form.gradeLevel || '',
+      framework: data.framework || form.framework || 'E5',
+      materials: Array.isArray(data.materials) ? [...data.materials] : [],
+      objectives: Array.isArray(data.objectives) ? [...data.objectives] : [],
+      lessonFlow: Array.isArray(data.lessonFlow)
+        ? data.lessonFlow.map((p) => ({ ...p }))
+        : [],
+      assessment: {
+        methods: Array.isArray(data.assessment?.methods) ? [...data.assessment.methods] : [],
+        criteria: data.assessment?.criteria || '',
+      },
+      homework: data.homework || '',
+      notes: data.notes || '',
+    }
+  }, [form.subject, form.gradeLevel, form.framework])
+
+  // --- Sync editorValue khi AI generate thành công ---
+  useEffect(() => {
+    if (aiGeneratedData) {
+      const mapped = mapAiToEditor(aiGeneratedData)
+      setEditorValue(mapped)
+      setHasGenerated(true)
+      setIsDirty(false) // bản mới từ AI chưa sửa → không dirty
+      lastAiDataRef.current = aiGeneratedData
+    }
+  }, [aiGeneratedData, mapAiToEditor])
+
+  // --- Track dirty state khi user sửa editor ---
+  useEffect(() => {
+    if (!hasGenerated || !editorValue || !lastAiDataRef.current) return
+    const currentEditorJson = JSON.stringify(editorValue)
+    const lastAiJson = JSON.stringify(mapAiToEditor(lastAiDataRef.current))
+    setIsDirty(currentEditorJson !== lastAiJson)
+  }, [editorValue, hasGenerated, mapAiToEditor])
+
+  // --- Warn khi user rời trang với dữ liệu chưa lưu ---
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
   // --- Update form field ---
   const handleFormChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  // --- Generate lesson plan ---
-  const handleGenerate = async () => {
-    if (!form.subject.trim()) return toast.error('Vui lòng nhập môn học')
-    if (!form.gradeLevel.trim()) return toast.error('Vui lòng nhập khối lớp')
-    if (!form.topic.trim()) return toast.error('Vui lòng nhập chủ đề')
-
+  // --- Internal generate logic (dùng chung cho lần đầu và regenerate) ---
+  const doGenerate = async () => {
     setIsGenerating(true)
     setGenerateError('')
-    setLessonPlan(null)
+    setAiGeneratedData(null)
+    setEditorValue(null)
     setHasGenerated(false)
+    setIsDirty(false)
+    setSaveError('')
 
     try {
       const res = await lessonPlanApi.generatePreview({
@@ -88,8 +163,7 @@ const LessonPlanGenerator = ({ onBack }) => {
         durationMinutes: form.durationMinutes,
         framework: form.framework,
       })
-      setLessonPlan(res.data)
-      setHasGenerated(true)
+      setAiGeneratedData(res.data)
       toast.success('AI đã sinh giáo án thành công!')
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Có lỗi xảy ra'
@@ -100,49 +174,78 @@ const LessonPlanGenerator = ({ onBack }) => {
     }
   }
 
-  // --- Regenerate ---
-  const handleRegenerate = async () => {
-    if (!form.subject.trim() || !form.gradeLevel.trim() || !form.topic.trim()) {
-      return toast.error('Vui lòng nhập đủ thông tin trước khi tạo lại')
-    }
-    await handleGenerate()
+  // --- Generate lesson plan (lần đầu) ---
+  const handleGenerate = async () => {
+    if (!form.subject.trim()) return toast.error('Vui lòng nhập môn học')
+    if (!form.gradeLevel.trim()) return toast.error('Vui lòng nhập khối lớp')
+    if (!form.topic.trim()) return toast.error('Vui lòng nhập chủ đề')
+    await doGenerate()
   }
 
-  // --- Save lesson plan ---
+  // --- Regenerate với confirm nếu đang dirty ---
+  const handleRegenerate = async () => {
+    if (isDirty) {
+      setShowRegenConfirm(true)
+      return
+    }
+    await doGenerate()
+  }
+
+  // --- Confirm regenerate (đã có confirm modal) ---
+  const handleConfirmRegenerate = async () => {
+    setShowRegenConfirm(false)
+    await doGenerate()
+  }
+
+  // --- Save lesson plan (lưu editorValue hiện tại, không phải form hay raw response) ---
   const handleSave = async () => {
-    if (!lessonPlan) return
+    if (!editorValue) return
 
     setIsSaving(true)
     setSaveError('')
 
     try {
-      await lessonPlanApi.generateAndSave({
-        subject: form.subject,
-        gradeLevel: form.gradeLevel,
+      // Lưu đúng nội dung user đang sửa trong editor – gọi API save riêng không qua generateAndSave
+      await lessonPlanApi.saveEdited({
+        subject: editorValue.subject || form.subject,
+        gradeLevel: editorValue.gradeLevel || form.gradeLevel,
         topic: form.topic,
         objectives: form.objectives || '',
         durationMinutes: form.durationMinutes,
-        framework: form.framework,
+        framework: editorValue.framework || form.framework,
+        // Gửi lesson plan data từ editor state
+        title: editorValue.title,
+        materials: editorValue.materials,
+        lessonPlanObjectives: editorValue.objectives,
+        lessonFlow: editorValue.lessonFlow,
+        assessment: editorValue.assessment,
+        homework: editorValue.homework,
+        notes: editorValue.notes,
       })
+      // Sync lại: lastAiData = editorValue, reset dirty
+      setAiGeneratedData({ ...editorValue })
+      lastAiDataRef.current = { ...editorValue }
+      setIsDirty(false)
       toast.success('Giáo án đã được lưu thành công!')
       onBack?.()
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Có lỗi khi lưu giáo án'
       setSaveError(msg)
       toast.error(msg)
+      // KHÔNG reset editorValue khi save thất bại → giữ nguyên dữ liệu user đã sửa
     } finally {
       setIsSaving(false)
     }
   }
 
-  // --- Update lesson plan field (editable) ---
-  const handleLessonPlanChange = (field, value) => {
-    setLessonPlan((prev) => ({ ...prev, [field]: value }))
+  // --- Update editor field (editable) ---
+  const handleEditorChange = (field, value) => {
+    setEditorValue((prev) => ({ ...prev, [field]: value }))
   }
 
   // --- Update lesson phase (editable flow step) ---
   const handlePhaseChange = (phaseIndex, field, value) => {
-    setLessonPlan((prev) => {
+    setEditorValue((prev) => {
       const newFlow = [...(prev.lessonFlow || [])]
       newFlow[phaseIndex] = { ...newFlow[phaseIndex], [field]: value }
       return { ...prev, lessonFlow: newFlow }
@@ -185,7 +288,7 @@ const LessonPlanGenerator = ({ onBack }) => {
       <textarea
         rows={2}
         value={value || ''}
-        onChange={(e) => handleLessonPlanChange(fieldKey, e.target.value)}
+        onChange={(e) => handleEditorChange(fieldKey, e.target.value)}
         className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all"
       />
     </div>
@@ -193,34 +296,38 @@ const LessonPlanGenerator = ({ onBack }) => {
 
   // --- Render objectives list ---
   const renderObjectives = () => {
-    const list = lessonPlan?.objectives || []
+    const list = editorValue?.objectives || []
     return (
       <div className="space-y-2">
         <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
           <Target size={12} />
           Mục tiêu bài học
         </label>
-        {list.map((obj, idx) => (
-          <div key={idx} className="flex gap-2">
-            <span className="text-xs font-bold text-indigo-500 mt-2">•</span>
-            <input
-              value={obj}
-              onChange={(e) => {
-                const next = [...list]
-                next[idx] = e.target.value
-                handleLessonPlanChange('objectives', next)
-              }}
-              className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        ))}
+        {list.length === 0 ? (
+          <p className="text-sm text-slate-400 italic">Chưa có mục tiêu.</p>
+        ) : (
+          list.map((obj, idx) => (
+            <div key={idx} className="flex gap-2">
+              <span className="text-xs font-bold text-indigo-500 mt-2">•</span>
+              <input
+                value={obj}
+                onChange={(e) => {
+                  const next = [...list]
+                  next[idx] = e.target.value
+                  handleEditorChange('objectives', next)
+                }}
+                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ))
+        )}
       </div>
     )
   }
 
   // --- Render lesson flow phases ---
   const renderLessonFlow = () => {
-    const phases = lessonPlan?.lessonFlow || []
+    const phases = editorValue?.lessonFlow || []
     return (
       <div className="space-y-3">
         <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
@@ -293,7 +400,7 @@ const LessonPlanGenerator = ({ onBack }) => {
 
   // --- Render assessment section ---
   const renderAssessment = () => {
-    const assessment = lessonPlan?.assessment || {}
+    const assessment = editorValue?.assessment || {}
     return (
       <div className="space-y-3">
         <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
@@ -307,7 +414,7 @@ const LessonPlanGenerator = ({ onBack }) => {
               rows={2}
               value={assessment.methods?.join('\n') || ''}
               onChange={(e) =>
-                handleLessonPlanChange('assessment', {
+                handleEditorChange('assessment', {
                   ...assessment,
                   methods: e.target.value.split('\n').filter((s) => s.trim()),
                 })
@@ -322,7 +429,7 @@ const LessonPlanGenerator = ({ onBack }) => {
               rows={2}
               value={assessment.criteria || ''}
               onChange={(e) =>
-                handleLessonPlanChange('assessment', {
+                handleEditorChange('assessment', {
                   ...assessment,
                   criteria: e.target.value,
                 })
@@ -517,11 +624,15 @@ const LessonPlanGenerator = ({ onBack }) => {
 
               {/* Content area */}
               <div className="flex-1 overflow-y-auto p-6 bg-slate-50/10">
+                {/* Empty state – chưa có kết quả AI */}
                 {!hasGenerated && !isGenerating ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 border-4 border-dashed border-slate-100 rounded-3xl">
-                    <BookOpen size={48} className="opacity-15" />
+                    <FileEdit size={48} className="opacity-15" />
                     <p className="font-bold uppercase tracking-widest text-sm">
                       Chưa có giáo án – Nhấn "Tạo với AI" để bắt đầu
+                    </p>
+                    <p className="text-xs text-slate-400 max-w-xs text-center">
+                      Nội dung AI có thể chỉnh sửa trước khi lưu
                     </p>
                   </div>
                 ) : isGenerating ? (
@@ -534,7 +645,7 @@ const LessonPlanGenerator = ({ onBack }) => {
                       Vui lòng chờ trong giây lát
                     </p>
                   </div>
-                ) : lessonPlan ? (
+                ) : editorValue ? (
                   <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                     {/* Title */}
                     <div className="space-y-1">
@@ -543,8 +654,8 @@ const LessonPlanGenerator = ({ onBack }) => {
                         Tiêu đề giáo án
                       </label>
                       <input
-                        value={lessonPlan.title || ''}
-                        onChange={(e) => handleLessonPlanChange('title', e.target.value)}
+                        value={editorValue.title || ''}
+                        onChange={(e) => handleEditorChange('title', e.target.value)}
                         className="w-full px-4 py-3 bg-white border border-indigo-200 rounded-xl text-lg font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder="Tiêu đề giáo án..."
                       />
@@ -555,31 +666,31 @@ const LessonPlanGenerator = ({ onBack }) => {
                       <div className="space-y-1">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Môn</label>
                         <input
-                          value={lessonPlan.subject || ''}
-                          onChange={(e) => handleLessonPlanChange('subject', e.target.value)}
+                          value={editorValue.subject || ''}
+                          onChange={(e) => handleEditorChange('subject', e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Khối</label>
                         <input
-                          value={lessonPlan.gradeLevel || ''}
-                          onChange={(e) => handleLessonPlanChange('gradeLevel', e.target.value)}
+                          value={editorValue.gradeLevel || ''}
+                          onChange={(e) => handleEditorChange('gradeLevel', e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Framework</label>
                         <input
-                          value={lessonPlan.framework || ''}
-                          onChange={(e) => handleLessonPlanChange('framework', e.target.value)}
+                          value={editorValue.framework || ''}
+                          onChange={(e) => handleEditorChange('framework', e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
 
                     {/* Materials */}
-                    {lessonPlan.materials && lessonPlan.materials.length > 0 && (
+                    {editorValue.materials && editorValue.materials.length > 0 && (
                       <div className="space-y-2">
                         {renderSectionHeader(
                           <Package size={14} />,
@@ -589,15 +700,15 @@ const LessonPlanGenerator = ({ onBack }) => {
                         )}
                         {expandedSections.materials && (
                           <div className="space-y-2 pl-2">
-                            {(lessonPlan.materials || []).map((m, idx) => (
+                            {(editorValue.materials || []).map((m, idx) => (
                               <div key={idx} className="flex gap-2">
                                 <span className="text-xs font-bold text-indigo-400 mt-2">•</span>
                                 <input
                                   value={m}
                                   onChange={(e) => {
-                                    const next = [...(lessonPlan.materials || [])]
+                                    const next = [...(editorValue.materials || [])]
                                     next[idx] = e.target.value
-                                    handleLessonPlanChange('materials', next)
+                                    handleEditorChange('materials', next)
                                   }}
                                   className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
@@ -625,7 +736,7 @@ const LessonPlanGenerator = ({ onBack }) => {
                         <Layout size={14} />,
                         'Các giai đoạn buổi học',
                         'lessonFlow',
-                        (lessonPlan.lessonFlow || []).length
+                        (editorValue.lessonFlow || []).length
                       )}
                       {expandedSections.lessonFlow && renderLessonFlow()}
                     </div>
@@ -651,7 +762,7 @@ const LessonPlanGenerator = ({ onBack }) => {
                       )}
                       {expandedSections.homework && renderSimpleField(
                         'Bài tập về nhà',
-                        lessonPlan.homework,
+                        editorValue.homework,
                         'homework',
                         <Home size={12} />
                       )}
@@ -667,7 +778,7 @@ const LessonPlanGenerator = ({ onBack }) => {
                       )}
                       {expandedSections.notes && renderSimpleField(
                         'Ghi chú',
-                        lessonPlan.notes,
+                        editorValue.notes,
                         'notes',
                         <StickyNote size={12} />
                       )}
@@ -684,11 +795,21 @@ const LessonPlanGenerator = ({ onBack }) => {
                 ) : null}
               </div>
 
-              {/* Action bar – only show after generation */}
-              {hasGenerated && lessonPlan && (
+              {/* Action bar – chỉ hiện sau khi có kết quả AI */}
+              {hasGenerated && editorValue && (
                 <div className="px-6 py-4 border-t bg-slate-50 flex items-center justify-between gap-3">
-                  <div className="text-xs text-slate-400 italic">
-                    Chỉnh sửa nội dung bên trên, sau đó nhấn "Lưu" để lưu vào hệ thống.
+                  <div className="flex items-center gap-2">
+                    {isDirty ? (
+                      <span className="flex items-center gap-1.5 text-xs text-amber-600">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                        Có thay đổi chưa lưu
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-green-600">
+                        <CheckCircle2 size={14} />
+                        Đã lưu bản AI gần nhất
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -701,7 +822,7 @@ const LessonPlanGenerator = ({ onBack }) => {
                       ) : (
                         <RotateCw size={16} />
                       )}
-                      Tạo lại
+                      {isGenerating ? 'Đang tạo...' : 'Tạo lại'}
                     </button>
                     <button
                       onClick={handleSave}
@@ -715,6 +836,41 @@ const LessonPlanGenerator = ({ onBack }) => {
                       )}
                       {isSaving ? 'Đang lưu...' : 'Lưu giáo án'}
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirm dialog – xác nhận ghi đè khi regenerate có dirty data */}
+              {showRegenConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-amber-100 rounded-xl text-amber-600">
+                        <AlertCircle size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-800 text-base">
+                          Xác nhận tạo lại?
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          Bạn đã có thay đổi chưa lưu. Tạo lại sẽ mất hết nội dung đã chỉnh sửa.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowRegenConfirm(false)}
+                        className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={handleConfirmRegenerate}
+                        className="flex-1 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow transition-all"
+                      >
+                        Tạo lại
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

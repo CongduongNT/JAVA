@@ -9,7 +9,14 @@ export const lessonPlanApi = {
     api.post('/ai/lesson-plans/generate', { ...data, saveToDb: false }),
 
   /**
-   * Sinh và lưu lesson plan luôn vào DB.
+   * Lưu giáo án đã chỉnh sửa vào DB (sau khi user review + sửa trong editor).
+   * @param {object} data - SaveLessonPlanRequest: subject, gradeLevel, topic, objectives, durationMinutes, framework, title, materials, lessonPlanObjectives, lessonFlow, assessment, homework, notes
+   */
+  saveEdited: (data) =>
+    api.post('/ai/lesson-plans/save', data),
+
+  /**
+   * Sinh và lưu lesson plan luôn vào DB (dùng khi không cần preview).
    */
   generateAndSave: (data) =>
     api.post('/ai/lesson-plans/generate', { ...data, saveToDb: true }),

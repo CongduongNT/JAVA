@@ -2,6 +2,7 @@ package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.LessonPlanGenerateRequest;
+import com.planbookai.backend.dto.SaveLessonPlanRequest;
 import com.planbookai.backend.service.LessonPlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,17 @@ public class LessonPlanController {
     @PostMapping("/generate")
     public ResponseEntity<LessonPlanDTO> generate(@Valid @RequestBody LessonPlanGenerateRequest request) {
         LessonPlanDTO result = service.generateLessonPlan(request);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Lưu giáo án đã chỉnh sửa (không gọi AI, chỉ lưu trực tiếp vào DB).
+     *
+     * POST /api/v1/ai/lesson-plans/save
+     */
+    @PostMapping("/save")
+    public ResponseEntity<LessonPlanDTO> save(@Valid @RequestBody SaveLessonPlanRequest request) {
+        LessonPlanDTO result = service.saveEditedLessonPlan(request);
         return ResponseEntity.ok(result);
     }
 

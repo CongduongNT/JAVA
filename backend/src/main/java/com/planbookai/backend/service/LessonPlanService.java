@@ -2,6 +2,7 @@ package com.planbookai.backend.service;
 
 import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.LessonPlanGenerateRequest;
+import com.planbookai.backend.dto.SaveLessonPlanRequest;
 import com.planbookai.backend.exception.AIServiceException;
 import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.model.entity.LessonPlan;
@@ -74,6 +75,65 @@ public class LessonPlanService {
         }
 
         return dto;
+    }
+
+    /**
+     * Lưu giáo án đã chỉnh sửa (sau khi user đã review và sửa trong editor).
+     * Không gọi AI – chỉ lưu trực tiếp vào DB.
+     *
+     * @param request Dữ liệu từ editor (đã được user chỉnh sửa)
+     * @return LessonPlanDTO có id
+     */
+    @Transactional
+    public LessonPlanDTO saveEditedLessonPlan(SaveLessonPlanRequest request) {
+        User currentUser = currentUserService.getCurrentUserEntity()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        log.info("[LessonPlanService] Saving edited lesson plan for user={}, topic={}",
+                currentUser.getId(), request.getTopic());
+
+        LessonPlanDTO dto = mapSaveRequestToDto(request);
+        LessonPlan saved = lessonPlanRepository.save(mapDtoToEntity(dto, currentUser));
+        log.info("[LessonPlanService] Edited lesson plan saved with id={}", saved.getId());
+        return mapEntityToDto(saved);
+    }
+
+    private LessonPlanDTO mapSaveRequestToDto(SaveLessonPlanRequest request) {
+        List<LessonPlanDTO.LessonPhase> lessonFlow = null;
+        if (request.getLessonFlow() != null) {
+            lessonFlow = request.getLessonFlow().stream()
+                    .map(phase -> LessonPlanDTO.LessonPhase.builder()
+                            .phase(phase.getPhase())
+                            .timeMinutes(phase.getTimeMinutes())
+                            .activities(phase.getActivities())
+                            .teacherActions(phase.getTeacherActions())
+                            .studentActions(phase.getStudentActions())
+                            .build())
+                    .toList();
+        }
+
+        LessonPlanDTO.Assessment assessment = null;
+        if (request.getAssessment() != null) {
+            assessment = LessonPlanDTO.Assessment.builder()
+                    .methods(request.getAssessment().getMethods())
+                    .criteria(request.getAssessment().getCriteria())
+                    .build();
+        }
+
+        return LessonPlanDTO.builder()
+                .title(request.getTitle() != null ? request.getTitle() : "Untitled")
+                .gradeLevel(request.getGradeLevel())
+                .subject(request.getSubject())
+                .topic(request.getTopic())
+                .durationMinutes(request.getDurationMinutes())
+                .framework(request.getFramework())
+                .objectives(request.getLessonPlanObjectives())
+                .materials(request.getMaterials())
+                .lessonFlow(lessonFlow)
+                .assessment(assessment)
+                .homework(request.getHomework())
+                .notes(request.getNotes())
+                .build();
     }
 
     private LessonFramework parseFramework(String frameworkId) {
