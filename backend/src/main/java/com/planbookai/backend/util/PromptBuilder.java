@@ -136,4 +136,102 @@ public class PromptBuilder {
             case HARD -> "analysis and synthesis, complex multi-step reasoning";
         };
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Lesson Plan Prompt Builder
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Framework dạy học được hỗ trợ cho sinh giáo án.
+     */
+    public enum LessonFramework {
+        E5("5E", "Gồm 5 bước: Engage (Khởi động), Explore (Khám phá), Explain (Giải thích), Elaborate (Mở rộng), Evaluate (Đánh giá)."),
+        E3("3E", "Gồm 3 bước: Engage (Kích hoạt), Explore (Khám phá), Explain (Giải thích). Phù hợp cho tiết học ngắn."),
+        E4("4E", "Gồm 4 bước: Engage (Khởi động), Explore (Khám phá), Explain (Giải thích), Evaluate (Đánh giá)."),
+        BACKWARD_DESIGN("Backward Design (Thiết kế ngược)", "Thiết kế ngược: 1) Xác định mục tiêu mong muốn, 2) Xác định bằng chứng đánh giá, 3) Lên kế hoạch hoạt động học tập."),
+        TGAP("TGAP", "Mô hình Việt Nam: 1) Tình huống xuất phát, 2) Khám phá kiến thức mới, 3) Luyện tập – vận dụng, 4) Vận dụng – mở rộng.");
+
+        private final String label;
+        private final String description;
+
+        LessonFramework(String label, String description) {
+            this.label = label;
+            this.description = description;
+        }
+
+        public String label() { return label; }
+        public String description() { return description; }
+    }
+
+    /**
+     * Tạo prompt hoàn chỉnh để Gemini AI sinh giáo án.
+     *
+     * @param subject   Môn học (VD: Toán, Tiếng Việt, Khoa học)
+     * @param topic     Chủ đề bài học (VD: Phép cộng phân số)
+     * @param grade     Lớp (VD: Lớp 4, Grade 6)
+     * @param duration  Thời lượng tiết học (phút, VD: 45)
+     * @param framework Khung phương pháp giảng dạy
+     * @return Chuỗi prompt hoàn chỉnh
+     */
+    public String buildLessonPlanPrompt(
+            String subject,
+            String topic,
+            String grade,
+            int duration,
+            LessonFramework framework) {
+
+        return """
+                You are an expert Vietnamese %s teacher with deep experience in lesson planning.
+                Your task is to create a detailed, well-structured lesson plan for the topic "%s" (Grade: %s, Duration: %d minutes) using the %s framework.
+
+                %s
+
+                CRITICAL RULES:
+                1. Return ONLY a valid JSON object. No markdown, no code fences, no explanation.
+                2. All text must be in Vietnamese.
+                3. The lesson plan must be educationally sound and ready to use in a real classroom.
+                4. Include specific timing for each activity (must sum to exactly %d minutes).
+                5. Include clear learning objectives, materials, and assessment strategies.
+
+                Required JSON schema:
+                {
+                  "subject": "%s",
+                  "topic": "%s",
+                  "grade": "%s",
+                  "duration": %d,
+                  "framework": "%s",
+                  "learningObjectives": ["<objective 1>", "<objective 2>"],
+                  "materials": ["<material 1>", "<material 2>"],
+                  "warmUp": {
+                    "name": "<activity name>",
+                    "duration": <minutes>,
+                    "description": "<what the teacher does>"
+                  },
+                  "activities": [
+                    {
+                      "phase": "<phase name in Vietnamese>",
+                      "duration": <minutes>,
+                      "teacherActions": "<description>",
+                      "studentActions": "<description>",
+                      "resources": "<materials needed>",
+                      "notes": "<optional pedagogical notes>"
+                    }
+                  ],
+                  "assessment": {
+                    "formative": "<how you check understanding during lesson>",
+                    "summative": "<end-of-lesson check>"
+                  },
+                  "homework": "<homework description>",
+                  "teacherReflection": "<reflection prompts for the teacher>"
+                }
+
+                Generate the JSON now:
+                """.formatted(
+                subject, topic, grade, duration,
+                framework.label(), framework.description(),
+                duration,
+                subject, topic, grade, duration,
+                framework.label()
+        );
+    }
 }
