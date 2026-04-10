@@ -4,32 +4,24 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
+import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.exception.AIServiceException;
 import com.planbookai.backend.model.entity.Question;
 import com.planbookai.backend.util.PromptBuilder;
+import com.planbookai.backend.util.PromptBuilder.LessonFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * GeminiAIService – Gọi Gemini API, parse JSON response → danh sách QuestionDTO.
- *
- * <p>Luồng xử lý:
- * <ol>
- *   <li>PromptBuilder xây dựng prompt theo tham số.</li>
- *   <li>Gửi prompt lên Gemini (model: gemini-2.0-flash).</li>
- *   <li>Trích xuất text response và loại bỏ markdown code fence nếu có.</li>
- *   <li>Parse JSON array → List&lt;QuestionDTO&gt; (chưa có id, chưa lưu DB).</li>
- * </ol>
- *
- * <p>Nếu Gemini trả về dữ liệu không hợp lệ, ném {@link AIServiceException}.
- */
 @Service
 public class GeminiAIService {
 
@@ -48,17 +40,6 @@ public class GeminiAIService {
         this.objectMapper = new ObjectMapper();
     }
 
-    /**
-     * Sinh danh sách câu hỏi thông qua Gemini AI (chưa lưu DB).
-     *
-     * @param subject    Môn học
-     * @param topic      Chủ đề
-     * @param difficulty Độ khó
-     * @param type       Loại câu hỏi
-     * @param count      Số câu cần sinh
-     * @return Danh sách QuestionDTO chưa có id (preview)
-     * @throws AIServiceException nếu Gemini trả về lỗi hoặc JSON không hợp lệ
-     */
     public List<QuestionDTO> generateQuestions(
             String subject,
             String topic,
@@ -66,17 +47,14 @@ public class GeminiAIService {
             Question.QuestionType type,
             int count) {
 
-        // 1. Build prompt
         String prompt = promptBuilder.buildQuestionPrompt(subject, topic, difficulty, type, count);
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
                 count, subject, topic, difficulty, type);
 
-        // 2. Call Gemini API
         String rawResponse;
         try {
-            GenerateContentResponse response = geminiClient.models.generateContent(
-                    model, prompt, null);
-            rawResponse = response.text();
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            rawResponse = response != null ? response.text() : null;
         } catch (Exception e) {
             log.error("[GeminiAI] API call failed: {}", e.getMessage(), e);
             throw new AIServiceException("Gemini AI service is unavailable: " + e.getMessage());
@@ -84,48 +62,45 @@ public class GeminiAIService {
 
         log.debug("[GeminiAI] Raw response: {}", rawResponse);
 
-        // 3. Clean response – strip markdown code fence if present
         String cleanedJson = cleanJsonResponse(rawResponse);
 
-        // 4. Parse JSON array → list of raw maps
         List<Map<String, Object>> rawQuestions;
         try {
-            rawQuestions = objectMapper.readValue(cleanedJson, new TypeReference<>() {});
+            rawQuestions = objectMapper.readValue(
+                    cleanedJson,
+                    new TypeReference<List<Map<String, Object>>>() {}
+            );
         } catch (Exception e) {
-            log.error("[GeminiAI] Failed to parse JSON response: {}", cleanedJson);
+            log.error("[GeminiAI] Failed to parse JSON response: {}", cleanedJson, e);
             throw new AIServiceException("AI returned invalid JSON. Please try again.");
         }
 
-        // 5. Convert raw maps → QuestionDTO
         return rawQuestions.stream()
                 .map(raw -> mapRawToDTO(raw, subject, topic, difficulty, type))
-                .toList();
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Loại bỏ markdown code fence (```json ... ```) nếu Gemini thêm vào.
-     */
     private String cleanJsonResponse(String raw) {
-        if (raw == null) return "[]";
+        if (raw == null) {
+            return "[]";
+        }
+
         String trimmed = raw.trim();
-        // Remove ```json or ``` at start
+
         if (trimmed.startsWith("```")) {
             int firstNewline = trimmed.indexOf('\n');
             if (firstNewline > 0) {
-                trimmed = trimmed.substring(firstNewline + 1);
+                trimmed = trimmed.substring(firstNewline + 1).trim();
             }
         }
-        // Remove ``` at end
+
         if (trimmed.endsWith("```")) {
             trimmed = trimmed.substring(0, trimmed.lastIndexOf("```")).trim();
         }
+
         return trimmed;
     }
 
-    /**
-     * Map một raw JSON object → QuestionDTO.
-     * Fallback về tham số truyền vào nếu Gemini thiếu field.
-     */
     @SuppressWarnings("unchecked")
     private QuestionDTO mapRawToDTO(
             Map<String, Object> raw,
@@ -139,20 +114,29 @@ public class GeminiAIService {
         String explanation = getStr(raw, "explanation", "");
         String topicVal = getStr(raw, "topic", topic);
 
-        // Parse type & difficulty safely
         Question.QuestionType parsedType = parseEnum(
-                Question.QuestionType.class, getStr(raw, "type", type.name()), type);
-        Question.Difficulty parsedDifficulty = parseEnum(
-                Question.Difficulty.class, getStr(raw, "difficulty", difficulty.name()), difficulty);
+                Question.QuestionType.class,
+                getStr(raw, "type", type.name()),
+                type
+        );
 
-        // Parse options (only for MULTIPLE_CHOICE)
+        Question.Difficulty parsedDifficulty = parseEnum(
+                Question.Difficulty.class,
+                getStr(raw, "difficulty", difficulty.name()),
+                difficulty
+        );
+
         List<Map<String, Object>> options = null;
         Object rawOptions = raw.get("options");
-        if (rawOptions instanceof List<?> list && !list.isEmpty()) {
-            options = new ArrayList<>();
-            for (Object item : list) {
-                if (item instanceof Map<?, ?> map) {
-                    options.add((Map<String, Object>) map);
+
+        if (rawOptions instanceof List<?>) {
+            List<?> list = (List<?>) rawOptions;
+            if (!list.isEmpty()) {
+                options = new ArrayList<Map<String, Object>>();
+                for (Object item : list) {
+                    if (item instanceof Map<?, ?>) {
+                        options.add((Map<String, Object>) item);
+                    }
                 }
             }
         }
@@ -177,9 +161,138 @@ public class GeminiAIService {
 
     private <T extends Enum<T>> T parseEnum(Class<T> enumClass, String value, T defaultVal) {
         try {
-            return Enum.valueOf(enumClass, value.toUpperCase());
+            return Enum.valueOf(enumClass, value.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
             return defaultVal;
         }
+    }
+
+    public LessonPlanDTO generateLessonPlan(
+            String subject,
+            String topic,
+            String grade,
+            int duration,
+            LessonFramework framework,
+            String objectives) {
+
+        String prompt = promptBuilder.buildLessonPlanPrompt(
+                subject, topic, grade, duration, framework, objectives);
+
+        log.info("[GeminiAI] Generating lesson plan: subject={}, topic={}, grade={}, duration={}, framework={}",
+                subject, topic, grade, duration, framework.label());
+
+        String rawResponse;
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            rawResponse = response != null ? response.text() : null;
+        } catch (Exception e) {
+            log.error("[GeminiAI] API call failed: {}", e.getMessage(), e);
+            throw new AIServiceException("Gemini AI service is unavailable: " + e.getMessage());
+        }
+
+        log.debug("[GeminiAI] Raw lesson plan response: {}", rawResponse);
+
+        String cleanedJson = cleanJsonResponse(rawResponse);
+
+        Map<String, Object> raw;
+        try {
+            raw = objectMapper.readValue(
+                    cleanedJson,
+                    new TypeReference<Map<String, Object>>() {}
+            );
+        } catch (Exception e) {
+            log.error("[GeminiAI] Failed to parse lesson plan JSON: {}", cleanedJson, e);
+            throw new AIServiceException("AI returned invalid JSON for lesson plan. Please try again.");
+        }
+
+        if (raw == null) {
+            log.error("[GeminiAI] Raw lesson plan map is null");
+            throw new AIServiceException("AI returned empty response for lesson plan.");
+        }
+
+        return mapRawToLessonPlan(raw);
+    }
+
+    private LessonPlanDTO mapRawToLessonPlan(Map<String, Object> raw) {
+        return LessonPlanDTO.builder()
+                .title(getStr(raw, "title", ""))
+                .gradeLevel(getStr(raw, "grade_level", ""))
+                .subject(getStr(raw, "subject", ""))
+                .topic(getStr(raw, "topic", ""))
+                .durationMinutes(getInt(raw, "duration_minutes", 0))
+                .objectives(getStrList(raw, "objectives"))
+                .materials(getStrList(raw, "materials"))
+                .lessonFlow(getLessonPhases(raw.get("lesson_flow")))
+                .assessment(getAssessment(raw.get("assessment")))
+                .homework(getStr(raw, "homework", ""))
+                .notes(getStr(raw, "notes", ""))
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<LessonPlanDTO.LessonPhase> getLessonPhases(Object raw) {
+        if (!(raw instanceof List<?>)) {
+            return Collections.emptyList();
+        }
+
+        List<?> list = (List<?>) raw;
+
+        return list.stream()
+                .filter(item -> item instanceof Map)
+                .map(item -> (Map<String, Object>) item)
+                .map(map -> LessonPlanDTO.LessonPhase.builder()
+                        .phase(getStr(map, "phase", ""))
+                        .timeMinutes(getInt(map, "time_minutes", 0))
+                        .activities(getStr(map, "activities", ""))
+                        .teacherActions(getStr(map, "teacher_actions", ""))
+                        .studentActions(getStr(map, "student_actions", ""))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    private LessonPlanDTO.Assessment getAssessment(Object raw) {
+        if (!(raw instanceof Map<?, ?>)) {
+            return LessonPlanDTO.Assessment.builder()
+                    .methods(Collections.emptyList())
+                    .criteria("")
+                    .build();
+        }
+
+        Map<String, Object> map = (Map<String, Object>) raw;
+
+        return LessonPlanDTO.Assessment.builder()
+                .methods(getStrList(map, "methods"))
+                .criteria(getStr(map, "criteria", ""))
+                .build();
+    }
+
+    private List<String> getStrList(Map<String, Object> raw, String key) {
+        Object val = raw.get(key);
+        if (val instanceof List<?>) {
+            List<?> list = (List<?>) val;
+            return list.stream()
+                    .filter(v -> v != null)
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    private int getInt(Map<String, Object> raw, String key, int defaultVal) {
+        Object val = raw.get(key);
+
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
+
+        if (val instanceof String) {
+            try {
+                return Integer.parseInt((String) val);
+            } catch (Exception ignored) {
+            }
+        }
+
+        return defaultVal;
     }
 }

@@ -165,13 +165,9 @@ public class PromptBuilder {
 
     /**
      * Tạo prompt hoàn chỉnh để Gemini AI sinh giáo án.
+     * Sử dụng khi objectives do AI tự suy ra (không truyền vào).
      *
-     * @param subject   Môn học (VD: Toán, Tiếng Việt, Khoa học)
-     * @param topic     Chủ đề bài học (VD: Phép cộng phân số)
-     * @param grade     Lớp (VD: Lớp 4, Grade 6)
-     * @param duration  Thời lượng tiết học (phút, VD: 45)
-     * @param framework Khung phương pháp giảng dạy
-     * @return Chuỗi prompt hoàn chỉnh
+     * @see #buildLessonPlanPrompt(String, String, String, int, LessonFramework, String)
      */
     public String buildLessonPlanPrompt(
             String subject,
@@ -179,59 +175,90 @@ public class PromptBuilder {
             String grade,
             int duration,
             LessonFramework framework) {
+        return buildLessonPlanPrompt(subject, topic, grade, duration, framework, null);
+    }
+
+    /**
+     * Tạo prompt hoàn chỉnh để Gemini AI sinh giáo án.
+     *
+     * @param subject    Môn học (VD: Toán, Tiếng Việt, Khoa học)
+     * @param topic      Chủ đề bài học (VD: Phép cộng phân số)
+     * @param grade      Lớp (VD: Lớp 4, Grade 6)
+     * @param duration   Thời lượng tiết học (phút, VD: 45)
+     * @param framework  Khung phương pháp giảng dạy
+     * @param objectives Chuỗi mục tiêu phân cách bằng dấu | , hoặc null để AI tự suy ra
+     * @return Chuỗi prompt hoàn chỉnh
+     */
+    public String buildLessonPlanPrompt(
+            String subject,
+            String topic,
+            String grade,
+            int duration,
+            LessonFramework framework,
+            String objectives) {
+
+        String objectivesBlock = buildObjectivesBlock(objectives, topic);
 
         return """
-                You are an expert Vietnamese %s teacher with deep experience in lesson planning.
-                Your task is to create a detailed, well-structured lesson plan for the topic "%s" (Grade: %s, Duration: %d minutes) using the %s framework.
+                You are an expert Vietnamese instructional designer and teacher with deep experience in lesson planning.
+                Your task is to generate a complete, high-quality lesson plan based on the input below.
 
+                === INPUT ===
+                - Subject: %s
+                - Grade Level: %s
+                - Topic: %s
+                - Duration (minutes): %d
+                - Framework: %s
                 %s
 
                 CRITICAL RULES:
                 1. Return ONLY a valid JSON object. No markdown, no code fences, no explanation.
-                2. All text must be in Vietnamese.
+                2. All text must be in Vietnamese (including all field values).
                 3. The lesson plan must be educationally sound and ready to use in a real classroom.
-                4. Include specific timing for each activity (must sum to exactly %d minutes).
-                5. Include clear learning objectives, materials, and assessment strategies.
+                4. The total of all time_minutes in lesson_flow MUST equal exactly %d minutes.
+                5. Objectives must be measurable and aligned with activities.
+                6. Use age-appropriate language for the given grade level.
 
-                Required JSON schema:
+                OUTPUT FORMAT (STRICT JSON):
                 {
+                  "title": "<concise lesson title in Vietnamese>",
+                  "grade_level": "%s",
                   "subject": "%s",
                   "topic": "%s",
-                  "grade": "%s",
-                  "duration": %d,
-                  "framework": "%s",
-                  "learningObjectives": ["<objective 1>", "<objective 2>"],
+                  "duration_minutes": %d,
+                  "objectives": ["<objective 1>", "<objective 2>"],
                   "materials": ["<material 1>", "<material 2>"],
-                  "warmUp": {
-                    "name": "<activity name>",
-                    "duration": <minutes>,
-                    "description": "<what the teacher does>"
-                  },
-                  "activities": [
+                  "lesson_flow": [
                     {
                       "phase": "<phase name in Vietnamese>",
-                      "duration": <minutes>,
-                      "teacherActions": "<description>",
-                      "studentActions": "<description>",
-                      "resources": "<materials needed>",
-                      "notes": "<optional pedagogical notes>"
+                      "time_minutes": <number>,
+                      "activities": "<detailed description of what happens in this phase>",
+                      "teacher_actions": "<what the teacher does>",
+                      "student_actions": "<what the students do>"
                     }
                   ],
                   "assessment": {
-                    "formative": "<how you check understanding during lesson>",
-                    "summative": "<end-of-lesson check>"
+                    "methods": ["<method 1>", "<method 2>"],
+                    "criteria": "<how learning outcomes are measured>"
                   },
-                  "homework": "<homework description>",
-                  "teacherReflection": "<reflection prompts for the teacher>"
+                  "homework": "<homework description in Vietnamese>",
+                  "notes": "<optional pedagogical notes for the teacher>"
                 }
 
                 Generate the JSON now:
                 """.formatted(
-                subject, topic, grade, duration,
-                framework.label(), framework.description(),
+                subject, grade, topic, duration,
+                framework.label(),
+                objectivesBlock,
                 duration,
-                subject, topic, grade, duration,
-                framework.label()
+                grade, subject, topic, duration
         );
+    }
+
+    private String buildObjectivesBlock(String objectives, String topic) {
+        if (objectives == null || objectives.isBlank()) {
+            return "- Objectives: (AI will infer appropriate objectives based on the topic)";
+        }
+        return "- Objectives: " + objectives;
     }
 }
