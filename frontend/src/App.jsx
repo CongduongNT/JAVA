@@ -21,6 +21,7 @@ import SettingsPage from './pages/settings/SettingsPage'
 import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
 import PromptTemplateForm from './pages/staff/PromptTemplateForm'
 import ExamGenerator from './pages/teacher/ExamGenerator'
+import LessonPlanGenerator from './pages/teacher/LessonPlanGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
 import { Toaster } from 'sonner'
@@ -151,9 +152,7 @@ function App() {
             path="/lesson-plans"
             element={
               <RoleGuard roles={['TEACHER']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Teacher - Lesson Plans</h2>
-                </div>
+                <LessonPlanGenerator />
               </RoleGuard>
             }
           />
