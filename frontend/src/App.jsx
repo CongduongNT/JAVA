@@ -17,9 +17,11 @@ import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
 import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
+import TeacherManagementPage from './pages/manager/TeacherManagementPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
 import PromptTemplateForm from './pages/staff/PromptTemplateForm'
+import GenerateLessonPlan from './pages/teacher/GenerateLessonPlan'
 import ExamGenerator from './pages/teacher/ExamGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
@@ -81,9 +83,7 @@ function App() {
             path="/manager/teachers"
             element={
               <RoleGuard roles={['MANAGER', 'ADMIN']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Manager – Danh sách giáo viên</h2>
-                </div>
+                <TeacherManagementPage />
               </RoleGuard>
             }
           />
@@ -112,11 +112,19 @@ function App() {
             }
           />
           <Route
+            path="/manager/approve"
+            element={
+              <RoleGuard roles={['MANAGER', 'ADMIN']}>
+                <PromptTemplatesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="/manager/analytics"
             element={
               <RoleGuard roles={['MANAGER', 'ADMIN']}>
                 <div className="p-8">
-                  <h2 className="text-2xl font-bold">Manager – Analytics</h2>
+                  <h2 className="text-2xl font-bold">Manager – Analytics (Coming Soon)</h2>
                 </div>
               </RoleGuard>
             }
@@ -150,10 +158,16 @@ function App() {
           <Route
             path="/lesson-plans"
             element={
-              <RoleGuard roles={['TEACHER']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Teacher - Lesson Plans</h2>
-                </div>
+              <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
+                <PromptTemplatesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/generate-lesson-plan/:id"
+            element={
+              <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
+                <GenerateLessonPlan />
               </RoleGuard>
             }
           />

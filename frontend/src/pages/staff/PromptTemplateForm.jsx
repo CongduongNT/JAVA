@@ -94,8 +94,8 @@ export default function PromptTemplateForm() {
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             {isEdit ? 'Chỉnh sửa Template' : 'Tạo Prompt Template mới'}
           </h1>
-          <p className="text-sm text-gray-500">
-            {isEdit ? 'Cập nhật nội dung câu lệnh AI hiện có.' : 'Thiết lập câu lệnh AI mẫu để hỗ trợ các công cụ tạo nội dung.'}
+          <p className="text-sm text-gray-600 font-medium">
+            {isEdit ? 'Cập nhật nội dung câu lệnh AI hiện có.' : 'Vai trò: Nhân viên nội dung (Staff) - Nội dung sẽ được gửi duyệt sau khi lưu.'}
           </p>
         </div>
       </div>
@@ -143,6 +143,11 @@ export default function PromptTemplateForm() {
           <p className="text-xs text-gray-400 italic flex items-center gap-1">
             <Info className="size-3" /> Phân cách các biến bằng dấu phẩy. Các biến này sẽ được dùng trong nội dung prompt.
           </p>
+          {formData.purpose === 'LESSON_PLAN_GEN' && (
+            <p className="text-xs text-blue-500 font-medium mt-1">
+              Gợi ý cho Giáo án: subject, topic, grade_level, objectives, duration
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
