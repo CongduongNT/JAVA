@@ -8,6 +8,8 @@ import com.planbookai.backend.model.entity.Order;
 import com.planbookai.backend.model.entity.SubscriptionPackage;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.OrderRepository;
+import com.planbookai.backend.model.entity.Role;
+import com.planbookai.backend.repository.RoleRepository;
 import com.planbookai.backend.repository.SubscriptionPackageRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,10 +22,12 @@ public class SubscriptionService {
 
     private final SubscriptionPackageRepository packageRepository;
     private final OrderRepository orderRepository;
+    private final RoleRepository roleRepository;
 
-    public SubscriptionService(SubscriptionPackageRepository packageRepository, OrderRepository orderRepository) {
+    public SubscriptionService(SubscriptionPackageRepository packageRepository, OrderRepository orderRepository, RoleRepository roleRepository) {
         this.packageRepository = packageRepository;
         this.orderRepository = orderRepository;
+        this.roleRepository = roleRepository;
     }
 
     // ===================================
@@ -122,13 +126,31 @@ public class SubscriptionService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
+        // Prevent status regression
+        if (order.getStatus() == Order.OrderStatus.ACTIVE && "PENDING".equalsIgnoreCase(status)) {
+            throw new IllegalStateException("Cannot revert an active order to pending.");
+        }
+
         Order.OrderStatus newStatus = Order.OrderStatus.valueOf(status.toUpperCase());
         order.setStatus(newStatus);
 
         // If active, set started and expired dates
         if (newStatus == Order.OrderStatus.ACTIVE && order.getStartedAt() == null) {
-            order.setStartedAt(LocalDateTime.now());
-            order.setExpiresAt(LocalDateTime.now().plusDays(order.getSubscriptionPackage().getDurationDays()));
+            LocalDateTime now = LocalDateTime.now();
+            order.setStartedAt(now);
+            order.setExpiresAt(now.plusDays(order.getSubscriptionPackage().getDurationDays()));
+
+            // Activate user status upon successful subscription
+            User user = order.getUser();
+            user.setIsActive(true);
+            
+            // Example Role Transition for Premium packages
+            if ("PREMIUM".equalsIgnoreCase(order.getSubscriptionPackage().getName())) {
+                roleRepository.findByName(Role.RoleName.MANAGER).ifPresent(role -> {
+                    user.setRole(role);
+                    // Thêm log để theo dõi việc nâng cấp tài khoản
+                });
+            }
         }
 
         return mapToOrderDTO(orderRepository.save(order));

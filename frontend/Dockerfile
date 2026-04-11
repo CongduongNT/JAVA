@@ -1,8 +1,9 @@
 # Build stage
-FROM node:20-alpine AS build
+FROM node:20 AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN rm -rf node_modules package-lock.json
+RUN npm install --include=optional
 COPY . .
 RUN npm run build
 
