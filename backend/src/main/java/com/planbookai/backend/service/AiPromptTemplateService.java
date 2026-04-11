@@ -4,25 +4,32 @@ import com.planbookai.backend.dto.PromptTemplateDTO;
 import com.planbookai.backend.dto.PromptTemplateRequest;
 import com.planbookai.backend.model.entity.AiPromptTemplate;
 import com.planbookai.backend.model.entity.Role;
+import com.planbookai.backend.model.entity.Role.RoleName;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.AiPromptTemplateRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class AiPromptTemplateService {
 
     private final AiPromptTemplateRepository repository;
+    private final GeminiAIService geminiAIService;
 
-    private static final Logger logger = Logger.getLogger(AiPromptTemplateService.class.getName());
-    public AiPromptTemplateService(AiPromptTemplateRepository repository) {
+    private static final Logger log = LoggerFactory.getLogger(AiPromptTemplateService.class);
+
+    public AiPromptTemplateService(AiPromptTemplateRepository repository, GeminiAIService geminiAIService) {
         this.repository = repository;
+        this.geminiAIService = geminiAIService;
     }
 
     @Transactional(readOnly = true)
@@ -34,17 +41,17 @@ public class AiPromptTemplateService {
 
     @Transactional(readOnly = true)
     public List<PromptTemplateDTO> getTemplatesByPurpose(String purpose, boolean onlyApproved) {
-        logger.info("AiPromptTemplateService: Lọc templates - Mục đích: '" + purpose + "', Chỉ duyệt: " + onlyApproved);
+        log.info("AiPromptTemplateService: Lọc templates - Mục đích: '{}', Chỉ duyệt: {}", purpose, onlyApproved);
         return repository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(t -> {
                     boolean statusMatch = !onlyApproved || "APPROVED".equalsIgnoreCase(t.getStatus());
                     if (!statusMatch) {
-                        logger.fine("AiPromptTemplateService: Loại bỏ template '" + t.getTitle() + "' vì trạng thái '" + t.getStatus() + "' không phải APPROVED (onlyApproved=" + onlyApproved + ")");
+                        log.debug("Loại bỏ template '{}' vì trạng thái '{}' không phải APPROVED", t.getTitle(), t.getStatus());
                     }
                     boolean purposeMatch = purpose == null || purpose.isBlank() || 
-                                         (t.getPurpose() != null && t.getPurpose().equalsIgnoreCase(purpose.trim()));
+                                         (t.getPurpose() != null && t.getPurpose().trim().equalsIgnoreCase(purpose.trim()));
                     if (!purposeMatch) {
-                        logger.fine("AiPromptTemplateService: Loại bỏ template '" + t.getTitle() + "' vì mục đích không khớp. Mong muốn: '" + purpose + "', Thực tế: '" + t.getPurpose() + "'");
+                        log.debug("Loại bỏ template '{}' vì mục đích không khớp. Mong muốn: '{}', Thực tế: '{}'", t.getTitle(), purpose, t.getPurpose());
                     }
                     return statusMatch && purposeMatch;
                 })
@@ -60,7 +67,7 @@ public class AiPromptTemplateService {
     @Transactional
     public PromptTemplateDTO createTemplate(PromptTemplateRequest request, User user) {
         // Nếu là Admin hoặc Manager thì tự động duyệt luôn
-        String initialStatus = (user.getRole() != null && 
+        String initialStatus = (user != null && user.getRole() != null && 
                 (user.getRole().getName() == Role.RoleName.ADMIN || user.getRole().getName() == Role.RoleName.MANAGER)) 
                 ? "APPROVED" : "PENDING";
 
@@ -112,11 +119,22 @@ public class AiPromptTemplateService {
     }
 
     @Transactional
-    public PromptTemplateDTO approveTemplate(Long id, User manager) {
+    public PromptTemplateDTO approveTemplate(Long id, String status, User manager) {
         AiPromptTemplate template = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Template not found"));
         
-        template.setStatus("APPROVED");
+        // Quy tắc nghiệp vụ: Chỉ có thể duyệt các bản mẫu đang chờ (PENDING)
+        if (!"PENDING".equalsIgnoreCase(template.getStatus())) {
+            throw new RuntimeException("Chỉ có thể thay đổi trạng thái cho các bản ghi đang ở trạng thái PENDING");
+        }
+
+        String targetStatus = (status != null) ? status.toUpperCase() : "APPROVED";
+        
+        if (!"APPROVED".equals(targetStatus) && !"REJECTED".equals(targetStatus)) {
+            throw new RuntimeException("Trạng thái phê duyệt không hợp lệ. Chỉ chấp nhận APPROVED hoặc REJECTED");
+        }
+
+        template.setStatus(targetStatus);
         template.setUpdatedAt(LocalDateTime.now());
         
         return mapToDTO(repository.save(template));
@@ -137,15 +155,39 @@ public class AiPromptTemplateService {
         }
         
         // Thay thế các biến {{variable}} bằng giá trị thực tế
+        // Sử dụng Regex để thay thế chính xác các placeholder
         if (inputs != null) {
             for (Map.Entry<String, String> entry : inputs.entrySet()) {
+                String key = entry.getKey();
                 String value = entry.getValue() != null ? entry.getValue() : "";
-                fullPrompt = fullPrompt.replace("{{" + entry.getKey() + "}}", value);
+                // Sửa lỗi escape sequence: dùng \\s thay vì \s, \\{ thay vì \{
+                String regex = "\\{\\{\\s*" + Pattern.quote(key) + "\\s*\\}\\}";
+                fullPrompt = fullPrompt.replaceAll(regex, Matcher.quoteReplacement(value));
             }
         }
+        
+        // Xóa các placeholder còn sót lại chưa được điền giá trị (tránh làm AI bối rối)
+        fullPrompt = fullPrompt.replaceAll("\\{\\{.*?\\}\\}", "");
 
-        // Ở đây bạn sẽ gọi đến GeminiAiService (cần triển khai) để lấy kết quả
-        // Tạm thời trả về Prompt đã build để bạn kiểm tra logic
-        return "AI Response dựa trên: " + fullPrompt;
+        String result = geminiAIService.callAi(fullPrompt);
+        if (result == null || result.isBlank()) throw new RuntimeException("AI không thể tạo nội dung từ mẫu này");
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PromptTemplateDTO> getTemplatesByFilter(RoleName filterRole, String purpose, String status) {
+        return repository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(t -> {
+                    boolean roleMatch = filterRole == null || (t.getCreatedBy() != null && 
+                                       t.getCreatedBy().getRole() != null && 
+                                       t.getCreatedBy().getRole().getName() == filterRole);
+                    boolean purposeMatch = purpose == null || purpose.isBlank() || 
+                                         (t.getPurpose() != null && t.getPurpose().equalsIgnoreCase(purpose));
+                    boolean statusMatch = status == null || status.isBlank() || 
+                                        (t.getStatus() != null && t.getStatus().equalsIgnoreCase(status));
+                    return roleMatch && purposeMatch && statusMatch;
+                })
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 }
