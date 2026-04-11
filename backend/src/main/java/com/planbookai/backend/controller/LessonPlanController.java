@@ -1,9 +1,11 @@
 package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.LessonPlanDTO;
+import com.planbookai.backend.dto.LessonPlanGenerateRequest;
 import com.planbookai.backend.dto.LessonPlanListItemDTO;
 import com.planbookai.backend.dto.LessonPlanRequest;
 import com.planbookai.backend.dto.PageResponse;
+import com.planbookai.backend.dto.SaveLessonPlanRequest;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.LessonPlanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,15 +29,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/v1/lesson-plans")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Tag(name = "Lesson Plans", description = "Teacher lesson plan management")
 public class LessonPlanController {
 
     private final LessonPlanService lessonPlanService;
 
-    @GetMapping
+    @GetMapping("/lesson-plans")
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(
             summary = "List current teacher lesson plans",
@@ -73,7 +77,7 @@ public class LessonPlanController {
                 lessonPlanService.getMyLessonPlans(user, page, size, status, subject, gradeLevel, keyword));
     }
 
-    @PostMapping
+    @PostMapping("/lesson-plans")
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(summary = "Create lesson plan", description = "Creates a new manual lesson plan for the current teacher.")
     @ApiResponses({
@@ -88,7 +92,7 @@ public class LessonPlanController {
         return ResponseEntity.status(201).body(lessonPlanService.createLessonPlan(request, user));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/lesson-plans/{id}")
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(summary = "Get lesson plan detail", description = "Returns the full detail of a lesson plan owned by the current teacher.")
     @ApiResponses({
@@ -103,7 +107,7 @@ public class LessonPlanController {
         return ResponseEntity.ok(lessonPlanService.getLessonPlan(id, user));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/lesson-plans/{id}")
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(summary = "Update lesson plan", description = "Updates the editable content of a lesson plan owned by the current teacher.")
     @ApiResponses({
@@ -120,7 +124,7 @@ public class LessonPlanController {
         return ResponseEntity.ok(lessonPlanService.updateLessonPlan(id, request, user));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/lesson-plans/{id}")
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(summary = "Delete lesson plan", description = "Deletes a lesson plan owned by the current teacher.")
     @ApiResponses({
@@ -136,7 +140,7 @@ public class LessonPlanController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/publish")
+    @PutMapping("/lesson-plans/{id}/publish")
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(summary = "Publish lesson plan", description = "Publishes a lesson plan owned by the current teacher.")
     @ApiResponses({
@@ -149,5 +153,35 @@ public class LessonPlanController {
             @PathVariable Long id,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(lessonPlanService.publishLessonPlan(id, user));
+    }
+
+    @PostMapping("/ai/lesson-plans/generate")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Generate lesson plan with AI")
+    public ResponseEntity<LessonPlanDTO> generate(@Valid @RequestBody LessonPlanGenerateRequest request) {
+        return ResponseEntity.ok(lessonPlanService.generateLessonPlan(request));
+    }
+
+    @PostMapping("/ai/lesson-plans/save")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Save edited AI lesson plan")
+    public ResponseEntity<LessonPlanDTO> save(@Valid @RequestBody SaveLessonPlanRequest request) {
+        return ResponseEntity.ok(lessonPlanService.saveEditedLessonPlan(request));
+    }
+
+    @GetMapping("/ai/lesson-plans")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "List current teacher AI lesson plans")
+    public ResponseEntity<List<LessonPlanDTO>> getAllAiLessonPlans() {
+        return ResponseEntity.ok(lessonPlanService.getAllLessonPlans());
+    }
+
+    @GetMapping("/ai/lesson-plans/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Get AI lesson plan detail")
+    public ResponseEntity<LessonPlanDTO> getAiLessonPlanById(@PathVariable Long id) {
+        return lessonPlanService.getLessonPlanById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

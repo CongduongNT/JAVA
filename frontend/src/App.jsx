@@ -15,12 +15,15 @@ import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
 import ManagerQuestionApprovalPage from './pages/manager/ManagerQuestionApprovalPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
+import AdminFrameworksPage from './pages/admin/FrameworksPage'
+import FrameworkForm from './pages/admin/FrameworkForm'
 import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
 import PromptTemplateForm from './pages/staff/PromptTemplateForm'
 import ExamGenerator from './pages/teacher/ExamGenerator'
+import LessonPlanGenerator from './pages/teacher/LessonPlanGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
 import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
@@ -75,6 +78,32 @@ function App() {
             element={
               <RoleGuard roles={['ADMIN']}>
                 <UserFormPage />
+              </RoleGuard>
+            }
+          />
+
+          {/* ADMIN - Frameworks */}
+          <Route
+            path="/admin/frameworks"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <AdminFrameworksPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/frameworks/new"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <FrameworkForm />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/frameworks/:id/edit"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <FrameworkForm />
               </RoleGuard>
             }
           />
@@ -179,6 +208,14 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER']}>
                 <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/ai-generator"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanGenerator />
               </RoleGuard>
             }
           />

@@ -7,6 +7,7 @@ import {
   Pencil,
   PlusCircle,
   Search,
+  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -232,10 +233,16 @@ export default function LessonPlansPage() {
           <h1 className="page-header">Giáo án của tôi</h1>
           <p className="page-subheader">Quản lý bản nháp, bản đã xuất bản và tiếp tục hoàn thiện giáo án của bạn.</p>
         </div>
-        <Button onClick={() => navigate('/lesson-plans/new')}>
-          <PlusCircle className="size-4" />
-          Tạo giáo án
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => navigate('/lesson-plans/ai-generator')}>
+            <Sparkles className="size-4" />
+            Tạo với AI
+          </Button>
+          <Button onClick={() => navigate('/lesson-plans/new')}>
+            <PlusCircle className="size-4" />
+            Tạo thủ công
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">

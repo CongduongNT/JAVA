@@ -40,6 +40,9 @@ public class LessonPlan {
     @Column(name = "framework_id")
     private Integer frameworkId;
 
+    @Column(name = "framework_code")
+    private String frameworkCode;
+
     @Column(nullable = false)
     private String title;
 
@@ -64,6 +67,24 @@ public class LessonPlan {
 
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
+
+    @Column(name = "ai_objectives_json", columnDefinition = "TEXT")
+    private String aiObjectivesJson;
+
+    @Column(name = "ai_materials_json", columnDefinition = "TEXT")
+    private String aiMaterialsJson;
+
+    @Column(name = "lesson_flow_json", columnDefinition = "TEXT")
+    private String lessonFlowJson;
+
+    @Column(name = "assessment_json", columnDefinition = "TEXT")
+    private String assessmentJson;
+
+    @Column(columnDefinition = "TEXT")
+    private String homework;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     @Column(name = "ai_generated")
     @Builder.Default

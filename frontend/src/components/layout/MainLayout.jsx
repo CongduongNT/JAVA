@@ -64,6 +64,7 @@ const ROLE_LABELS = {
 
 function useBreadcrumb(pathname) {
   if (pathname.startsWith('/question-bank')) return 'Question Bank'
+  if (pathname === '/lesson-plans/ai-generator') return 'Tạo giáo án với AI'
   if (pathname === '/lesson-plans/new') return 'Tạo giáo án'
   if (/^\/lesson-plans\/\d+\/edit$/.test(pathname)) return 'Chỉnh sửa giáo án'
   if (/^\/lesson-plans\/\d+$/.test(pathname)) return 'Chi tiết giáo án'

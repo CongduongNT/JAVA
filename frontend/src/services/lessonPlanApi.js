@@ -1,38 +1,30 @@
 import api from './api'
 
 const lessonPlanApi = {
-  /**
-   * GET /api/v1/lesson-plans
-   * Params: page, size, status, subject, gradeLevel, keyword
-   */
-  getMyLessonPlans: (params = {}) => api.get('/api/v1/lesson-plans', { params }),
+  getMyLessonPlans: (params = {}) => api.get('/lesson-plans', { params }),
 
-  /**
-   * POST /api/v1/lesson-plans
-   * Body: LessonPlanRequest
-   */
-  createLessonPlan: (data) => api.post('/api/v1/lesson-plans', data),
+  createLessonPlan: (data) => api.post('/lesson-plans', data),
 
-  /**
-   * GET /api/v1/lesson-plans/{id}
-   */
-  getLessonPlan: (id) => api.get(`/api/v1/lesson-plans/${id}`),
+  getLessonPlan: (id) => api.get(`/lesson-plans/${id}`),
 
-  /**
-   * PUT /api/v1/lesson-plans/{id}
-   * Body: LessonPlanRequest
-   */
-  updateLessonPlan: (id, data) => api.put(`/api/v1/lesson-plans/${id}`, data),
+  updateLessonPlan: (id, data) => api.put(`/lesson-plans/${id}`, data),
 
-  /**
-   * DELETE /api/v1/lesson-plans/{id}
-   */
-  deleteLessonPlan: (id) => api.delete(`/api/v1/lesson-plans/${id}`),
+  deleteLessonPlan: (id) => api.delete(`/lesson-plans/${id}`),
 
-  /**
-   * PUT /api/v1/lesson-plans/{id}/publish
-   */
-  publishLessonPlan: (id) => api.put(`/api/v1/lesson-plans/${id}/publish`),
+  publishLessonPlan: (id) => api.put(`/lesson-plans/${id}/publish`),
+
+  generatePreview: (data) =>
+    api.post('/ai/lesson-plans/generate', { ...data, saveToDb: false }),
+
+  saveEdited: (data) =>
+    api.post('/ai/lesson-plans/save', data),
+
+  generateAndSave: (data) =>
+    api.post('/ai/lesson-plans/generate', { ...data, saveToDb: true }),
+
+  getAll: () => api.get('/ai/lesson-plans'),
+
+  getById: (id) => api.get(`/ai/lesson-plans/${id}`),
 }
 
 export default lessonPlanApi

@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface LessonPlanRepository extends JpaRepository<LessonPlan, Long> {
 
@@ -44,4 +46,6 @@ public interface LessonPlanRepository extends JpaRepository<LessonPlan, Long> {
             @Param("gradeLevel") String gradeLevel,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    List<LessonPlan> findByTeacher_IdOrderByUpdatedAtDesc(Long teacherId);
 }
