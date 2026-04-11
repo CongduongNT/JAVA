@@ -16,6 +16,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * GeminiAIService – Gọi Gemini API, parse JSON response → danh sách QuestionDTO.
@@ -42,10 +45,10 @@ public class GeminiAIService {
     @Value("${gemini.model:gemini-2.0-flash}")
     private String model;
 
-    public GeminiAIService(Client geminiClient, PromptBuilder promptBuilder) {
-        this.geminiClient = geminiClient;
+    public GeminiAIService(Optional<Client> geminiClient, PromptBuilder promptBuilder, ObjectMapper objectMapper) {
+        this.geminiClient = geminiClient.orElse(null);
         this.promptBuilder = promptBuilder;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -66,6 +69,10 @@ public class GeminiAIService {
             Question.QuestionType type,
             int count) {
 
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
         // 1. Build prompt
         String prompt = promptBuilder.buildQuestionPrompt(subject, topic, difficulty, type, count);
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
@@ -78,8 +85,12 @@ public class GeminiAIService {
                     model, prompt, null);
             rawResponse = response.text();
         } catch (Exception e) {
-            log.error("[GeminiAI] API call failed: {}", e.getMessage(), e);
-            throw new AIServiceException("Gemini AI service is unavailable: " + e.getMessage());
+            String errorMsg = e.getMessage();
+            log.error("[GeminiAI] API call failed: {}", errorMsg, e);
+            if (errorMsg != null && errorMsg.contains("API key not valid")) {
+                throw new AIServiceException("API Key không hợp lệ. Vui lòng kiểm tra lại biến môi trường GEMINI_API_KEY.");
+            }
+            throw new AIServiceException("Gemini AI service is unavailable: " + errorMsg);
         }
 
         log.debug("[GeminiAI] Raw response: {}", rawResponse);
@@ -103,23 +114,47 @@ public class GeminiAIService {
     }
 
     /**
+     * Gọi AI trực tiếp với một chuỗi prompt đã build hoàn chỉnh.
+     *
+     * @param prompt Nội dung prompt đầy đủ
+     * @return Văn bản phản hồi từ AI
+     */
+    public String callAi(String prompt) {
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            return response.text();
+        } catch (Exception e) {
+            String errorMsg = e.getMessage();
+            log.error("[GeminiAI] Lỗi gọi AI: {}", errorMsg);
+            if (errorMsg != null && (errorMsg.contains("API key not valid") || errorMsg.contains("400"))) {
+                throw new AIServiceException("Lỗi xác thực: API Key không hợp lệ. Hãy đảm bảo bạn không nhập thừa dấu ngoặc kép hoặc khoảng trắng.");
+            }
+            throw new AIServiceException("Không thể kết nối với AI: " + errorMsg);
+        }
+    }
+
+    /**
      * Loại bỏ markdown code fence (```json ... ```) nếu Gemini thêm vào.
      */
     private String cleanJsonResponse(String raw) {
         if (raw == null) return "[]";
-        String trimmed = raw.trim();
-        // Remove ```json or ``` at start
-        if (trimmed.startsWith("```")) {
-            int firstNewline = trimmed.indexOf('\n');
-            if (firstNewline > 0) {
-                trimmed = trimmed.substring(firstNewline + 1);
-            }
+
+        String cleaned = raw.trim();
+        
+        // Regex to find the JSON array/object inside optional markdown code fences
+        // Captures content starting with [ or { and ending with ] or }
+        Pattern pattern = Pattern.compile("```(?:json)?\\s*([\\[\\{].*?[\\]\\}])\\s*```", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(cleaned);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
         }
-        // Remove ``` at end
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.lastIndexOf("```")).trim();
-        }
-        return trimmed;
+        
+        // Fallback: if no fences found, strip any potential markers manually
+        return cleaned.replaceAll("```json|```", "").trim();
     }
 
     /**
