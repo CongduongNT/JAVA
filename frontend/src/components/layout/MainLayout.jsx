@@ -63,12 +63,14 @@ const ROLE_LABELS = {
 }
 
 function useBreadcrumb(pathname) {
-  if (pathname.startsWith('/question-bank')) {
-    return 'Question Bank'
-  }
+  if (pathname.startsWith('/question-bank')) return 'Question Bank'
+  if (pathname === '/lesson-plans/ai-generator') return 'Tạo giáo án với AI'
+  if (pathname === '/lesson-plans/new') return 'Tạo giáo án'
+  if (/^\/lesson-plans\/\d+\/edit$/.test(pathname)) return 'Chỉnh sửa giáo án'
+  if (/^\/lesson-plans\/\d+$/.test(pathname)) return 'Chi tiết giáo án'
+  if (pathname.startsWith('/lesson-plans')) return 'Lesson Plans'
   const map = {
     '/dashboard': 'Dashboard',
-    '/lesson-plans': 'Lesson Plans',
     '/packages': 'Packages',
     '/orders/history': 'Orders',
     '/question-bank': 'Question Bank',
@@ -82,8 +84,7 @@ function useBreadcrumb(pathname) {
     '/manager/approve': 'Approve Templates',
     '/admin/users': 'User Management',
   }
-  const label = map[pathname] || 'Dashboard'
-  return label
+  return map[pathname] || 'Dashboard'
 }
 
 function AppSidebar() {

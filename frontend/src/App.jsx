@@ -15,6 +15,8 @@ import ManagerOrdersPage from './pages/manager/ManagerOrdersPage'
 import ManagerQuestionApprovalPage from './pages/manager/ManagerQuestionApprovalPage'
 import TeacherPackagesPage from './pages/teacher/TeacherPackagesPage'
 import TeacherOrderHistoryPage from './pages/teacher/TeacherOrderHistoryPage'
+import AdminFrameworksPage from './pages/admin/FrameworksPage'
+import FrameworkForm from './pages/admin/FrameworkForm'
 import UsersPage from './pages/users/UsersPage'
 import UserFormPage from './pages/users/UserFormPage'
 import TeacherManagementPage from './pages/manager/TeacherManagementPage'
@@ -23,8 +25,12 @@ import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
 import PromptTemplateForm from './pages/staff/PromptTemplateForm'
 import GenerateLessonPlan from './pages/teacher/GenerateLessonPlan'
 import ExamGenerator from './pages/teacher/ExamGenerator'
+import LessonPlanGenerator from './pages/teacher/LessonPlanGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
+import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
+import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
+import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -74,6 +80,32 @@ function App() {
             element={
               <RoleGuard roles={['ADMIN']}>
                 <UserFormPage />
+              </RoleGuard>
+            }
+          />
+
+          {/* ADMIN - Frameworks */}
+          <Route
+            path="/admin/frameworks"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <AdminFrameworksPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/frameworks/new"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <FrameworkForm />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/frameworks/:id/edit"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <FrameworkForm />
               </RoleGuard>
             }
           />
@@ -158,16 +190,52 @@ function App() {
           <Route
             path="/lesson-plans"
             element={
+<<<<<<< HEAD
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <PromptTemplatesPage />
+=======
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlansPage />
+>>>>>>> origin/main
               </RoleGuard>
             }
           />
           <Route
+<<<<<<< HEAD
             path="/generate-lesson-plan/:id"
             element={
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <GenerateLessonPlan />
+=======
+            path="/lesson-plans/new"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanDetailPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id/edit"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/ai-generator"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanGenerator />
+>>>>>>> origin/main
               </RoleGuard>
             }
           />

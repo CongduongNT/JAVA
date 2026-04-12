@@ -13,6 +13,7 @@ import {
   BookOpen,
   Shield,
   ClipboardCheck,
+  BookMarked,
 } from 'lucide-react';
 
 const ALL_NAV_ITEMS = [
@@ -104,6 +105,12 @@ const ALL_NAV_ITEMS = [
     name: 'User Management',
     icon: Shield,
     path: '/admin/users',
+    roles: ['ADMIN'],
+  },
+  {
+    name: 'Frameworks',
+    icon: BookMarked,
+    path: '/admin/frameworks',
     roles: ['ADMIN'],
   },
 ];
