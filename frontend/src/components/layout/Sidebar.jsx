@@ -27,7 +27,7 @@ const ALL_NAV_ITEMS = [
     name: 'My Lesson Plans',
     icon: BookOpen,
     path: '/lesson-plans',
-    roles: ['TEACHER'],
+    roles: ['TEACHER', 'STAFF', 'MANAGER', 'ADMIN'],
   },
   {
     name: 'Packages',
@@ -63,7 +63,7 @@ const ALL_NAV_ITEMS = [
     name: 'Prompt Templates',
     icon: Settings,
     path: '/prompt-templates',
-    roles: ['STAFF', 'MANAGER'],
+    roles: ['STAFF', 'MANAGER', 'ADMIN'],
   },
   {
     name: 'Manage Teachers',
@@ -72,7 +72,13 @@ const ALL_NAV_ITEMS = [
     roles: ['MANAGER', 'ADMIN'],
   },
   {
-    name: 'Packages',
+    name: 'Approve Templates',
+    icon: ClipboardCheck,
+    path: '/manager/approve',
+    roles: ['MANAGER', 'ADMIN'],
+  },
+  {
+    name: 'Manager Packages',
     icon: Package,
     path: '/manager/subscriptions',
     roles: ['MANAGER', 'ADMIN'],
@@ -84,7 +90,7 @@ const ALL_NAV_ITEMS = [
     roles: ['MANAGER', 'ADMIN'],
   },
   {
-    name: 'Duyệt câu hỏi',
+    name: 'Question Approval',
     icon: ClipboardCheck,
     path: '/manager/questions/approval',
     roles: ['MANAGER', 'ADMIN'],
@@ -117,15 +123,19 @@ const ROLE_LABELS = {
 };
 
 const Sidebar = () => {
-  const { user } = useSelector((state) => state.auth);
-  const userRole = user?.role?.toUpperCase() || '';
+  const { user } = useSelector((state) => state.auth || {});
+  // Hardened role detection đồng bộ với RoleGuard và MainLayout
+  const rawRole = user?.roleName || (user?.role && typeof user.role === 'object' ? user.role.name : user?.role) || ''
+  
+  // Chuẩn hóa role: Loại bỏ ROLE_
+  const userRole = rawRole.toUpperCase().replace('ROLE_', '')
 
   const visibleItems = ALL_NAV_ITEMS.filter((item) => {
     if (!item.roles || item.roles.length === 0) return true;
-    return item.roles.map((r) => r.toUpperCase()).includes(userRole);
+    return userRole && item.roles.map((r) => r.toUpperCase().replace('ROLE_', '')).includes(userRole);
   });
 
-  const roleInfo = ROLE_LABELS[userRole] || { label: userRole, color: 'bg-slate-100 text-slate-600' };
+  const roleInfo = ROLE_LABELS[userRole] || { label: userRole || 'User', color: 'bg-slate-100 text-slate-600' };
 
   return (
     <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">

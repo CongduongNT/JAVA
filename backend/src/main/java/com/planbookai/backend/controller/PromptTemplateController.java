@@ -85,10 +85,13 @@ public class PromptTemplateController {
 
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
-    public ResponseEntity<?> approve(@PathVariable Long id, @AuthenticationPrincipal User manager) {
+    public ResponseEntity<?> approve(
+            @PathVariable Long id, 
+            @RequestBody(required = false) Map<String, String> body, 
+            @AuthenticationPrincipal User manager) {
         try {
-            // The 'manager' User object is directly injected by Spring Security.
-            aiPromptTemplateService.approveTemplate(id, manager);
+            String status = (body != null && body.containsKey("status")) ? body.get("status") : "APPROVED";
+            aiPromptTemplateService.approveTemplate(id, status, manager);
             return ResponseEntity.ok().body("Template approved successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.status(404)
