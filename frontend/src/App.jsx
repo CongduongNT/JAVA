@@ -26,6 +26,9 @@ import ExamGenerator from './pages/teacher/ExamGenerator'
 import LessonPlanGenerator from './pages/teacher/LessonPlanGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
+import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
+import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
+import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -178,6 +181,38 @@ function App() {
 
           <Route
             path="/lesson-plans"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlansPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/new"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanDetailPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id/edit"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/ai-generator"
             element={
               <RoleGuard roles={['TEACHER']}>
                 <LessonPlanGenerator />

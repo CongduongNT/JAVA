@@ -1,34 +1,29 @@
 import api from './api'
 
-export const lessonPlanApi = {
-  /**
-   * Gọi AI sinh lesson plan (preview, không lưu DB).
-   * @param {object} data - { subject, gradeLevel, topic, objectives, durationMinutes, framework }
-   */
+const lessonPlanApi = {
+  getMyLessonPlans: (params = {}) => api.get('/lesson-plans', { params }),
+
+  createLessonPlan: (data) => api.post('/lesson-plans', data),
+
+  getLessonPlan: (id) => api.get(`/lesson-plans/${id}`),
+
+  updateLessonPlan: (id, data) => api.put(`/lesson-plans/${id}`, data),
+
+  deleteLessonPlan: (id) => api.delete(`/lesson-plans/${id}`),
+
+  publishLessonPlan: (id) => api.put(`/lesson-plans/${id}/publish`),
+
   generatePreview: (data) =>
     api.post('/ai/lesson-plans/generate', { ...data, saveToDb: false }),
 
-  /**
-   * Lưu giáo án đã chỉnh sửa vào DB (sau khi user review + sửa trong editor).
-   * @param {object} data - SaveLessonPlanRequest: subject, gradeLevel, topic, objectives, durationMinutes, framework, title, materials, lessonPlanObjectives, lessonFlow, assessment, homework, notes
-   */
   saveEdited: (data) =>
     api.post('/ai/lesson-plans/save', data),
 
-  /**
-   * Sinh và lưu lesson plan luôn vào DB (dùng khi không cần preview).
-   */
   generateAndSave: (data) =>
     api.post('/ai/lesson-plans/generate', { ...data, saveToDb: true }),
 
-  /**
-   * Lấy tất cả lesson plans của current user.
-   */
   getAll: () => api.get('/ai/lesson-plans'),
 
-  /**
-   * Lấy lesson plan theo id.
-   */
   getById: (id) => api.get(`/ai/lesson-plans/${id}`),
 }
 

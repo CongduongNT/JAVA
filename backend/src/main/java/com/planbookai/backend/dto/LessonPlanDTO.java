@@ -1,5 +1,6 @@
 package com.planbookai.backend.dto;
 
+import com.planbookai.backend.model.entity.LessonPlan;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,45 +10,54 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class LessonPlanDTO {
 
     private Long id;
+    private Long teacherId;
+    private Integer frameworkId;
     private String title;
-    private String gradeLevel;
     private String subject;
+    private String gradeLevel;
     private String topic;
-    private int durationMinutes;
+    private String objectives;
+    private String activities;
+    private String assessment;
+    private String materials;
+    private Integer durationMinutes;
+
     private String framework;
-    private List<String> objectives;
-    private List<String> materials;
+    private List<String> lessonObjectives;
+    private List<String> materialItems;
     private List<LessonPhase> lessonFlow;
-    private Assessment assessment;
+    private AssessmentDetail assessmentDetail;
     private String homework;
     private String notes;
+
     private Boolean aiGenerated;
-    private Boolean isApproved;
+    private LessonPlan.LessonPlanStatus status;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
     public static class LessonPhase {
         private String phase;
-        private int timeMinutes;
+        private Integer timeMinutes;
         private String activities;
         private String teacherActions;
         private String studentActions;
     }
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
-    public static class Assessment {
+    public static class AssessmentDetail {
         private List<String> methods;
         private String criteria;
     }

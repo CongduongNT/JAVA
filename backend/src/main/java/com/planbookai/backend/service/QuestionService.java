@@ -14,6 +14,7 @@ import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.QuestionBankRepository;
 import com.planbookai.backend.repository.QuestionRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 public class QuestionService {
@@ -129,7 +132,7 @@ public class QuestionService {
         validatePageRequest(page, size);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var questionsPage = questionRepository.findByBankIdWithFilters(
+        Page<Question> questionsPage = questionRepository.findByBankIdWithFilters(
                 bankId,
                 normalizeFilter(topic),
                 parseDifficulty(difficulty),
@@ -242,6 +245,146 @@ public class QuestionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Question bank not found: " + id));
     }
 
+    private Question findQuestionOrThrow(Long id) {
+        return questionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + id));
+    }
+
+    private QuestionDTO.QuestionBankDTO mapToBankDTO(QuestionBank bank) {
+        return QuestionDTO.QuestionBankDTO.builder()
+                .id(bank.getId())
+                .name(bank.getName())
+                .subject(bank.getSubject())
+                .gradeLevel(bank.getGradeLevel())
+                .description(bank.getDescription())
+                .createdById(bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null)
+                .createdByName(bank.getCreatedBy() != null ? bank.getCreatedBy().getFullName() : null)
+                .isPublished(bank.getIsPublished())
+                .createdAt(bank.getCreatedAt())
+                .build();
+    }
+
+    private void assertCanCreateBank(User user) {
+        requireAuthenticatedUser(user);
+        if (hasRole(user, Role.RoleName.TEACHER) || hasRole(user, Role.RoleName.STAFF)) {
+            return;
+        }
+        throw new ForbiddenOperationException("Only teacher or staff can create question banks");
+    }
+
+    private void assertCanReadBank(QuestionBank bank, User user) {
+        requireAuthenticatedUser(user);
+        if (canReadBank(bank, user)) {
+            return;
+        }
+        throw new ForbiddenOperationException("You do not have permission to access this question bank");
+    }
+
+    private void assertCanManageBank(QuestionBank bank, User user) {
+        requireAuthenticatedUser(user);
+        if (canManageBank(bank, user)) {
+            return;
+        }
+        throw new ForbiddenOperationException("You do not have permission to manage this question bank");
+    }
+
+    private void assertCanReadQuestion(Question question, User user) {
+        assertCanReadBank(question.getBank(), user);
+    }
+
+    private void assertCanManageQuestion(Question question, User user) {
+        assertCanManageBank(question.getBank(), user);
+    }
+
+    private boolean canReadBank(QuestionBank bank, User user) {
+        return bank != null && (canManageBank(bank, user) || Boolean.TRUE.equals(bank.getIsPublished()));
+    }
+
+    private boolean canManageBank(QuestionBank bank, User user) {
+        if (bank == null || user == null) {
+            return false;
+        }
+        if (hasRole(user, Role.RoleName.ADMIN) || hasRole(user, Role.RoleName.MANAGER)) {
+            return true;
+        }
+        Long ownerId = bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null;
+        return ownerId != null && ownerId.equals(user.getId());
+    }
+
+    private boolean hasRole(User user, Role.RoleName roleName) {
+        return user != null
+                && user.getRole() != null
+                && user.getRole().getName() == roleName;
+    }
+
+    private void requireAuthenticatedUser(User user) {
+        if (user == null || user.getId() == null) {
+            throw new ForbiddenOperationException("Authentication is required");
+        }
+    }
+
+    private void validatePageRequest(Integer page, Integer size) {
+        if (page == null || page < 0) {
+            throw new IllegalArgumentException("page must be greater than or equal to 0");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("size must be greater than 0");
+        }
+        if (size > 100) {
+            throw new IllegalArgumentException("size must not exceed 100");
+        }
+    }
+
+    private void validatePreviewSaveRequest(Integer bankId, List<QuestionDTO> questions) {
+        if (bankId == null) {
+            throw new IllegalArgumentException("bankId is required");
+        }
+        if (questions == null || questions.isEmpty()) {
+            throw new IllegalArgumentException("questions must not be empty");
+        }
+        for (int i = 0; i < questions.size(); i++) {
+            if (questions.get(i) == null) {
+                throw new IllegalArgumentException("questions[" + i + "] must not be null");
+            }
+        }
+    }
+
+    private String normalizeFilter(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private Question.Difficulty parseDifficulty(String value) {
+        return parseEnum(value, Question.Difficulty.class, "difficulty");
+    }
+
+    private Question.QuestionType parseQuestionType(String value) {
+        return parseEnum(value, Question.QuestionType.class, "type");
+    }
+
+    private <T extends Enum<T>> T parseRequiredEnum(String value, Class<T> enumClass, String fieldName) {
+        T parsed = parseEnum(value, enumClass, fieldName);
+        if (parsed != null) {
+            return parsed;
+        }
+        throw new IllegalArgumentException(fieldName + " is required");
+    }
+
+    private <T extends Enum<T>> T parseEnum(String value, Class<T> enumClass, String fieldName) {
+        String normalizedValue = normalizeFilter(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        try {
+            return Enum.valueOf(enumClass, normalizedValue.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            String allowedValues = Arrays.stream(enumClass.getEnumConstants())
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+            throw new IllegalArgumentException(
+                    "Invalid " + fieldName + ": " + value + ". Allowed values: " + allowedValues);
+        }
+    }
+
     public QuestionDTO mapToQuestionDTO(Question question) {
         QuestionDTO dto = new QuestionDTO();
         dto.setId(question.getId());
@@ -317,8 +460,7 @@ public class QuestionService {
      */
     @Transactional
     public QuestionDTO approveQuestion(Long questionId, boolean approve, User manager) {
-        Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Question not found: " + questionId));
+        Question question = findQuestionOrThrow(questionId);
 
         question.setIsApproved(approve);
         question.setApprovedBy(approve ? manager : null);

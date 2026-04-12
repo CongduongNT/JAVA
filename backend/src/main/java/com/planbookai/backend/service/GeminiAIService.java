@@ -7,6 +7,7 @@ import com.google.genai.types.GenerateContentResponse;
 import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.exception.AIServiceException;
+import com.planbookai.backend.model.entity.LessonPlan;
 import com.planbookai.backend.model.entity.Question;
 import com.planbookai.backend.util.PromptBuilder;
 import com.planbookai.backend.util.PromptBuilder.LessonFramework;
@@ -220,12 +221,14 @@ public class GeminiAIService {
                 .subject(getStr(raw, "subject", ""))
                 .topic(getStr(raw, "topic", ""))
                 .durationMinutes(getInt(raw, "duration_minutes", 0))
-                .objectives(getStrList(raw, "objectives"))
-                .materials(getStrList(raw, "materials"))
+                .lessonObjectives(getStrList(raw, "objectives"))
+                .materialItems(getStrList(raw, "materials"))
                 .lessonFlow(getLessonPhases(raw.get("lesson_flow")))
-                .assessment(getAssessment(raw.get("assessment")))
+                .assessmentDetail(getAssessment(raw.get("assessment")))
                 .homework(getStr(raw, "homework", ""))
                 .notes(getStr(raw, "notes", ""))
+                .aiGenerated(true)
+                .status(LessonPlan.LessonPlanStatus.DRAFT)
                 .build();
     }
 
@@ -251,9 +254,9 @@ public class GeminiAIService {
     }
 
     @SuppressWarnings("unchecked")
-    private LessonPlanDTO.Assessment getAssessment(Object raw) {
+    private LessonPlanDTO.AssessmentDetail getAssessment(Object raw) {
         if (!(raw instanceof Map<?, ?>)) {
-            return LessonPlanDTO.Assessment.builder()
+            return LessonPlanDTO.AssessmentDetail.builder()
                     .methods(Collections.emptyList())
                     .criteria("")
                     .build();
@@ -261,7 +264,7 @@ public class GeminiAIService {
 
         Map<String, Object> map = (Map<String, Object>) raw;
 
-        return LessonPlanDTO.Assessment.builder()
+        return LessonPlanDTO.AssessmentDetail.builder()
                 .methods(getStrList(map, "methods"))
                 .criteria(getStr(map, "criteria", ""))
                 .build();

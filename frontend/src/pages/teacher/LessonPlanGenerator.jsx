@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   BookOpen,
@@ -42,6 +43,8 @@ import lessonPlanApi from '../../services/lessonPlanApi'
  * 4. User bấm "Lưu" → lưu editorValue hiện tại (sau chỉnh sửa)
  */
 const LessonPlanGenerator = ({ onBack }) => {
+  const navigate = useNavigate()
+
   // --- Form State (input fields) ---
   const [form, setForm] = useState({
     subject: '',
@@ -94,14 +97,14 @@ const LessonPlanGenerator = ({ onBack }) => {
       subject: data.subject || form.subject || '',
       gradeLevel: data.gradeLevel || form.gradeLevel || '',
       framework: data.framework || form.framework || 'E5',
-      materials: Array.isArray(data.materials) ? [...data.materials] : [],
-      objectives: Array.isArray(data.objectives) ? [...data.objectives] : [],
+      materials: Array.isArray(data.materialItems) ? [...data.materialItems] : [],
+      objectives: Array.isArray(data.lessonObjectives) ? [...data.lessonObjectives] : [],
       lessonFlow: Array.isArray(data.lessonFlow)
         ? data.lessonFlow.map((p) => ({ ...p }))
         : [],
       assessment: {
-        methods: Array.isArray(data.assessment?.methods) ? [...data.assessment.methods] : [],
-        criteria: data.assessment?.criteria || '',
+        methods: Array.isArray(data.assessmentDetail?.methods) ? [...data.assessmentDetail.methods] : [],
+        criteria: data.assessmentDetail?.criteria || '',
       },
       homework: data.homework || '',
       notes: data.notes || '',
@@ -206,7 +209,7 @@ const LessonPlanGenerator = ({ onBack }) => {
 
     try {
       // Lưu đúng nội dung user đang sửa trong editor – gọi API save riêng không qua generateAndSave
-      await lessonPlanApi.saveEdited({
+      const res = await lessonPlanApi.saveEdited({
         subject: editorValue.subject || form.subject,
         gradeLevel: editorValue.gradeLevel || form.gradeLevel,
         topic: form.topic,
@@ -222,12 +225,13 @@ const LessonPlanGenerator = ({ onBack }) => {
         homework: editorValue.homework,
         notes: editorValue.notes,
       })
-      // Sync lại: lastAiData = editorValue, reset dirty
-      setAiGeneratedData({ ...editorValue })
-      lastAiDataRef.current = { ...editorValue }
-      setIsDirty(false)
+      setAiGeneratedData(res.data)
       toast.success('Giáo án đã được lưu thành công!')
-      onBack?.()
+      if (onBack) {
+        onBack()
+      } else {
+        navigate('/lesson-plans')
+      }
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Có lỗi khi lưu giáo án'
       setSaveError(msg)
@@ -255,6 +259,14 @@ const LessonPlanGenerator = ({ onBack }) => {
   // --- Toggle section expansion ---
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }))
+  }
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
+    navigate('/lesson-plans')
   }
 
   // --- Render section header ---
@@ -448,7 +460,7 @@ const LessonPlanGenerator = ({ onBack }) => {
       {/* Navbar */}
       <div className="h-16 flex items-center px-6 border-b bg-white border-slate-200 justify-between">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 font-bold transition-colors"
         >
           <ArrowLeft size={20} />
