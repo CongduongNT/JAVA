@@ -120,13 +120,39 @@ public class ExamController {
     @Operation(
             summary = "Sinh đề thi bằng AI + ngân hàng câu hỏi (KAN-23)",
             description = """
-                    Sinh đề thi tự động theo chiến lược:
-                    1. **Lấy từ bank:** Truy vấn các bank được chỉ định (bankIds), lọc theo môn, topic, độ khó, loại câu.
-                    2. **Tính gap:** `gap = totalQuestions - câu từ bank`
-                    3. **AI fill gap:** Nếu gap > 0, gọi Gemini AI sinh thêm câu, truyền nội dung câu đã có để tránh trùng.
-                    4. **Lưu đề:** Tạo Exam ở trạng thái DRAFT, gắn tất cả câu hỏi (BANK + AI).
+                    **[KAN-23] API POST /api/v1/exams/ai-generate**
 
-                    **Response:** ExamDTO đầy đủ với `source` = `BANK` hoặc `AI` cho từng câu.
+                    Sinh đề thi tự động kết hợp câu từ ngân hàng và Gemini AI.
+
+                    ### Request Body (JSON)
+                    ```json
+                    {
+                      "subject":          "Chemistry",
+                      "grade_level":      "10",
+                      "topic":            "Nguyên tử - Phân tử",
+                      "total_questions":  20,
+                      "difficulty_mix":   { "EASY": 5, "MEDIUM": 10, "HARD": 5 },
+                      "bank_id":          1,
+                      "title":            "(optional – auto-generated if omitted)",
+                      "question_type":    "MULTIPLE_CHOICE",
+                      "duration_mins":    45,
+                      "randomized":       false
+                    }
+                    ```
+
+                    ### difficulty_mix (ưu tiên)
+                    Nếu cung cấp `difficulty_mix`, hệ thống xử lý **per-difficulty**:
+                    - Với mỗi mức (EASY/MEDIUM/HARD): lấy câu từ bank → tính gap → AI sinh bù.
+                    - Tổng value trong map phải = `total_questions`.
+
+                    ### Chế độ đơn (fallback)
+                    Nếu bỏ `difficulty_mix`, dùng field `difficulty` (default: MEDIUM) cho toàn đề.
+
+                    ### bank_id
+                    - Nếu null: AI sinh toàn bộ câu hỏi.
+                    - Nếu cung cấp: hệ thống ưu tiên câu đã duyệt từ bank, AI bù phần còn thiếu.
+
+                    **Response:** ExamDTO ở trạng thái `DRAFT`, mỗi câu có `source` = `BANK` | `AI`.
                     """
     )
     @ApiResponses({

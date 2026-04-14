@@ -21,28 +21,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * ExamService – Xử lý nghiệp vụ tạo, quản lý và sinh đề thi bằng AI.
  *
- * <h2>Luồng aiGenerateExam()</h2>
+ * <h2>Luồng aiGenerateExam() (KAN-23)</h2>
  * <ol>
- *   <li><b>Lấy từ bank:</b> Truy vấn ngân hàng câu hỏi theo {@code bankIds},
- *       lọc theo môn học, chủ đề, độ khó, loại câu hỏi, và trạng thái đã duyệt.</li>
- *   <li><b>Trộn ngẫu nhiên &amp; cắt:</b> Shuffle danh sách câu từ bank, lấy tối đa
- *       {@code totalQuestions} câu.</li>
- *   <li><b>Tính số câu còn thiếu (gap):</b>
- *       {@code gap = totalQuestions - bankQuestionsSelected.size()}</li>
- *   <li><b>Sinh bù bằng AI:</b> Nếu {@code gap > 0}, gọi {@link GeminiAIService#generateExamGapQuestions}
- *       với danh sách nội dung câu đã có để tránh trùng lặp.</li>
- *   <li><b>Lưu câu AI vào bank:</b> Câu AI-generated được lưu vào ngân hàng câu hỏi
- *       (bank đầu tiên trong danh sách, hoặc bank mặc định của teacher).</li>
- *   <li><b>Tạo đề thi:</b> Tạo {@link Exam}, gắn tất cả câu hỏi theo thứ tự,
- *       đánh dấu nguồn gốc (BANK / AI) trong metadata.</li>
- *   <li><b>Trả về {@link ExamDTO}:</b> Gồm danh sách câu hỏi đầy đủ với metadata.</li>
+ *   <li><b>difficulty_mix mode:</b> Với mỗi mức độ khó (EASY/MEDIUM/HARD) trong map:
+ *       <ul>
+ *         <li>Lấy câu từ bank lọc theo bank_id + difficulty + topic.</li>
+ *         <li>Tính gap per-difficulty → gọi AI sinh bù.</li>
+ *       </ul>
+ *   </li>
+ *   <li><b>single difficulty mode:</b> Hành vi cũ – lấy từ bank theo difficulty đơn, AI fill gap.</li>
+ *   <li><b>Tạo Exam entity:</b> Gắn tất cả câu theo thứ tự (BANK trước, AI sau mỗi nhóm).</li>
+ *   <li><b>Trả về ExamDTO</b> kèm metadata source (BANK | AI) trên từng câu.</li>
  * </ol>
  */
 @Service
@@ -78,13 +73,6 @@ public class ExamService {
 
     /**
      * Lấy danh sách đề của một teacher (phân trang, lọc theo môn + status).
-     *
-     * @param teacher Teacher đang đăng nhập
-     * @param page    Trang (0-indexed)
-     * @param size    Kích thước trang
-     * @param subject Lọc theo môn (null = tất cả)
-     * @param status  Lọc theo status (null = tất cả)
-     * @return Trang kết quả ExamDTO (không kèm danh sách câu hỏi)
      */
     public com.planbookai.backend.dto.PageResponse<ExamDTO> getMyExams(
             User teacher,
@@ -104,10 +92,6 @@ public class ExamService {
 
     /**
      * Xem chi tiết một đề thi (kèm danh sách câu hỏi đầy đủ).
-     *
-     * @param examId  ID đề thi
-     * @param teacher Teacher hiện tại
-     * @return ExamDTO đầy đủ
      */
     public ExamDTO getExamDetail(Long examId, User teacher) {
         Exam exam = findExamOrThrow(examId);
@@ -117,53 +101,156 @@ public class ExamService {
 
     // =========================================================================
     // AI GENERATE EXAM  (KAN-23)
+    // POST /api/v1/exams/ai-generate
     // =========================================================================
 
     /**
      * Sinh đề thi tự động bằng cách kết hợp câu hỏi từ bank và AI.
      *
-     * <p>Đây là phương thức cốt lõi của KAN-23. Xem JavaDoc lớp để biết luồng xử lý.
+     * <p>Hỗ trợ hai chế độ:
+     * <ul>
+     *   <li><b>difficulty_mix mode</b> (ưu tiên): Phân bổ câu theo từng mức độ khó.</li>
+     *   <li><b>single difficulty mode</b>: Toàn đề cùng một mức độ khó.</li>
+     * </ul>
      *
-     * @param request Tham số sinh đề
+     * @param request Tham số sinh đề (subject, grade_level, topic, total_questions,
+     *                difficulty_mix, bank_id)
      * @param teacher Giáo viên yêu cầu
      * @return ExamDTO đầy đủ với danh sách câu hỏi (nguồn gốc BANK + AI)
      */
     @Transactional
     public ExamDTO aiGenerateExam(AIGenerateExamRequest request, User teacher) {
 
+        List<Question> bankQuestions;
+        List<Question> aiQuestions;
+
+        if (request.hasDifficultyMix()) {
+            // ----------------------------------------------------------------
+            // MODE A: difficulty_mix – sinh theo từng mức độ khó
+            // ----------------------------------------------------------------
+            DifficultyMixResult result = processWithDifficultyMix(request, teacher);
+            bankQuestions = result.bankQuestions();
+            aiQuestions   = result.aiQuestions();
+        } else {
+            // ----------------------------------------------------------------
+            // MODE B: single difficulty – hành vi cũ
+            // ----------------------------------------------------------------
+            SingleDifficultyResult result = processWithSingleDifficulty(request, teacher);
+            bankQuestions = result.bankQuestions();
+            aiQuestions   = result.aiQuestions();
+        }
+
+        // ----------------------------------------------------------------
+        // Tạo Exam entity + gắn câu hỏi
+        // ----------------------------------------------------------------
+        Exam exam = buildExam(request, teacher);
+        exam = examRepository.save(exam);
+
+        List<ExamQuestion> examQList = buildExamQuestions(exam, bankQuestions, aiQuestions);
+        examQuestionRepository.saveAll(examQList);
+
+        exam.setTotalQuestions(examQList.size());
+        exam.setUpdatedAt(LocalDateTime.now());
+        exam = examRepository.save(exam);
+
+        log.info("[ExamService][aiGenerateExam] Exam #{} created: {} from bank, {} from AI",
+                exam.getId(), bankQuestions.size(), aiQuestions.size());
+
+        return toDetailDTO(exam);
+    }
+
+    // =========================================================================
+    // Private – Mode A: difficulty_mix
+    // =========================================================================
+
+    /**
+     * Xử lý sinh đề theo difficulty_mix:
+     * với mỗi cặp (difficulty, count) trong map, lấy câu từ bank rồi AI fill gap.
+     */
+    private DifficultyMixResult processWithDifficultyMix(AIGenerateExamRequest request, User teacher) {
+        List<Question> allBankSelected = new ArrayList<>();
+        List<Question> allAiGenerated  = new ArrayList<>();
+
+        // Fetch toàn bộ câu ứng cử từ bank (nếu có bank_id)
+        List<Question> poolFromBank = fetchFromBankById(request);
+
+        for (Map.Entry<String, Integer> entry : request.getDifficultyMix().entrySet()) {
+            Question.Difficulty diff = parseDifficulty(entry.getKey());
+            int needed = (entry.getValue() != null && entry.getValue() > 0) ? entry.getValue() : 0;
+
+            if (needed == 0) continue;
+
+            if (diff == null) {
+                log.warn("[ExamService][difficultyMix] Unknown difficulty key '{}' – skipping", entry.getKey());
+                continue;
+            }
+
+            // Lọc pool theo difficulty
+            final Question.Difficulty finalDiff = diff;
+            List<Question> poolForDiff = poolFromBank.stream()
+                    .filter(q -> finalDiff.equals(q.getDifficulty()))
+                    .collect(Collectors.toList());
+
+            Collections.shuffle(poolForDiff);
+            List<Question> selected = poolForDiff.stream().limit(needed).toList();
+            allBankSelected.addAll(selected);
+
+            int gap = needed - selected.size();
+            log.info("[ExamService][difficultyMix] difficulty={} needed={} bank={} gap={}",
+                    diff, needed, selected.size(), gap);
+
+            if (gap > 0) {
+                List<String> existingContents = selected.stream()
+                        .map(Question::getContent)
+                        .toList();
+
+                List<QuestionDTO> aiDTOs = geminiAIService.generateExamGapQuestions(
+                        request.getSubject(),
+                        request.getTopic(),
+                        diff,
+                        request.getQuestionType(),
+                        gap,
+                        existingContents);
+
+                List<Question> saved = persistAIQuestions(aiDTOs, request.getBankId(), teacher);
+                allAiGenerated.addAll(saved);
+            }
+        }
+
+        return new DifficultyMixResult(allBankSelected, allAiGenerated);
+    }
+
+    /**
+     * Internal record – kết quả của processWithDifficultyMix.
+     */
+    private record DifficultyMixResult(List<Question> bankQuestions, List<Question> aiQuestions) {}
+
+    // =========================================================================
+    // Private – Mode B: single difficulty
+    // =========================================================================
+
+    private SingleDifficultyResult processWithSingleDifficulty(AIGenerateExamRequest request, User teacher) {
         int total = request.getTotalQuestions();
 
-        // ----------------------------------------------------------------
-        // STEP 1: Lấy câu hỏi từ ngân hàng (nếu có bankIds)
-        // ----------------------------------------------------------------
-        List<Question> bankQuestions = fetchFromBank(request);
+        List<Question> bankPool = fetchFromBankById(request);
 
-        log.info("[ExamService][aiGenerateExam] Bank returned {} questions (need {})",
-                bankQuestions.size(), total);
+        // Lọc theo difficulty đơn
+        Question.Difficulty diff = request.getDifficulty();
+        if (diff != null) {
+            bankPool = bankPool.stream()
+                    .filter(q -> diff.equals(q.getDifficulty()))
+                    .collect(Collectors.toList());
+        }
 
-        // ----------------------------------------------------------------
-        // STEP 2: Trộn ngẫu nhiên và cắt theo số câu cần dùng
-        // ----------------------------------------------------------------
-        Collections.shuffle(bankQuestions);
-        List<Question> selectedFromBank = bankQuestions.stream()
-                .limit(total)
-                .toList();
+        Collections.shuffle(bankPool);
+        List<Question> selected = bankPool.stream().limit(total).toList();
 
-        // ----------------------------------------------------------------
-        // STEP 3: Tính số câu còn thiếu (gap)
-        // ----------------------------------------------------------------
-        int gap = total - selectedFromBank.size();
-        log.info("[ExamService][aiGenerateExam] Gap = {} (will be AI-generated)", gap);
+        int gap = total - selected.size();
+        log.info("[ExamService][single] Bank={} gap={}", selected.size(), gap);
 
-        // ----------------------------------------------------------------
-        // STEP 4: Sinh câu bù bằng Gemini AI (nếu gap > 0)
-        // ----------------------------------------------------------------
         List<Question> aiQuestions = new ArrayList<>();
         if (gap > 0) {
-            List<String> existingContents = selectedFromBank.stream()
-                    .map(Question::getContent)
-                    .toList();
-
+            List<String> existingContents = selected.stream().map(Question::getContent).toList();
             List<QuestionDTO> aiDTOs = geminiAIService.generateExamGapQuestions(
                     request.getSubject(),
                     request.getTopic(),
@@ -171,96 +258,35 @@ public class ExamService {
                     request.getQuestionType(),
                     gap,
                     existingContents);
-
-            // STEP 5: Lưu câu AI vào ngân hàng câu hỏi
-            // lấy bank đầu tiên trong danh sách, hoặc bank mặc định (id=1)
-            Integer targetBankId = (request.getBankIds() != null && !request.getBankIds().isEmpty())
-                    ? request.getBankIds().get(0)
-                    : null;
-
-            aiQuestions = persistAIQuestions(aiDTOs, targetBankId, teacher);
-            log.info("[ExamService][aiGenerateExam] Persisted {} AI questions to bank {}",
-                    aiQuestions.size(), targetBankId);
+            aiQuestions = persistAIQuestions(aiDTOs, request.getBankId(), teacher);
         }
 
-        // ----------------------------------------------------------------
-        // STEP 6: Tạo Exam entity + gắn câu hỏi
-        // ----------------------------------------------------------------
-        Exam exam = buildExam(request, teacher);
-        exam = examRepository.save(exam);
-
-        List<ExamQuestion> examQList = buildExamQuestions(exam, selectedFromBank, aiQuestions);
-        examQuestionRepository.saveAll(examQList);
-
-        // Cập nhật total_questions
-        exam.setTotalQuestions(examQList.size());
-        exam.setUpdatedAt(LocalDateTime.now());
-        exam = examRepository.save(exam);
-
-        log.info("[ExamService][aiGenerateExam] Exam #{} created: {} from bank, {} from AI",
-                exam.getId(), selectedFromBank.size(), aiQuestions.size());
-
-        // ----------------------------------------------------------------
-        // STEP 7: Trả về DTO đầy đủ
-        // ----------------------------------------------------------------
-        return toDetailDTO(exam);
+        return new SingleDifficultyResult(selected, aiQuestions);
     }
 
-    // =========================================================================
-    // PUBLISH / DELETE
-    // =========================================================================
-
-    /**
-     * Publish đề thi (DRAFT → PUBLISHED).
-     */
-    @Transactional
-    public ExamDTO publishExam(Long examId, User teacher) {
-        Exam exam = findExamOrThrow(examId);
-        assertOwner(exam, teacher);
-        exam.setStatus(Exam.ExamStatus.PUBLISHED);
-        exam.setUpdatedAt(LocalDateTime.now());
-        return toSummaryDTO(examRepository.save(exam));
-    }
-
-    /**
-     * Xóa đề thi (cascade xóa exam_questions).
-     */
-    @Transactional
-    public void deleteExam(Long examId, User teacher) {
-        Exam exam = findExamOrThrow(examId);
-        assertOwner(exam, teacher);
-        examRepository.delete(exam);
-    }
+    private record SingleDifficultyResult(List<Question> bankQuestions, List<Question> aiQuestions) {}
 
     // =========================================================================
     // Private helpers – Bank fetching
     // =========================================================================
 
     /**
-     * Lấy câu hỏi từ ngân hàng theo các bộ lọc trong request.
+     * Lấy tất cả câu hỏi đã duyệt từ bank theo {@code bank_id} + topic filter.
      *
-     * <p>Chỉ lấy câu đã được duyệt ({@code isApproved = true}).
-     * Nếu {@code bankIds} rỗng/null, trả về danh sách rỗng (để AI sinh toàn bộ).
+     * <p>Nếu {@code bank_id} null, trả về danh sách rỗng (AI sinh toàn bộ).
      */
-    private List<Question> fetchFromBank(AIGenerateExamRequest request) {
-        if (request.getBankIds() == null || request.getBankIds().isEmpty()) {
-            log.info("[ExamService] No bankIds provided – AI will generate all questions");
+    private List<Question> fetchFromBankById(AIGenerateExamRequest request) {
+        if (request.getBankId() == null) {
+            log.info("[ExamService] No bank_id provided – AI will generate all questions");
             return new ArrayList<>();
         }
 
-        // Bulk fetch từ nhiều bank, rồi lọc ở application level
-        return questionRepository.findByBankIdIn(request.getBankIds())
+        return questionRepository.findByBankId(request.getBankId())
                 .stream()
                 .filter(q -> q.getIsApproved() != null && q.getIsApproved())
-                .filter(q -> matchesDifficulty(q, request.getDifficulty()))
                 .filter(q -> matchesType(q, request.getQuestionType()))
                 .filter(q -> matchesTopic(q, request.getTopic()))
-                .toList();
-    }
-
-    private boolean matchesDifficulty(Question q, Question.Difficulty difficulty) {
-        if (difficulty == null) return true;
-        return difficulty.equals(q.getDifficulty());
+                .collect(Collectors.toList()); // mutable list để shuffle
     }
 
     private boolean matchesType(Question q, Question.QuestionType type) {
@@ -281,14 +307,13 @@ public class ExamService {
     /**
      * Lưu danh sách câu hỏi AI-generated vào ngân hàng câu hỏi.
      *
-     * <p>Nếu {@code targetBankId} là null hoặc không tìm thấy, các câu AI
-     * vẫn được tạo dưới dạng entity nhưng KHÔNG liên kết bank (bank sẽ là null).
-     * Điều này cho phép đề thi vẫn hoạt động dù không có bank.
+     * <p>Nếu {@code targetBankId} null hoặc bank không tìm thấy,
+     * câu AI được tạo in-memory (không liên kết bank).
      *
      * @param aiDTOs       Danh sách QuestionDTO từ Gemini
      * @param targetBankId ID ngân hàng muốn lưu (nullable)
      * @param teacher      Giáo viên tạo
-     * @return Danh sách Question entity đã lưu
+     * @return Danh sách Question entity đã lưu (hoặc transient nếu không có bank)
      */
     private List<Question> persistAIQuestions(
             List<QuestionDTO> aiDTOs,
@@ -299,22 +324,19 @@ public class ExamService {
             return new ArrayList<>();
         }
 
-        // Tìm bank nếu có – dùng QuestionBankRepository trực tiếp
+        // Resolve bank
         QuestionBank bank = null;
         if (targetBankId != null) {
             bank = questionBankRepository.findById(targetBankId).orElse(null);
             if (bank == null) {
-                log.warn("[ExamService] Bank {} not found – AI questions will not be linked to a bank",
-                        targetBankId);
+                log.warn("[ExamService] Bank {} not found – AI questions will not be linked to a bank", targetBankId);
             }
         }
 
         final QuestionBank finalBank = bank;
 
-        // Nếu không tìm được bank, vẫn tạo câu nhưng cần bank (NOT NULL constraint)
-        // => Chỉ lưu khi có bank hợp lệ
         if (finalBank == null) {
-            log.info("[ExamService] No valid bank found – AI questions will be created in-memory only (not persisted to bank)");
+            log.info("[ExamService] No valid bank – AI questions created in-memory only");
             return aiDTOs.stream()
                     .filter(dto -> dto != null && dto.getContent() != null && !dto.getContent().isBlank())
                     .map(dto -> buildTransientQuestion(dto, teacher))
@@ -324,7 +346,7 @@ public class ExamService {
         List<Question> toSave = aiDTOs.stream()
                 .filter(dto -> dto != null && dto.getContent() != null && !dto.getContent().isBlank())
                 .map(dto -> buildPersistableQuestion(dto, finalBank, teacher))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         return questionRepository.saveAll(toSave);
     }
@@ -348,7 +370,7 @@ public class ExamService {
 
     private Question buildPersistableQuestion(
             QuestionDTO dto,
-            com.planbookai.backend.model.entity.QuestionBank bank,
+            QuestionBank bank,
             User teacher) {
         Question q = buildTransientQuestion(dto, teacher);
         q.setBank(bank);
@@ -362,7 +384,7 @@ public class ExamService {
     private Exam buildExam(AIGenerateExamRequest request, User teacher) {
         return Exam.builder()
                 .teacher(teacher)
-                .title(request.getTitle())
+                .title(request.resolvedTitle())
                 .subject(request.getSubject())
                 .gradeLevel(request.getGradeLevel())
                 .topic(request.getTopic())
@@ -376,13 +398,7 @@ public class ExamService {
     /**
      * Xây dựng danh sách ExamQuestion (junction entities).
      *
-     * <p>Câu từ bank đứng trước, câu AI theo sau.
-     * Nếu {@code randomized=true} trong đề, thứ tự được xáo ngẫu nhiên ở bước trước.
-     *
-     * @param exam          Đề thi đã được lưu (có ID)
-     * @param bankQuestions Câu hỏi lấy từ bank
-     * @param aiQuestions   Câu hỏi AI sinh thêm
-     * @return Danh sách ExamQuestion theo thứ tự
+     * <p>Thứ tự: câu từ bank trước, câu AI theo sau.
      */
     private List<ExamQuestion> buildExamQuestions(
             Exam exam,
@@ -419,9 +435,6 @@ public class ExamService {
     // Private helpers – DTO mapping
     // =========================================================================
 
-    /**
-     * Chuyển Exam → ExamDTO không kèm câu hỏi (dùng cho danh sách).
-     */
     private ExamDTO toSummaryDTO(Exam exam) {
         return ExamDTO.builder()
                 .id(exam.getId())
@@ -442,9 +455,6 @@ public class ExamService {
                 .build();
     }
 
-    /**
-     * Chuyển Exam → ExamDTO đầy đủ kèm danh sách câu hỏi.
-     */
     private ExamDTO toDetailDTO(Exam exam) {
         ExamDTO dto = toSummaryDTO(exam);
 
@@ -477,6 +487,28 @@ public class ExamService {
     }
 
     // =========================================================================
+    // PUBLISH / DELETE
+    // =========================================================================
+
+    /** Publish đề thi (DRAFT → PUBLISHED). */
+    @Transactional
+    public ExamDTO publishExam(Long examId, User teacher) {
+        Exam exam = findExamOrThrow(examId);
+        assertOwner(exam, teacher);
+        exam.setStatus(Exam.ExamStatus.PUBLISHED);
+        exam.setUpdatedAt(LocalDateTime.now());
+        return toSummaryDTO(examRepository.save(exam));
+    }
+
+    /** Xóa đề thi (cascade xóa exam_questions). */
+    @Transactional
+    public void deleteExam(Long examId, User teacher) {
+        Exam exam = findExamOrThrow(examId);
+        assertOwner(exam, teacher);
+        examRepository.delete(exam);
+    }
+
+    // =========================================================================
     // Private helpers – lookup / validation
     // =========================================================================
 
@@ -487,7 +519,6 @@ public class ExamService {
 
     private void assertOwner(Exam exam, User user) {
         if (exam.getTeacher() == null || !exam.getTeacher().getId().equals(user.getId())) {
-            // Admin/Manager có thể xem
             if (user.getRole() != null &&
                     (user.getRole().getName() == Role.RoleName.ADMIN
                             || user.getRole().getName() == Role.RoleName.MANAGER)) {
