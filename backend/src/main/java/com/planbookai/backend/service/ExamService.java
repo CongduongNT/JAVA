@@ -307,13 +307,21 @@ public class ExamService {
     /**
      * Lưu danh sách câu hỏi AI-generated vào ngân hàng câu hỏi.
      *
-     * <p>Nếu {@code targetBankId} null hoặc bank không tìm thấy,
-     * câu AI được tạo in-memory (không liên kết bank).
+     * <p><b>Bank resolution (3 tầng):</b>
+     * <ol>
+     *   <li>Dùng {@code targetBankId} nếu cung cấp và tìm thấy trong DB.</li>
+     *   <li>Fallback: bank đầu tiên của teacher ({@code findFirstByCreatedById}).</li>
+     *   <li>Nếu teacher không có bank nào → throw {@link ResourceNotFoundException}.</li>
+     * </ol>
+     *
+     * <p>AI questions <b>luôn phải được persist</b> trước khi tạo {@code exam_questions},
+     * vì {@code exam_questions.question_id} là NOT NULL FK → transient Question sẽ gây lỗi.
      *
      * @param aiDTOs       Danh sách QuestionDTO từ Gemini
      * @param targetBankId ID ngân hàng muốn lưu (nullable)
      * @param teacher      Giáo viên tạo
-     * @return Danh sách Question entity đã lưu (hoặc transient nếu không có bank)
+     * @return Danh sách Question entity đã lưu vào DB
+     * @throws ResourceNotFoundException nếu không resolve được bank nào
      */
     private List<Question> persistAIQuestions(
             List<QuestionDTO> aiDTOs,
@@ -324,31 +332,51 @@ public class ExamService {
             return new ArrayList<>();
         }
 
-        // Resolve bank
-        QuestionBank bank = null;
-        if (targetBankId != null) {
-            bank = questionBankRepository.findById(targetBankId).orElse(null);
-            if (bank == null) {
-                log.warn("[ExamService] Bank {} not found – AI questions will not be linked to a bank", targetBankId);
-            }
-        }
-
-        final QuestionBank finalBank = bank;
-
-        if (finalBank == null) {
-            log.info("[ExamService] No valid bank – AI questions created in-memory only");
-            return aiDTOs.stream()
-                    .filter(dto -> dto != null && dto.getContent() != null && !dto.getContent().isBlank())
-                    .map(dto -> buildTransientQuestion(dto, teacher))
-                    .toList();
-        }
+        // Resolve target bank – MUST be non-null (questions.bank_id NOT NULL)
+        QuestionBank bank = resolveTargetBank(targetBankId, teacher);
 
         List<Question> toSave = aiDTOs.stream()
                 .filter(dto -> dto != null && dto.getContent() != null && !dto.getContent().isBlank())
-                .map(dto -> buildPersistableQuestion(dto, finalBank, teacher))
+                .map(dto -> buildPersistableQuestion(dto, bank, teacher))
                 .collect(Collectors.toList());
 
-        return questionRepository.saveAll(toSave);
+        List<Question> saved = questionRepository.saveAll(toSave);
+        log.info("[ExamService] Persisted {} AI questions to bank id={} name='{}'",
+                saved.size(), bank.getId(), bank.getName());
+        return saved;
+    }
+
+    /**
+     * Resolve ngân hàng câu hỏi để lưu AI-generated questions.
+     *
+     * <p>Thứ tự ưu tiên:
+     * <ol>
+     *   <li>Bank theo {@code targetBankId} (nếu cung cấp và tồn tại).</li>
+     *   <li>Bank đầu tiên của teacher.</li>
+     *   <li>Throw exception nếu teacher không có bank nào.</li>
+     * </ol>
+     */
+    private QuestionBank resolveTargetBank(Integer targetBankId, User teacher) {
+        // Tier 1 – explicit bankId
+        if (targetBankId != null) {
+            Optional<QuestionBank> explicit = questionBankRepository.findById(targetBankId);
+            if (explicit.isPresent()) {
+                return explicit.get();
+            }
+            log.warn("[ExamService] bank_id={} not found, falling back to teacher's default bank", targetBankId);
+        }
+
+        // Tier 2 – teacher's first bank
+        Optional<QuestionBank> teacherBank = questionBankRepository.findFirstByCreatedById(teacher.getId());
+        if (teacherBank.isPresent()) {
+            log.info("[ExamService] Using teacher's default bank id={} as fallback", teacherBank.get().getId());
+            return teacherBank.get();
+        }
+
+        // Tier 3 – no bank available → fail fast
+        throw new ResourceNotFoundException(
+                "Không tìm thấy ngân hàng câu hỏi để lưu câu AI. " +
+                "Vui lòng tạo hoặc chỉ định bank_id hợp lệ trước khi sinh đề.");
     }
 
     private Question buildTransientQuestion(QuestionDTO dto, User teacher) {
