@@ -29,4 +29,7 @@ public class Role {
     public enum RoleName {
         ADMIN, MANAGER, STAFF, TEACHER
     }
+
+    
+
 }

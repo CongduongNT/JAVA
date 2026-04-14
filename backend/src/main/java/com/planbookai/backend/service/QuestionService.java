@@ -53,9 +53,6 @@ public class QuestionService {
                 .toList();
     }
 
-    private boolean hasRole(User user, RoleName roleName) {
-        return user.getRole() != null && user.getRole().getName() == roleName;
-    }
 
     public QuestionDTO.QuestionBankDTO getBank(Integer id, User user) {
         QuestionBank bank = findBankOrThrow(id);
@@ -477,95 +474,4 @@ public class QuestionService {
         return mapToQuestionDTO(saved);
     }
 
-    private QuestionDTO.QuestionBankDTO mapToBankDTO(QuestionBank bank) {
-        QuestionDTO.QuestionBankDTO dto = new QuestionDTO.QuestionBankDTO();
-        dto.setId(bank.getId());
-        dto.setName(bank.getName());
-        dto.setSubject(bank.getSubject());
-        dto.setGradeLevel(bank.getGradeLevel());
-        dto.setDescription(bank.getDescription());
-        dto.setIsPublished(bank.getIsPublished());
-        dto.setCreatedById(bank.getCreatedBy() != null ? bank.getCreatedBy().getId() : null);
-        dto.setCreatedAt(bank.getCreatedAt());
-        return dto;
-    }
-
-    private void assertCanReadBank(QuestionBank bank, User user) {
-        if (Boolean.TRUE.equals(bank.getIsPublished())) return;
-        if (hasRole(user, RoleName.ADMIN) || hasRole(user, RoleName.MANAGER)) return;
-        if (bank.getCreatedBy() != null && bank.getCreatedBy().getId().equals(user.getId())) return;
-        throw new ForbiddenOperationException("Bạn không có quyền truy cập ngân hàng câu hỏi này.");
-    }
-
-    private void assertCanManageBank(QuestionBank bank, User user) {
-        if (hasRole(user, RoleName.ADMIN) || hasRole(user, RoleName.MANAGER)) return;
-        if (bank.getCreatedBy() != null && bank.getCreatedBy().getId().equals(user.getId())) return;
-        throw new ForbiddenOperationException("Bạn không có quyền quản lý ngân hàng câu hỏi này.");
-    }
-
-    private void assertCanCreateBank(User user) {
-        if (user == null) throw new ForbiddenOperationException("Yêu cầu xác thực người dùng.");
-    }
-
-    private Question findQuestionOrThrow(Long id) {
-        return questionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi với ID: " + id));
-    }
-
-    private void assertCanReadQuestion(Question question, User user) {
-        assertCanReadBank(question.getBank(), user);
-    }
-
-    private void assertCanManageQuestion(Question question, User user) {
-        assertCanManageBank(question.getBank(), user);
-    }
-
-    private void validatePageRequest(Integer page, Integer size) {
-        if (page == null || page < 0) throw new IllegalArgumentException("Chỉ mục trang không hợp lệ.");
-        if (size == null || size < 1) throw new IllegalArgumentException("Kích thước trang không hợp lệ.");
-    }
-
-    private String normalizeFilter(String value) {
-        return StringUtils.hasText(value) ? value.trim() : null;
-    }
-
-    private Question.Difficulty parseDifficulty(String difficulty) {
-        if (!StringUtils.hasText(difficulty)) return null;
-        try {
-            return Question.Difficulty.valueOf(difficulty.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private Question.QuestionType parseQuestionType(String type) {
-        if (!StringUtils.hasText(type)) return null;
-        try {
-            return Question.QuestionType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private <T extends Enum<T>> T parseEnum(String value, Class<T> enumClass, String fieldName) {
-        if (!StringUtils.hasText(value)) return null;
-        try {
-            return Enum.valueOf(enumClass, value.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private <T extends Enum<T>> T parseRequiredEnum(String value, Class<T> enumClass, String fieldName) {
-        T result = parseEnum(value, enumClass, fieldName);
-        if (result == null) {
-            throw new IllegalArgumentException("Trường '" + fieldName + "' không hợp lệ hoặc bị thiếu.");
-        }
-        return result;
-    }
-
-    private void validatePreviewSaveRequest(Integer bankId, List<QuestionDTO> questions) {
-        if (bankId == null) throw new IllegalArgumentException("Bank ID là bắt buộc.");
-        if (questions == null || questions.isEmpty()) throw new IllegalArgumentException("Danh sách câu hỏi trống.");
-    }
 }
