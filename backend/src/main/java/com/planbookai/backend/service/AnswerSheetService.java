@@ -4,6 +4,7 @@ import com.planbookai.backend.dto.AnswerSheetDTO;
 import com.planbookai.backend.dto.UploadAnswerSheetRequest;
 import com.planbookai.backend.exception.ForbiddenOperationException;
 import com.planbookai.backend.exception.ResourceNotFoundException;
+import com.planbookai.backend.mapper.AnswerSheetMapper;
 import com.planbookai.backend.model.entity.AnswerSheet;
 import com.planbookai.backend.model.entity.Exam;
 import com.planbookai.backend.model.entity.Role;
@@ -63,7 +64,7 @@ public class AnswerSheetService {
         }
 
         return answerSheetRepository.saveAll(answerSheets).stream()
-                .map(this::mapToDTO)
+                .map(AnswerSheetMapper::toDTO)
                 .toList();
     }
 
@@ -109,19 +110,5 @@ public class AnswerSheetService {
 
     private String buildStorageFolder(Long teacherId, Long examId) {
         return "answer-sheets/" + teacherId + "/exam-" + examId;
-    }
-
-    private AnswerSheetDTO mapToDTO(AnswerSheet answerSheet) {
-        AnswerSheetDTO dto = new AnswerSheetDTO();
-        dto.setId(answerSheet.getId());
-        dto.setExamId(answerSheet.getExam() != null ? answerSheet.getExam().getId() : null);
-        dto.setTeacherId(answerSheet.getTeacher() != null ? answerSheet.getTeacher().getId() : null);
-        dto.setStudentName(answerSheet.getStudentName());
-        dto.setStudentCode(answerSheet.getStudentCode());
-        dto.setFileUrl(answerSheet.getFileUrl());
-        dto.setOcrStatus(answerSheet.getOcrStatus());
-        dto.setOcrRawData(answerSheet.getOcrRawData());
-        dto.setUploadedAt(answerSheet.getUploadedAt());
-        return dto;
     }
 }
