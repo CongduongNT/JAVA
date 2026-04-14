@@ -1,0 +1,500 @@
+﻿[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.planbookai:backend >-----------------------
+[INFO] Building backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 11 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 94 source files with javac [debug parameters release 17] to target\classes
+[INFO] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AiPromptTemplateController.java: D:\project\JAVA\backend\src\main\java\com\planbookai\backend\controller\AiPromptTemplateController.java uses unchecked or unsafe operations.
+[INFO] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AiPromptTemplateController.java: Recompile with -Xlint:unchecked for details.
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/QuestionService.java:[322,21] method hasRole(com.planbookai.backend.model.entity.User,com.planbookai.backend.model.entity.Role.RoleName) is already defined in class com.planbookai.backend.service.QuestionService
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/Security/JwtAuthenticationFilter.java:[89,65] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/model/entity/User.java:[75,43] cannot find symbol
+  symbol:   method getName()
+  location: variable role of type com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/model/entity/User.java:[78,70] cannot find symbol
+  symbol:   method getName()
+  location: variable role of type com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[43,41] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[66,37] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[73,57] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[74,21] cannot find symbol
+  symbol:   method setRole(com.planbookai.backend.model.entity.Role)
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[79,55] cannot find symbol
+  symbol:   method getPasswordHash()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[80,21] cannot find symbol
+  symbol:   method setPasswordHash(java.lang.String)
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[102,55] cannot find symbol
+  symbol:   method getName()
+  location: variable p of type com.planbookai.backend.model.entity.SubscriptionPackage
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[103,55] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.model.entity.SubscriptionPackage
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[132,47] cannot find symbol
+  symbol:   method getTitle()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[133,53] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[47,89] cannot find symbol
+  symbol:   method getStatus()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[49,100] cannot find symbol
+  symbol:   method getTitle()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[49,114] cannot find symbol
+  symbol:   method getStatus()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[52,44] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[52,70] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[54,116] cannot find symbol
+  symbol:   method getTitle()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[54,139] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[71,32] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[71,83] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[74,53] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[75,31] cannot find symbol
+  symbol:   method getTitle()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[76,33] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[77,36] cannot find symbol
+  symbol:   method getPromptText()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[78,35] cannot find symbol
+  symbol:   method getVariables()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[91,34] cannot find symbol
+  symbol:   method getTitle()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[92,36] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[93,39] cannot find symbol
+  symbol:   method getPromptText()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[94,38] cannot find symbol
+  symbol:   method getVariables()
+  location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[95,17] cannot find symbol
+  symbol:   method setUpdatedAt(java.time.LocalDateTime)
+  location: variable existing of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[109,33] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.PromptTemplateDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[110,27] cannot find symbol
+  symbol:   method getId()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[111,30] cannot find symbol
+  symbol:   method getTitle()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[112,32] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[113,35] cannot find symbol
+  symbol:   method getPromptText()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[114,34] cannot find symbol
+  symbol:   method getVariables()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[115,31] cannot find symbol
+  symbol:   method getStatus()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[116,38] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[116,70] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[117,34] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[127,49] cannot find symbol
+  symbol:   method getStatus()
+  location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[137,17] cannot find symbol
+  symbol:   method setStatus(java.lang.String)
+  location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[138,17] cannot find symbol
+  symbol:   method setUpdatedAt(java.time.LocalDateTime)
+  location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[148,40] cannot find symbol
+  symbol:   method getStatus()
+  location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[152,37] cannot find symbol
+  symbol:   method getPromptText()
+  location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[181,65] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[182,41] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[183,41] cannot find symbol
+  symbol:   method getCreatedBy()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[185,44] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[185,70] cannot find symbol
+  symbol:   method getPurpose()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[187,43] cannot find symbol
+  symbol:   method getStatus()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[187,68] cannot find symbol
+  symbol:   method getStatus()
+  location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[296,27] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.QuestionDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[310,29] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.LessonPlanDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[338,54] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.LessonPlanDTO.LessonPhase
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[345,25] incompatible types: inference variable T has incompatible bounds
+    equality constraints: com.planbookai.backend.dto.LessonPlanDTO.LessonPhase
+    lower bounds: java.lang.Object
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[351,50] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.LessonPlanDTO.AssessmentDetail
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[359,46] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.LessonPlanDTO.AssessmentDetail
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AuthController.java:[56,60] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.AuthResponse.UserDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AuthController.java:[57,25] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AuthController.java:[58,31] cannot find symbol
+  symbol:   method getFullName()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AuthController.java:[60,62] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/AuthController.java:[61,31] cannot find symbol
+  symbol:   method getIsActive()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[39,47] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type com.planbookai.backend.dto.RegisterRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[48,25] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[49,34] cannot find symbol
+  symbol:   method getFullName()
+  location: variable request of type com.planbookai.backend.dto.RegisterRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[50,31] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type com.planbookai.backend.dto.RegisterRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[51,61] cannot find symbol
+  symbol:   method getPassword()
+  location: variable request of type com.planbookai.backend.dto.RegisterRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[62,50] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type com.planbookai.backend.dto.LoginRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[65,56] cannot find symbol
+  symbol:   method getPassword()
+  location: variable request of type com.planbookai.backend.dto.LoginRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[74,45] cannot find symbol
+  symbol:   method getRefreshToken()
+  location: variable request of type com.planbookai.backend.dto.RefreshTokenRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[109,60] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.AuthResponse.UserDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[110,25] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[111,31] cannot find symbol
+  symbol:   method getFullName()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[113,62] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[114,31] cannot find symbol
+  symbol:   method getIsActive()
+  location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AuthService.java:[117,28] cannot find symbol
+  symbol:   method builder()
+  location: class com.planbookai.backend.dto.AuthResponse
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/controller/CurriculumFrameworkController.java:[142,30] cannot find symbol
+  symbol:   method getName()
+  location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[98,35] cannot find symbol
+  symbol:   method getTitle()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[99,37] cannot find symbol
+  symbol:   method getSubject()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[100,40] cannot find symbol
+  symbol:   method getGradeLevel()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[101,41] cannot find symbol
+  symbol:   method getDescription()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[102,39] cannot find symbol
+  symbol:   method getStructure()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[103,18] cannot find symbol
+  symbol:   method setCreatedBy(com.planbookai.backend.model.entity.User)
+  location: variable framework of type com.planbookai.backend.model.entity.CurriculumFramework
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[104,61] cannot find symbol
+  symbol:   method getIsPublished()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[105,18] cannot find symbol
+  symbol:   method setCreatedAt(java.time.LocalDateTime)
+  location: variable framework of type com.planbookai.backend.model.entity.CurriculumFramework
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[106,18] cannot find symbol
+  symbol:   method setUpdatedAt(java.time.LocalDateTime)
+  location: variable framework of type com.planbookai.backend.model.entity.CurriculumFramework
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[119,35] cannot find symbol
+  symbol:   method getTitle()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[120,37] cannot find symbol
+  symbol:   method getSubject()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[121,40] cannot find symbol
+  symbol:   method getGradeLevel()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[122,41] cannot find symbol
+  symbol:   method getDescription()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[123,39] cannot find symbol
+  symbol:   method getStructure()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[124,20] cannot find symbol
+  symbol:   method getIsPublished()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[125,45] cannot find symbol
+  symbol:   method getIsPublished()
+  location: variable request of type com.planbookai.backend.dto.CurriculumFrameworkRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[127,18] cannot find symbol
+  symbol:   method setUpdatedAt(java.time.LocalDateTime)
+  location: variable framework of type com.planbookai.backend.model.entity.CurriculumFramework
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[148,18] cannot find symbol
+  symbol:   method setIsPublished(boolean)
+  location: variable framework of type com.planbookai.backend.model.entity.CurriculumFramework
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/CurriculumFrameworkService.java:[149,18] cannot find symbol
+  symbol:   method setUpdatedAt(java.time.LocalDateTime)
+  location: variable framework of type com.planbookai.backend.model.entity.CurriculumFramework
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  12.510 s
+[INFO] Finished at: 2026-04-14T23:03:16+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project backend: Compilation failure: Compilation failure: 
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/QuestionService.java:[322,21] method hasRole(com.planbookai.backend.model.entity.User,com.planbookai.backend.model.entity.Role.RoleName) is already defined in class com.planbookai.backend.service.QuestionService
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/Security/JwtAuthenticationFilter.java:[89,65] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/model/entity/User.java:[75,43] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable role of type com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/model/entity/User.java:[78,70] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable role of type com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[43,41] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[66,37] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[73,57] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[74,21] cannot find symbol
+[ERROR]   symbol:   method setRole(com.planbookai.backend.model.entity.Role)
+[ERROR]   location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[79,55] cannot find symbol
+[ERROR]   symbol:   method getPasswordHash()
+[ERROR]   location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[80,21] cannot find symbol
+[ERROR]   symbol:   method setPasswordHash(java.lang.String)
+[ERROR]   location: variable user of type com.planbookai.backend.model.entity.User
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[102,55] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable p of type com.planbookai.backend.model.entity.SubscriptionPackage
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[103,55] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.model.entity.SubscriptionPackage
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[132,47] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/component/DataSeeder.java:[133,53] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[47,89] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[49,100] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[49,114] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[52,44] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[52,70] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[54,116] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[54,139] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[71,32] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[71,83] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: class com.planbookai.backend.model.entity.Role
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[74,53] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[75,31] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[76,33] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[77,36] cannot find symbol
+[ERROR]   symbol:   method getPromptText()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[78,35] cannot find symbol
+[ERROR]   symbol:   method getVariables()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[91,34] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[92,36] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[93,39] cannot find symbol
+[ERROR]   symbol:   method getPromptText()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[94,38] cannot find symbol
+[ERROR]   symbol:   method getVariables()
+[ERROR]   location: variable request of type com.planbookai.backend.dto.PromptTemplateRequest
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[95,17] cannot find symbol
+[ERROR]   symbol:   method setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   location: variable existing of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[109,33] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.dto.PromptTemplateDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[110,27] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[111,30] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[112,32] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[113,35] cannot find symbol
+[ERROR]   symbol:   method getPromptText()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[114,34] cannot find symbol
+[ERROR]   symbol:   method getVariables()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[115,31] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[116,38] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[116,70] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[117,34] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable entity of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[127,49] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[137,17] cannot find symbol
+[ERROR]   symbol:   method setStatus(java.lang.String)
+[ERROR]   location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[138,17] cannot find symbol
+[ERROR]   symbol:   method setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[148,40] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[152,37] cannot find symbol
+[ERROR]   symbol:   method getPromptText()
+[ERROR]   location: variable template of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[181,65] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[182,41] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[183,41] cannot find symbol
+[ERROR]   symbol:   method getCreatedBy()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[185,44] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[185,70] cannot find symbol
+[ERROR]   symbol:   method getPurpose()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[187,43] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/AiPromptTemplateService.java:[187,68] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable t of type com.planbookai.backend.model.entity.AiPromptTemplate
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[296,27] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.dto.QuestionDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[310,29] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.dto.LessonPlanDTO
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[338,54] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.planbookai.backend.dto.LessonPlanDTO.LessonPhase
+[ERROR] /D:/project/JAVA/backend/src/main/java/com/planbookai/backend/service/GeminiAIService.java:[345,25] incompatible types: inference variable T has incompatible bounds

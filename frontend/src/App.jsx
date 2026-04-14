@@ -190,23 +190,20 @@ function App() {
           <Route
             path="/lesson-plans"
             element={
-<<<<<<< HEAD
-              <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
-                <PromptTemplatesPage />
-=======
               <RoleGuard roles={['TEACHER']}>
                 <LessonPlansPage />
->>>>>>> origin/main
               </RoleGuard>
             }
           />
           <Route
-<<<<<<< HEAD
             path="/generate-lesson-plan/:id"
             element={
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <GenerateLessonPlan />
-=======
+              </RoleGuard>
+            }
+          />
+          <Route
             path="/lesson-plans/new"
             element={
               <RoleGuard roles={['TEACHER']}>
@@ -235,7 +232,6 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER']}>
                 <LessonPlanGenerator />
->>>>>>> origin/main
               </RoleGuard>
             }
           />

@@ -35,4 +35,6 @@ public class AiPromptTemplate {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    
 }

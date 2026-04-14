@@ -30,4 +30,7 @@ public class CurriculumFrameworkRequest {
     private String structure;
 
     private Boolean isPublished;
+
+    
+
 }
