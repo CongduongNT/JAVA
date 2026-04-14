@@ -63,12 +63,14 @@ const ROLE_LABELS = {
 }
 
 function useBreadcrumb(pathname) {
-  if (pathname.startsWith('/question-bank')) {
-    return 'Question Bank'
-  }
+  if (pathname.startsWith('/question-bank')) return 'Question Bank'
+  if (pathname === '/lesson-plans/ai-generator') return 'Tạo giáo án với AI'
+  if (pathname === '/lesson-plans/new') return 'Tạo giáo án'
+  if (/^\/lesson-plans\/\d+\/edit$/.test(pathname)) return 'Chỉnh sửa giáo án'
+  if (/^\/lesson-plans\/\d+$/.test(pathname)) return 'Chi tiết giáo án'
+  if (pathname.startsWith('/lesson-plans')) return 'Lesson Plans'
   const map = {
     '/dashboard': 'Dashboard',
-    '/lesson-plans': 'Lesson Plans',
     '/packages': 'Packages',
     '/orders/history': 'Orders',
     '/question-bank': 'Question Bank',
@@ -79,10 +81,10 @@ function useBreadcrumb(pathname) {
     '/manager/subscriptions': 'Manager Packages',
     '/manager/orders': 'Orders',
     '/manager/analytics': 'Analytics',
+    '/manager/approve': 'Approve Templates',
     '/admin/users': 'User Management',
   }
-  const label = map[pathname] || 'Dashboard'
-  return label
+  return map[pathname] || 'Dashboard'
 }
 
 function AppSidebar() {
@@ -90,7 +92,8 @@ function AppSidebar() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth?.user)
-  const role = user?.role?.toUpperCase() || ''
+  const rawRole = user?.roleName || (typeof user?.role === 'object' ? user?.role?.name : user?.role);
+  const role = rawRole?.toUpperCase() || '';
 
   const isActive = (href) => {
     if (href === '/dashboard') return location.pathname === '/dashboard'
@@ -108,10 +111,10 @@ function AppSidebar() {
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!item.roles || item.roles.length === 0) return true
-    return item.roles.map((r) => r.toUpperCase()).includes(role)
+    return role && item.roles.map((r) => r.toUpperCase().replace('ROLE_', '')).includes(role)
   })
 
-  const currentRoleKey = role.toUpperCase();
+  const currentRoleKey = role; // Đã chuẩn hóa ở trên
   const roleInfo = ROLE_LABELS[currentRoleKey] || { label: role || 'User', color: 'bg-slate-100 text-slate-600' }
 
   return (

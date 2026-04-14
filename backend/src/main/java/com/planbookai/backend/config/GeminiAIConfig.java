@@ -36,14 +36,37 @@ public class GeminiAIConfig {
      */
     @Bean
     public Client geminiClient() {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.warn("[GeminiAI] GEMINI_API_KEY is not configured. AI features will fail at runtime.");
-            // Return client without key – sẽ fail gracefully tại runtime khi gọi API
-            return new Client.Builder().build();
+        // Loại bỏ placeholder "dummy" hoặc chuỗi mẫu ban đầu để tránh lỗi 400
+        String effectiveKey = (apiKey != null && 
+                               !apiKey.isBlank() && 
+                               !apiKey.equalsIgnoreCase("dummy") && 
+                               !apiKey.startsWith("AIzaSyA...")) 
+                               ? apiKey : null;
+        String source = "application.yml";
+
+        // Fallback sang biến môi trường hệ thống nếu config trống
+        if (effectiveKey == null) {
+            effectiveKey = System.getenv("GEMINI_API_KEY");
+            source = "System Environment (GEMINI_API_KEY)";
         }
-        log.info("[GeminiAI] Gemini client initialized successfully.");
+        
+        if (effectiveKey == null) {
+            effectiveKey = System.getenv("GOOGLE_API_KEY");
+            source = "System Environment (GOOGLE_API_KEY)";
+        }
+
+        if (effectiveKey == null) {
+            log.error("[GeminiAI] CONFIG ERROR: API Key not found. AI features are DISABLED.");
+            return null;
+        }
+
+        // Clean the key: remove quotes and whitespace
+        effectiveKey = effectiveKey.trim().replaceAll("[\"']", "");
+
+        log.info("[GeminiAI] Client initialized successfully using source: {}", source);
+
         return new Client.Builder()
-                .apiKey(apiKey)
+                .apiKey(effectiveKey)
                 .build();
     }
 }
