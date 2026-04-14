@@ -71,7 +71,59 @@ public class GeminiAIService {
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
                 count, subject, topic, difficulty, type);
 
-        // 2. Call Gemini API
+        return callGeminiAndParse(prompt, subject, topic, difficulty, type);
+    }
+
+    /**
+     * Sinh câu hỏi bù vào đề thi khi ngân hàng không đủ.
+     *
+     * <p>Prompt được tối ưu để tránh trùng lặp với các câu hỏi đã có trong đề.
+     *
+     * @param subject          Môn học
+     * @param topic            Chủ đề
+     * @param difficulty       Độ khó
+     * @param type             Loại câu hỏi
+     * @param gapCount         Số câu cần sinh bù
+     * @param existingContents Nội dung các câu hỏi đã có (để tránh trùng)
+     * @return Danh sách QuestionDTO mới (chưa lưu DB)
+     * @throws AIServiceException nếu Gemini trả về lỗi hoặc JSON không hợp lệ
+     */
+    public List<QuestionDTO> generateExamGapQuestions(
+            String subject,
+            String topic,
+            Question.Difficulty difficulty,
+            Question.QuestionType type,
+            int gapCount,
+            List<String> existingContents) {
+
+        if (gapCount <= 0) {
+            return List.of();
+        }
+
+        String prompt = promptBuilder.buildExamGenerationPrompt(
+                subject, topic, difficulty, type, gapCount, existingContents);
+
+        log.info("[GeminiAI][ExamGap] Generating {} gap questions for exam: subject={}, topic={}, difficulty={}, type={}",
+                gapCount, subject, topic, difficulty, type);
+
+        return callGeminiAndParse(prompt, subject, topic, difficulty, type);
+    }
+
+    // =========================================================================
+    // Internal helpers
+    // =========================================================================
+
+    /**
+     * Gọi Gemini API với prompt và parse kết quả thành danh sách QuestionDTO.
+     */
+    private List<QuestionDTO> callGeminiAndParse(
+            String prompt,
+            String subject,
+            String topic,
+            Question.Difficulty difficulty,
+            Question.QuestionType type) {
+
+        // Call Gemini API
         String rawResponse;
         try {
             GenerateContentResponse response = geminiClient.models.generateContent(
@@ -84,10 +136,10 @@ public class GeminiAIService {
 
         log.debug("[GeminiAI] Raw response: {}", rawResponse);
 
-        // 3. Clean response – strip markdown code fence if present
+        // Clean response – strip markdown code fence if present
         String cleanedJson = cleanJsonResponse(rawResponse);
 
-        // 4. Parse JSON array → list of raw maps
+        // Parse JSON array → list of raw maps
         List<Map<String, Object>> rawQuestions;
         try {
             rawQuestions = objectMapper.readValue(cleanedJson, new TypeReference<>() {});
@@ -96,7 +148,7 @@ public class GeminiAIService {
             throw new AIServiceException("AI returned invalid JSON. Please try again.");
         }
 
-        // 5. Convert raw maps → QuestionDTO
+        // Convert raw maps → QuestionDTO
         return rawQuestions.stream()
                 .map(raw -> mapRawToDTO(raw, subject, topic, difficulty, type))
                 .toList();

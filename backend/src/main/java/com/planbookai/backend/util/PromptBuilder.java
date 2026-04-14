@@ -136,4 +136,83 @@ public class PromptBuilder {
             case HARD -> "analysis and synthesis, complex multi-step reasoning";
         };
     }
+
+    // =========================================================================
+    // Exam Generation Prompt
+    // =========================================================================
+
+    /**
+     * Tạo prompt để sinh thêm câu hỏi bù vào đề thi khi ngân hàng không đủ.
+     *
+     * <p>Prompt chỉ yêu cầu Gemini sinh đúng {@code gapCount} câu (phần còn thiếu),
+     * và truyền danh sách câu đã chọn từ bank để tránh trùng lặp nội dung.
+     *
+     * @param subject          Môn học
+     * @param topic            Chủ đề
+     * @param difficulty       Độ khó
+     * @param type             Loại câu hỏi
+     * @param gapCount         Số câu cần sinh thêm
+     * @param existingContents Danh sách nội dung câu hỏi đã có (để tránh trùng)
+     * @return Chuỗi prompt hoàn chỉnh
+     */
+    public String buildExamGenerationPrompt(
+            String subject,
+            String topic,
+            Question.Difficulty difficulty,
+            Question.QuestionType type,
+            int gapCount,
+            java.util.List<String> existingContents) {
+
+        String difficultyLabel = mapDifficultyLabel(difficulty);
+        String typeInstructions = buildTypeInstructions(type);
+
+        String avoidSection = "";
+        if (existingContents != null && !existingContents.isEmpty()) {
+            StringBuilder sb = new StringBuilder(
+                    "IMPORTANT – The following questions are already in the exam. Do NOT generate similar or duplicate questions:\n");
+            int cap = Math.min(existingContents.size(), 10); // limit context size
+            for (int i = 0; i < cap; i++) {
+                sb.append("- ").append(existingContents.get(i)).append("\n");
+            }
+            avoidSection = sb.toString();
+        }
+
+        return """
+                You are an expert Vietnamese high school %s teacher and exam writer.
+                Your task is to generate exactly %d NEW %s questions about the topic "%s" with %s difficulty.
+                These questions will supplement existing exam questions – AVOID duplicates.
+
+                %s
+
+                %s
+
+                CRITICAL RULES:
+                1. Return ONLY a valid JSON array. No markdown, no code fences, no explanation.
+                2. The JSON array must contain exactly %d question objects.
+                3. All text must be in Vietnamese.
+                4. Each question must be educationally accurate and appropriate for high school level.
+                5. Difficulty level "%s" means: %s
+
+                Required JSON schema for each question object:
+                {
+                  "content": "<question text in Vietnamese>",
+                  "type": "%s",
+                  "difficulty": "%s",
+                  "topic": "%s",
+                  "options": %s,
+                  "correctAnswer": "<correct answer>",
+                  "explanation": "<brief explanation in Vietnamese>"
+                }
+
+                Generate the JSON array now:
+                """.formatted(
+                subject, gapCount, type.name(), topic, difficultyLabel,
+                avoidSection,
+                typeInstructions,
+                gapCount,
+                difficultyLabel, getDifficultyDescription(difficulty),
+                type.name(), difficulty.name(), topic,
+                buildOptionsSchema(type)
+        );
+    }
 }
