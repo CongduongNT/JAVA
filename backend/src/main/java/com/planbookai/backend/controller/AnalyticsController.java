@@ -3,9 +3,11 @@ package com.planbookai.backend.controller;
 import com.planbookai.backend.dto.ExamAnalyticsDTO;
 import com.planbookai.backend.dto.RevenueAnalyticsDTO;
 import com.planbookai.backend.dto.StudentAnalyticsDTO;
+import com.planbookai.backend.dto.UserAnalyticsDTO;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.AnalyticsService;
 import com.planbookai.backend.service.RevenueService;
+import com.planbookai.backend.service.UserAnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,8 +38,9 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AnalyticsController {
 
-    private final AnalyticsService analyticsService;
-    private final RevenueService   revenueService;
+    private final AnalyticsService     analyticsService;
+    private final RevenueService       revenueService;
+    private final UserAnalyticsService userAnalyticsService;
 
     // =========================================================================
     // GET /analytics/exams/{id}/results   (KAN-26)
@@ -180,5 +183,47 @@ public class AnalyticsController {
     })
     public ResponseEntity<RevenueAnalyticsDTO> getRevenueAnalytics() {
         return ResponseEntity.ok(revenueService.getRevenueAnalytics());
+    }
+
+    // =========================================================================
+    // GET /analytics/users   (KAN-26)
+    // =========================================================================
+
+    /**
+     * [KAN-26] Báo cáo tổng quan người dùng hệ thống – chỉ Admin.
+     */
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Báo cáo người dùng hệ thống (KAN-26)",
+            description = """
+                    **[KAN-26] GET /api/v1/analytics/users**
+
+                    Báo cáo toàn diện về người dùng, chỉ dành cho **ADMIN**.
+
+                    ### Response structure
+
+                    | Field                | Mô tả                                                 |
+                    |----------------------|-------------------------------------------------------|
+                    | `summary`            | KPIs: tổng, active, new this month, MoM growth        |
+                    | `usersByRole`        | Số user theo role (ADMIN/MANAGER/STAFF/TEACHER)       |
+                    | `usersByMonth`       | Đăng ký mới theo tháng năm hiện tại               |
+                    | `activeVsInactive`   | Tỉ lệ account active / inactive                      |
+                    | `topTeachers`        | Top 5 teacher theo số đề thi đã tạo                 |
+                    | `subscriptionStats`  | Số user có gói / chưa gói, phân bổ theo gói        |
+                    | `recentUsers`        | 10 user mới đăng ký gần nhất                       |
+
+                    ### Quyền truy cập
+                    Chỉ **ADMIN** – trả `403` với MANAGER, TEACHER.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Báo cáo trả về thành công",
+                    content = @Content(schema = @Schema(implementation = UserAnalyticsDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Chưa xác thực",                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không đủ quyền (yêu cầu ADMIN)",   content = @Content),
+    })
+    public ResponseEntity<UserAnalyticsDTO> getUserAnalytics() {
+        return ResponseEntity.ok(userAnalyticsService.getUserAnalytics());
     }
 }
