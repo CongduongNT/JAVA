@@ -31,6 +31,7 @@ import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
 import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
 import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
 import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
+import AnswerSheetsPage from './features/answer-sheets/AnswerSheetsPage'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -263,9 +264,7 @@ function App() {
             path="/ocr-grading"
             element={
               <RoleGuard roles={['TEACHER']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Teacher - OCR Grading</h2>
-                </div>
+                <AnswerSheetsPage />
               </RoleGuard>
             }
           />
