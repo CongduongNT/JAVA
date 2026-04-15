@@ -3,20 +3,25 @@ package com.planbookai.backend.service;
 import com.planbookai.backend.dto.ExamAnalyticsDTO;
 import com.planbookai.backend.dto.ExamAnalyticsDTO.AiVsBankDTO;
 import com.planbookai.backend.dto.ExamAnalyticsDTO.QuestionStatDTO;
+import com.planbookai.backend.dto.StudentAnalyticsDTO;
+import com.planbookai.backend.dto.StudentAnalyticsDTO.*;
 import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.model.entity.Exam;
 import com.planbookai.backend.model.entity.ExamQuestion;
 import com.planbookai.backend.model.entity.Question;
+import com.planbookai.backend.model.entity.QuestionBank;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.ExamQuestionRepository;
 import com.planbookai.backend.repository.ExamRepository;
+import com.planbookai.backend.repository.QuestionBankRepository;
+import com.planbookai.backend.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,6 +51,8 @@ public class AnalyticsService {
 
     private final ExamRepository        examRepository;
     private final ExamQuestionRepository examQuestionRepository;
+    private final QuestionBankRepository questionBankRepository;
+    private final QuestionRepository     questionRepository;
 
     // ── Điểm ước tính trung bình theo độ khó (thang 10) ──────────────────────
     private static final Map<String, Double> DIFFICULTY_AVG_SCORE = Map.of(
@@ -115,8 +122,243 @@ public class AnalyticsService {
         );
     }
 
+    // =========================================================================
+    // GET /analytics/students   (KAN-26)
+    // =========================================================================
+
+    /**
+     * [KAN-26] Thống kê nhóm học sinh mục tiêu của một teacher.
+     *
+     * <p>Vì hệ thống chưa có entity Student, analytics được tổng hợp từ
+     * tập các đề thi của teacher, phân nhóm theo (gradeLevel × subject).
+     * Mỗi nhóm tương ứng với một lớp/khối mà teacher đang nhắm tới.
+     *
+     * @param teacher Giáo viên đang đăng nhập
+     * @return {@link StudentAnalyticsDTO} chứa tổng quan + chi tiết từng nhóm HS
+     */
+    @Transactional(readOnly = true)
+    public StudentAnalyticsDTO getStudentAnalytics(User teacher) {
+        log.info("[AnalyticsService] getStudentAnalytics: teacher={}", teacher.getEmail());
+
+        // 1. Load tất cả đề thi của teacher (không phân trang – dùng toàn bộ)
+        List<Exam> allExams = examRepository.findByTeacherId(
+                teacher.getId(),
+                org.springframework.data.domain.Pageable.unpaged()
+        ).getContent();
+
+        log.info("[AnalyticsService] Teacher {} has {} exams", teacher.getEmail(), allExams.size());
+
+        // 2. Load question bank stats
+        List<QuestionBank> banks = questionBankRepository.findByCreatedById(teacher.getId());
+
+        // 3. Load tất cả câu hỏi trong các bank của teacher
+        List<Integer> bankIds = banks.stream().map(QuestionBank::getId).collect(Collectors.toList());
+        List<Question> allQuestions = bankIds.isEmpty()
+                ? Collections.emptyList()
+                : questionRepository.findByBankIdIn(bankIds);
+
+        // 4. Load exam_questions cho tất cả đề thi
+        Map<Long, List<ExamQuestion>> examQuestionsMap = new HashMap<>();
+        for (Exam exam : allExams) {
+            List<ExamQuestion> eqs = examQuestionRepository.findByExamIdOrderByOrderIndex(exam.getId());
+            examQuestionsMap.put(exam.getId(), eqs);
+        }
+
+        // 5. Build TeacherSummaryDTO
+        TeacherSummaryDTO summary = buildTeacherSummary(teacher, allExams, allQuestions, banks, examQuestionsMap);
+
+        // 6. Group exams by (gradeLevel × subject)
+        Map<String, List<Exam>> grouped = allExams.stream()
+                .collect(Collectors.groupingBy(e -> {
+                    String g = e.getGradeLevel() != null ? e.getGradeLevel() : "N/A";
+                    String s = e.getSubject()    != null ? e.getSubject()    : "Khác";
+                    return g + "||" + s;
+                }));
+
+        // 7. Build StudentGroupDTO list (sắp xếp theo gradeLevel → subject)
+        List<StudentGroupDTO> studentGroups = grouped.entrySet().stream()
+                .map(e -> buildStudentGroup(e.getKey(), e.getValue(), examQuestionsMap))
+                .sorted(Comparator
+                        .comparing(StudentGroupDTO::gradeLevel)
+                        .thenComparing(StudentGroupDTO::subject))
+                .collect(Collectors.toList());
+
+        // 8. Build aggregates
+        Map<String, Long> examsBySubject = allExams.stream()
+                .collect(Collectors.groupingBy(
+                        e -> e.getSubject() != null ? e.getSubject() : "Khác",
+                        Collectors.counting()));
+
+        Map<String, Long> examsByGrade = allExams.stream()
+                .collect(Collectors.groupingBy(
+                        e -> e.getGradeLevel() != null ? e.getGradeLevel() : "N/A",
+                        Collectors.counting()));
+
+        Map<String, Long> questionsByDifficulty = buildGlobalDifficultyStats(examQuestionsMap);
+
+        List<TopicFrequencyDTO> topTopics = buildTopTopics(allExams, examQuestionsMap);
+
+        return new StudentAnalyticsDTO(
+                teacher.getId(),
+                teacher.getFullName(),
+                teacher.getEmail(),
+                summary,
+                studentGroups,
+                examsBySubject,
+                examsByGrade,
+                questionsByDifficulty,
+                topTopics
+        );
+    }
+
+    // ── Private helpers for student analytics ─────────────────────────────────
+
+    private TeacherSummaryDTO buildTeacherSummary(
+            User teacher,
+            List<Exam> allExams,
+            List<Question> allQuestions,
+            List<QuestionBank> banks,
+            Map<Long, List<ExamQuestion>> examQuestionsMap) {
+
+        long published = allExams.stream().filter(e -> Exam.ExamStatus.PUBLISHED.equals(e.getStatus())).count();
+        long draft     = allExams.stream().filter(e -> Exam.ExamStatus.DRAFT.equals(e.getStatus())).count();
+
+        // Tổng câu trong tất cả đề (có thể trùng nếu câu lặp lại)
+        long totalQ = examQuestionsMap.values().stream().mapToLong(List::size).sum();
+        long aiQ    = examQuestionsMap.values().stream()
+                .flatMap(List::stream)
+                .filter(eq -> eq.getQuestion() != null && Boolean.TRUE.equals(eq.getQuestion().getAiGenerated()))
+                .count();
+
+        // Unique student groups
+        long groupCount = allExams.stream()
+                .map(e -> (e.getGradeLevel() != null ? e.getGradeLevel() : "N/A")
+                        + "||" + (e.getSubject() != null ? e.getSubject() : "Khác"))
+                .distinct().count();
+
+        return new TeacherSummaryDTO(
+                allExams.size(),
+                published,
+                draft,
+                totalQ,
+                aiQ,
+                totalQ - aiQ,
+                banks.size(),
+                (int) groupCount
+        );
+    }
+
+    private StudentGroupDTO buildStudentGroup(
+            String key,
+            List<Exam> exams,
+            Map<Long, List<ExamQuestion>> examQuestionsMap) {
+
+        String[] parts    = key.split("\\|\\|");
+        String gradeLevel = parts[0];
+        String subject    = parts.length > 1 ? parts[1] : "Khác";
+
+        // All exam_questions in this group
+        List<ExamQuestion> allEqs = exams.stream()
+                .flatMap(e -> examQuestionsMap.getOrDefault(e.getId(), Collections.emptyList()).stream())
+                .collect(Collectors.toList());
+
+        int publishedCount = (int) exams.stream()
+                .filter(e -> Exam.ExamStatus.PUBLISHED.equals(e.getStatus())).count();
+
+        // Difficulty breakdown
+        Map<String, Long> diffBreakdown = allEqs.stream()
+                .map(eq -> eq.getQuestion() != null && eq.getQuestion().getDifficulty() != null
+                        ? eq.getQuestion().getDifficulty().name() : "UNKNOWN")
+                .collect(Collectors.groupingBy(d -> d, Collectors.counting()));
+
+        // AI ratio
+        long aiCount = allEqs.stream()
+                .filter(eq -> eq.getQuestion() != null && Boolean.TRUE.equals(eq.getQuestion().getAiGenerated()))
+                .count();
+        double aiRatio = allEqs.isEmpty() ? 0.0 : round2((double) aiCount / allEqs.size() * 100);
+
+        // avgScore + passRate weighted across all exams in group
+        double avgScore = allEqs.isEmpty() ? 0.0 : calcAvgScore(allEqs);
+        double passRate = calcPassRate(avgScore);
+
+        // Topics (unique, non-null)
+        List<String> topics = exams.stream()
+                .map(Exam::getTopic)
+                .filter(t -> t != null && !t.isBlank())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        // Recent exams (max 5, newest first)
+        List<RecentExamDTO> recentExams = exams.stream()
+                .sorted(Comparator.comparing(Exam::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(5)
+                .map(e -> {
+                    List<ExamQuestion> eqs = examQuestionsMap.getOrDefault(e.getId(), Collections.emptyList());
+                    double es  = eqs.isEmpty() ? 0.0 : round2(calcAvgScore(eqs));
+                    double pr  = round2(calcPassRate(es));
+                    return new RecentExamDTO(
+                            e.getId(), e.getTitle(),
+                            e.getStatus() != null ? e.getStatus().name() : null,
+                            e.getTotalQuestions() != null ? e.getTotalQuestions() : 0,
+                            es, pr, e.getCreatedAt());
+                })
+                .collect(Collectors.toList());
+
+        return new StudentGroupDTO(
+                gradeLevel,
+                subject,
+                exams.size(),
+                publishedCount,
+                allEqs.size(),
+                round2(avgScore),
+                round2(passRate),
+                diffBreakdown,
+                aiRatio,
+                topics,
+                recentExams
+        );
+    }
+
+    /** Tổng hợp độ khó trên toàn bộ đề của teacher. */
+    private Map<String, Long> buildGlobalDifficultyStats(Map<Long, List<ExamQuestion>> map) {
+        return map.values().stream()
+                .flatMap(List::stream)
+                .map(eq -> eq.getQuestion() != null && eq.getQuestion().getDifficulty() != null
+                        ? eq.getQuestion().getDifficulty().name() : "UNKNOWN")
+                .collect(Collectors.groupingBy(d -> d, Collectors.counting()));
+    }
+
+    /** Top 5 topic xuất hiện nhiều nhất (theo số đề có topic đó). */
+    private List<TopicFrequencyDTO> buildTopTopics(
+            List<Exam> allExams, Map<Long, List<ExamQuestion>> examQuestionsMap) {
+
+        // Count exams per topic
+        Map<String, Long> topicExamCount = allExams.stream()
+                .filter(e -> e.getTopic() != null && !e.getTopic().isBlank())
+                .collect(Collectors.groupingBy(Exam::getTopic, Collectors.counting()));
+
+        // Count questions per topic (via exam_questions → question.topic)
+        Map<String, Long> topicQuestionCount = examQuestionsMap.values().stream()
+                .flatMap(List::stream)
+                .filter(eq -> eq.getQuestion() != null
+                        && eq.getQuestion().getTopic() != null
+                        && !eq.getQuestion().getTopic().isBlank())
+                .collect(Collectors.groupingBy(
+                        eq -> eq.getQuestion().getTopic(), Collectors.counting()));
+
+        return topicExamCount.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(e -> new TopicFrequencyDTO(
+                        e.getKey(),
+                        e.getValue(),
+                        topicQuestionCount.getOrDefault(e.getKey(), 0L)))
+                .collect(Collectors.toList());
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
-    // Private helpers
+    // Private helpers (shared)
     // ─────────────────────────────────────────────────────────────────────────
 
     /** Kiểm tra quyền: Teacher xem đề của mình, Manager/Admin xem tất cả. */

@@ -1,6 +1,7 @@
 package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.ExamAnalyticsDTO;
+import com.planbookai.backend.dto.StudentAnalyticsDTO;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,15 +25,8 @@ import org.springframework.web.bind.annotation.*;
  * <p>Endpoints:
  * <ul>
  *   <li>GET /analytics/exams/{id}/results – Thống kê kết quả một đề thi</li>
+ *   <li>GET /analytics/students           – Teacher xem tổng quan nhóm học sinh mục tiêu</li>
  * </ul>
- *
- * <h2>Luồng (KAN-26):</h2>
- * <ol>
- *   <li>Teacher / Manager / Admin gọi GET /analytics/exams/{id}/results.</li>
- *   <li>AnalyticsService kiểm tra quyền, load câu hỏi, tính toán số liệu.</li>
- *   <li>Trả về {@link ExamAnalyticsDTO} gồm avg_score, pass_rate,
- *       score_distribution, question_stats, difficulty_stats, ai_vs_bank.</li>
- * </ol>
  */
 @RestController
 @RequestMapping("/api/v1/analytics")
@@ -46,33 +40,6 @@ public class AnalyticsController {
     // GET /analytics/exams/{id}/results   (KAN-26)
     // =========================================================================
 
-    /**
-     * [KAN-26] Thống kê kết quả đề thi.
-     *
-     * <p>Trả về:
-     * <pre>
-     * {
-     *   "examId":            1,
-     *   "examTitle":         "Đề kiểm tra Hóa Lớp 10 – Nguyên tử Phân tử",
-     *   "subject":           "Hóa học",
-     *   "gradeLevel":        "10",
-     *   "topic":             "Nguyên tử – Phân tử",
-     *   "totalQuestions":    20,
-     *   "durationMins":      45,
-     *   "status":            "PUBLISHED",
-     *   "avgScore":          6.85,
-     *   "passRate":          73.5,
-     *   "scoreDistribution": { "0-2": 5, "3-4": 10, "5-6": 35, "7-8": 35, "9-10": 15 },
-     *   "questionStats":     [ { "questionId": 1, "orderIndex": 0, "content": "...",
-     *                            "difficulty": "MEDIUM", "type": "MULTIPLE_CHOICE",
-     *                            "source": "BANK", "points": 1.0,
-     *                            "estimatedCorrectRate": 60.0 }, ... ],
-     *   "difficultyStats":   { "EASY": 5, "MEDIUM": 10, "HARD": 5 },
-     *   "aiVsBankStats":     { "bankCount": 12, "aiCount": 8,
-     *                          "bankRatio": 60.0, "aiRatio": 40.0 }
-     * }
-     * </pre>
-     */
     @GetMapping("/exams/{id}/results")
     @PreAuthorize("hasAnyRole('TEACHER','MANAGER','ADMIN')")
     @Operation(
@@ -91,32 +58,80 @@ public class AnalyticsController {
                     | `difficulty_stats`   | Số câu EASY / MEDIUM / HARD                        |
                     | `ai_vs_bank_stats`   | Tỉ lệ câu từ AI vs ngân hàng                       |
 
-                    ### Quyền truy cập
-                    - **TEACHER**: chỉ xem đề của mình
-                    - **MANAGER / ADMIN**: xem tất cả đề
-
-                    ### Ghi chú
-                    Trong phiên bản hiện tại, `avg_score`, `pass_rate` và `score_distribution`
-                    được **ước lượng** theo chuẩn Bloom's Taxonomy từ cấu trúc độ khó của đề.
-                    Khi tích hợp `exam_submissions`, các trường này sẽ được tính từ dữ liệu thực.
+                    **Quyền:** TEACHER xem đề của mình, MANAGER/ADMIN xem tất cả.
                     """
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description  = "Thống kê trả về thành công",
-                    content      = @Content(schema = @Schema(implementation = ExamAnalyticsDTO.class))
-            ),
-            @ApiResponse(responseCode = "401", description = "Chưa xác thực",              content = @Content),
-            @ApiResponse(responseCode = "403", description = "Không đủ quyền xem đề này",  content = @Content),
-            @ApiResponse(responseCode = "404", description = "Không tìm thấy đề thi",       content = @Content),
+            @ApiResponse(responseCode = "200", description = "Thống kê trả về thành công",
+                    content = @Content(schema = @Schema(implementation = ExamAnalyticsDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Chưa xác thực",             content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không đủ quyền xem đề này", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy đề thi",      content = @Content),
     })
     public ResponseEntity<ExamAnalyticsDTO> getExamResults(
             @Parameter(description = "ID đề thi", example = "1", required = true)
             @PathVariable Long id,
             @AuthenticationPrincipal User user) {
 
-        ExamAnalyticsDTO analytics = analyticsService.getExamAnalytics(id, user);
-        return ResponseEntity.ok(analytics);
+        return ResponseEntity.ok(analyticsService.getExamAnalytics(id, user));
+    }
+
+    // =========================================================================
+    // GET /analytics/students   (KAN-26)
+    // =========================================================================
+
+    /**
+     * [KAN-26] Tổng quan nhóm học sinh mục tiêu của teacher đang đăng nhập.
+     *
+     * <p>Vì hệ thống chưa có entity Student,  analytics được tổng hợp từ
+     * tất cả đề thi của teacher, <strong>phân nhóm theo (gradeLevel × subject)</strong>.
+     * Mỗi nhóm ứng với một lớp/môn mà teacher đang phụ trách.
+     */
+    @GetMapping("/students")
+    @PreAuthorize("hasAnyRole('TEACHER','MANAGER','ADMIN')")
+    @Operation(
+            summary = "Tổng quan học sinh mục tiêu của teacher (KAN-26)",
+            description = """
+                    **[KAN-26] GET /api/v1/analytics/students**
+
+                    Trả về analytics nhóm học sinh mục tiêu của teacher đang đăng nhập,
+                    phân tích từ cấu trúc các đề thi đã tạo (grade_level × subject).
+
+                    ### Response structure
+
+                    | Field                  | Mô tả                                           |
+                    |------------------------|-------------------------------------------------|
+                    | `summary`              | Tổng số đề, câu hỏi, bank, nhóm HS             |
+                    | `studentGroups`        | Danh sách nhóm HS (khối × môn), có metrics      |
+                    | `examsBySubject`       | Số đề theo môn học                              |
+                    | `examsByGrade`         | Số đề theo khối lớp                             |
+                    | `questionsByDifficulty`| Số câu EASY / MEDIUM / HARD toàn bộ            |
+                    | `topTopics`            | Top 5 chủ đề xuất hiện nhiều nhất               |
+
+                    ### studentGroups – mỗi nhóm bao gồm
+                    - `gradeLevel`, `subject` – định danh nhóm
+                    - `examCount`, `publishedExamCount`, `totalQuestions`
+                    - `estimatedAvgScore`, `estimatedPassRate` – ước lượng Bloom's Taxonomy
+                    - `difficultyBreakdown` – phân bổ EASY / MEDIUM / HARD
+                    - `aiQuestionRatio` – % câu do AI tạo
+                    - `topics` – danh sách chủ đề đã ra
+                    - `recentExams` – 5 đề gần nhất của nhóm
+
+                    ### Ghi chú
+                    `estimatedAvgScore` và `estimatedPassRate` được tính theo chuẩn
+                    Bloom's Taxonomy (EASY=8.5, MEDIUM=6.5, HARD=4.5 / thang 10).
+                    Khi bổ sung `exam_submissions`, sẽ thay bằng dữ liệu thực tế.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trả về analytics thành công",
+                    content = @Content(schema = @Schema(implementation = StudentAnalyticsDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Chưa xác thực",  content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không đủ quyền", content = @Content),
+    })
+    public ResponseEntity<StudentAnalyticsDTO> getStudentAnalytics(
+            @AuthenticationPrincipal User teacher) {
+
+        return ResponseEntity.ok(analyticsService.getStudentAnalytics(teacher));
     }
 }
