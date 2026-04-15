@@ -21,13 +21,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-<<<<<<< HEAD
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-=======
 import java.util.stream.Collectors;
->>>>>>> origin/main
 
 @Service
 public class GeminiAIService {
@@ -54,14 +51,11 @@ public class GeminiAIService {
             Question.QuestionType type,
             int count) {
 
-<<<<<<< HEAD
         if (geminiClient == null) {
             throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
         }
 
         // 1. Build prompt
-=======
->>>>>>> origin/main
         String prompt = promptBuilder.buildQuestionPrompt(subject, topic, difficulty, type, count);
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
                 count, subject, topic, difficulty, type);
@@ -99,7 +93,6 @@ public class GeminiAIService {
                 .collect(Collectors.toList());
     }
 
-<<<<<<< HEAD
     /**
      * Gọi AI trực tiếp với một chuỗi prompt đã build hoàn chỉnh.
      *
@@ -142,27 +135,6 @@ public class GeminiAIService {
         
         // Fallback: if no fences found, strip any potential markers manually
         return cleaned.replaceAll("```json|```", "").trim();
-=======
-    private String cleanJsonResponse(String raw) {
-        if (raw == null) {
-            return "[]";
-        }
-
-        String trimmed = raw.trim();
-
-        if (trimmed.startsWith("```")) {
-            int firstNewline = trimmed.indexOf('\n');
-            if (firstNewline > 0) {
-                trimmed = trimmed.substring(firstNewline + 1).trim();
-            }
-        }
-
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.lastIndexOf("```")).trim();
-        }
-
-        return trimmed;
->>>>>>> origin/main
     }
 
     @SuppressWarnings("unchecked")
