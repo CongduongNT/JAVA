@@ -25,6 +25,8 @@ import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
 import PromptTemplateForm from './pages/staff/PromptTemplateForm'
 import GenerateLessonPlan from './pages/teacher/GenerateLessonPlan'
 import ExamGenerator from './pages/teacher/ExamGenerator'
+import ExamBuilderPage from './pages/teacher/ExamBuilderPage'
+import ExamsPage from './pages/teacher/ExamsPage'
 import LessonPlanGenerator from './pages/teacher/LessonPlanGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
@@ -188,54 +190,42 @@ function App() {
           />
 
           <Route
-            path="/lesson-plans"
+            path="/exams"
             element={
-<<<<<<< HEAD
-              <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
-                <PromptTemplatesPage />
-=======
               <RoleGuard roles={['TEACHER']}>
-                <LessonPlansPage />
->>>>>>> origin/main
+                <ExamsPage />
               </RoleGuard>
             }
           />
           <Route
-<<<<<<< HEAD
+            path="/exams/:id/edit"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <ExamBuilderPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/exams/new"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <ExamBuilderPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans"
+            element={
+              <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
+                <PromptTemplatesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="/generate-lesson-plan/:id"
             element={
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <GenerateLessonPlan />
-=======
-            path="/lesson-plans/new"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-                <LessonPlanFormPage />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/lesson-plans/:id"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-                <LessonPlanDetailPage />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/lesson-plans/:id/edit"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-                <LessonPlanFormPage />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/lesson-plans/ai-generator"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-                <LessonPlanGenerator />
->>>>>>> origin/main
               </RoleGuard>
             }
           />
