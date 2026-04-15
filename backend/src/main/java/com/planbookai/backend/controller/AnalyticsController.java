@@ -1,9 +1,11 @@
 package com.planbookai.backend.controller;
 
 import com.planbookai.backend.dto.ExamAnalyticsDTO;
+import com.planbookai.backend.dto.RevenueAnalyticsDTO;
 import com.planbookai.backend.dto.StudentAnalyticsDTO;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.service.AnalyticsService;
+import com.planbookai.backend.service.RevenueService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final RevenueService   revenueService;
 
     // =========================================================================
     // GET /analytics/exams/{id}/results   (KAN-26)
@@ -133,5 +136,49 @@ public class AnalyticsController {
             @AuthenticationPrincipal User teacher) {
 
         return ResponseEntity.ok(analyticsService.getStudentAnalytics(teacher));
+    }
+
+    // =========================================================================
+    // GET /analytics/revenue   (KAN-26)
+    // =========================================================================
+
+    /**
+     * [KAN-26] Báo cáo doanh thu toàn hệ thống – chỉ Admin và Manager.
+     */
+    @GetMapping("/revenue")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(
+            summary = "Báo cáo doanh thu hệ thống (KAN-26)",
+            description = """
+                    **[KAN-26] GET /api/v1/analytics/revenue**
+
+                    Báo cáo doanh thu toàn hệ thống, chỉ dành cho **ADMIN** và **MANAGER**.
+
+                    ### Response structure
+
+                    | Field                  | Mô tả                                                    |
+                    |------------------------|----------------------------------------------------------|
+                    | `summary`              | KPIs: tổng revenue, tháng này, MoM growth, unique buyers |
+                    | `revenueByMonth`       | Doanh thu 12 tháng năm hiện tại (key: "yyyy-MM")         |
+                    | `revenueByPackage`     | Doanh thu theo từng gói subscription                     |
+                    | `ordersByStatus`       | Số order: PENDING / ACTIVE / EXPIRED / CANCELLED         |
+                    | `topPackages`          | Top 5 gói bán chạy nhất (kèm revenue share %)            |
+                    | `paymentMethodStats`   | Số đơn theo phương thức thanh toán                       |
+                    | `recentOrders`         | 10 đơn hàng gần nhất (mọi trạng thái)                   |
+
+                    ### Nguồn dữ liệu
+                    - Doanh thu chỉ tính từ orders có `status = ACTIVE`.
+                    - MoM Growth = ((tháng này - tháng trước) / tháng trước) × 100%.
+                    - `avgOrderValue` = tổng revenue / số ACTIVE orders.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Báo cáo trả về thành công",
+                    content = @Content(schema = @Schema(implementation = RevenueAnalyticsDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Chưa xác thực",                         content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không đủ quyền (yêu cầu ADMIN/MANAGER)", content = @Content),
+    })
+    public ResponseEntity<RevenueAnalyticsDTO> getRevenueAnalytics() {
+        return ResponseEntity.ok(revenueService.getRevenueAnalytics());
     }
 }
