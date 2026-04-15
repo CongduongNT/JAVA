@@ -4,13 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planbookai.backend.dto.AnswerSheetDTO;
 import com.planbookai.backend.exception.AIServiceException;
-import com.planbookai.backend.exception.ForbiddenOperationException;
 import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.mapper.AnswerSheetMapper;
 import com.planbookai.backend.model.entity.AnswerSheet;
-import com.planbookai.backend.model.entity.Role;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.AnswerSheetRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,25 +27,42 @@ public class OCRService {
     private final AnswerSheetFileLoader answerSheetFileLoader;
     private final GeminiVisionClient geminiVisionClient;
     private final ObjectMapper objectMapper;
+    private final AnswerSheetAccessGuard accessGuard;
+
+    @Autowired
+    public OCRService(
+            AnswerSheetRepository answerSheetRepository,
+            AnswerSheetFileLoader answerSheetFileLoader,
+            GeminiVisionClient geminiVisionClient,
+            ObjectMapper objectMapper,
+            AnswerSheetAccessGuard accessGuard) {
+        this.answerSheetRepository = answerSheetRepository;
+        this.answerSheetFileLoader = answerSheetFileLoader;
+        this.geminiVisionClient = geminiVisionClient;
+        this.objectMapper = objectMapper;
+        this.accessGuard = accessGuard;
+    }
 
     public OCRService(
             AnswerSheetRepository answerSheetRepository,
             AnswerSheetFileLoader answerSheetFileLoader,
             GeminiVisionClient geminiVisionClient,
             ObjectMapper objectMapper) {
-        this.answerSheetRepository = answerSheetRepository;
-        this.answerSheetFileLoader = answerSheetFileLoader;
-        this.geminiVisionClient = geminiVisionClient;
-        this.objectMapper = objectMapper;
+        this(
+                answerSheetRepository,
+                answerSheetFileLoader,
+                geminiVisionClient,
+                objectMapper,
+                new AnswerSheetAccessGuard());
     }
 
     @Transactional
     public AnswerSheetDTO processAnswerSheet(Long answerSheetId, User user) {
-        assertTeacher(user);
+        accessGuard.requireTeacher(user, "Only teacher can process answer sheets");
 
-        AnswerSheet answerSheet = answerSheetRepository.findById(answerSheetId)
+        AnswerSheet answerSheet = answerSheetRepository.findByIdForUpdate(answerSheetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Answer sheet not found: " + answerSheetId));
-        assertOwnsAnswerSheet(answerSheet, user);
+        accessGuard.requireOwnedAnswerSheet(answerSheet, user, "You do not have permission to process this answer sheet");
 
         if (answerSheet.getOcrStatus() == AnswerSheet.OcrStatus.PROCESSING) {
             throw new IllegalArgumentException("Answer sheet is already being processed");
@@ -184,33 +200,5 @@ public class OCRService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
-    }
-
-    private void assertTeacher(User user) {
-        requireAuthenticatedUser(user);
-        if (hasRole(user, Role.RoleName.TEACHER)) {
-            return;
-        }
-        throw new ForbiddenOperationException("Only teacher can process answer sheets");
-    }
-
-    private void requireAuthenticatedUser(User user) {
-        if (user == null || user.getId() == null) {
-            throw new ForbiddenOperationException("Authentication is required");
-        }
-    }
-
-    private boolean hasRole(User user, Role.RoleName roleName) {
-        return user != null
-                && user.getRole() != null
-                && user.getRole().getName() == roleName;
-    }
-
-    private void assertOwnsAnswerSheet(AnswerSheet answerSheet, User user) {
-        Long teacherId = answerSheet.getTeacher() != null ? answerSheet.getTeacher().getId() : null;
-        if (teacherId != null && teacherId.equals(user.getId())) {
-            return;
-        }
-        throw new ForbiddenOperationException("You do not have permission to process this answer sheet");
     }
 }

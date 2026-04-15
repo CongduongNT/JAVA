@@ -59,6 +59,8 @@ class OCRServiceTest {
 
         assertEquals("https://demo.supabase.co/storage/sheet.png", fileLoader.fileUrl);
         assertEquals(1, geminiVisionClient.invocations);
+        assertEquals(0, state.findByIdCalls);
+        assertEquals(1, state.findByIdForUpdateCalls);
         assertEquals(5, geminiVisionClient.fileContent.length);
         assertEquals("image/png", geminiVisionClient.mimeType);
         assertTrue(geminiVisionClient.prompt.contains("strict JSON"));
@@ -187,6 +189,10 @@ class OCRServiceTest {
                 (proxy, method, args) -> {
                     switch (method.getName()) {
                         case "findById":
+                            state.findByIdCalls++;
+                            return Optional.ofNullable(state.store.get((Long) args[0]));
+                        case "findByIdForUpdate":
+                            state.findByIdForUpdateCalls++;
                             return Optional.ofNullable(state.store.get((Long) args[0]));
                         case "save":
                             AnswerSheet answerSheet = (AnswerSheet) args[0];
@@ -236,6 +242,8 @@ class OCRServiceTest {
     private static final class RepositoryState {
         private final Map<Long, AnswerSheet> store = new HashMap<>();
         private final List<AnswerSheet.OcrStatus> savedStatuses = new ArrayList<>();
+        private int findByIdCalls;
+        private int findByIdForUpdateCalls;
         private long nextId = 100L;
     }
 
