@@ -32,6 +32,9 @@ import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
 import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
 import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
 import AnswerSheetsPage from './features/answer-sheets/AnswerSheetsPage'
+import TeacherAnalyticsDashboard from './pages/teacher/TeacherAnalyticsDashboard'
+import ManagerRevenueDashboard from './pages/manager/ManagerRevenueDashboard'
+import AdminUserGrowthDashboard from './pages/admin/AdminUserGrowthDashboard'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -156,9 +159,15 @@ function App() {
             path="/manager/analytics"
             element={
               <RoleGuard roles={['MANAGER', 'ADMIN']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Manager – Analytics (Coming Soon)</h2>
-                </div>
+                <ManagerRevenueDashboard />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/analytics/users"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <AdminUserGrowthDashboard />
               </RoleGuard>
             }
           />
@@ -257,6 +266,14 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER']}>
                 <ExamGenerator />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <TeacherAnalyticsDashboard />
               </RoleGuard>
             }
           />
