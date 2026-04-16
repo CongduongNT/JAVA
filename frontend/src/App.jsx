@@ -34,6 +34,8 @@ import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
 import TeacherAnalyticsDashboard from './pages/teacher/TeacherAnalyticsDashboard'
 import ManagerRevenueDashboard from './pages/manager/ManagerRevenueDashboard'
 import AdminUserGrowthDashboard from './pages/admin/AdminUserGrowthDashboard'
+import GradingResultsList from './pages/teacher/GradingResultsList'
+import GradingResultDetail from './pages/teacher/GradingResultDetail'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -277,12 +279,18 @@ function App() {
             }
           />
           <Route
-            path="/ocr-grading"
+            path="/grading"
             element={
               <RoleGuard roles={['TEACHER']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Teacher - OCR Grading</h2>
-                </div>
+                <GradingResultsList />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/grading/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <GradingResultDetail />
               </RoleGuard>
             }
           />
