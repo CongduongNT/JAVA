@@ -1,6 +1,11 @@
 package com.planbookai.backend.util;
 
 import com.planbookai.backend.model.entity.Question;
+import com.planbookai.backend.model.entity.Question.Difficulty;
+import com.planbookai.backend.model.entity.Question.QuestionType;
+
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -260,5 +265,11 @@ public class PromptBuilder {
             return "- Objectives: (AI will infer appropriate objectives based on the topic)";
         }
         return "- Objectives: " + objectives;
+    }
+
+    public String buildExamGenerationPrompt(String subject, String topic, Difficulty difficulty, QuestionType type,
+            int gapCount, List<String> existingContents) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'buildExamGenerationPrompt'");
     }
 }

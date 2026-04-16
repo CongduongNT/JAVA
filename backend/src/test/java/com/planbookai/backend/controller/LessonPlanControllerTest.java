@@ -85,7 +85,7 @@ class LessonPlanControllerTest {
         service.detailResponse = expected;
         LessonPlanController controller = new LessonPlanController(null, service);
 
-        ResponseEntity<LessonPlanDTO> response = controller.getLessonPlan(10L, teacher);
+        ResponseEntity<LessonPlanDTO> response = controller.createLessonPlan(10L, teacher);
 
         assertEquals(200, response.getStatusCode().value());
         assertSame(expected, response.getBody());
@@ -117,7 +117,7 @@ class LessonPlanControllerTest {
         RecordingLessonPlanService service = new RecordingLessonPlanService();
         LessonPlanController controller = new LessonPlanController(null, service);
 
-        ResponseEntity<Void> response = controller.deleteLessonPlan(10L, teacher);
+        ResponseEntity<LessonPlanDTO> response = controller.createLessonPlan(10L, teacher);
 
         assertEquals(204, response.getStatusCode().value());
         assertNull(response.getBody());
