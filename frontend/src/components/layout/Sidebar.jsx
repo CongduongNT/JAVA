@@ -54,9 +54,9 @@ const ALL_NAV_ITEMS = [
     roles: ['TEACHER'],
   },
   {
-    name: 'OCR Grading',
+    name: 'Kết quả chấm bài',
     icon: Bot,
-    path: '/ocr-grading',
+    path: '/grading',
     roles: ['TEACHER'],
   },
   {

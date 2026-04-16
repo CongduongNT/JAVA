@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
+import com.planbookai.backend.dto.GradingFeedbackRequest;
 import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.exception.AIServiceException;
@@ -156,6 +157,108 @@ public class GeminiAIService {
         }
 
         return mapRawToLessonPlan(raw);
+    }
+
+    // =========================================================================
+    // Grading Feedback Generation
+    // =========================================================================
+
+    /**
+     * Sinh gợi ý feedback cho bài kiểm tra bằng Gemini AI.
+     *
+     * <p>CHỈ dựa trên dữ liệu CÓ THẬT: điểm số, câu sai, câu bỏ trống.
+     * KHÔNG suy đoán hay bịa đặt nguyên nhân tâm lý.
+     *
+     * @param request Thông tin bài làm của học sinh
+     * @return Plain text feedback ngắn gọn (≤ 500 chars)
+     */
+    public String generateFeedback(GradingFeedbackRequest request) {
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
+        String prompt = buildGradingFeedbackPrompt(request);
+        log.info("[GeminiAI] Generating grading feedback for student={}, exam={}",
+                request.getStudentName(), request.getExamTitle());
+
+        String rawResponse;
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            rawResponse = response != null ? response.text() : null;
+        } catch (Exception e) {
+            log.error("[GeminiAI] generateFeedback failed: {}", e.getMessage(), e);
+            throw new AIServiceException("Không thể kết nối với AI: " + e.getMessage());
+        }
+
+        if (rawResponse == null || rawResponse.isBlank()) {
+            throw new AIServiceException("AI returned empty feedback response.");
+        }
+
+        String cleaned = rawResponse.trim();
+        // Limit to 500 chars
+        if (cleaned.length() > 500) {
+            cleaned = cleaned.substring(0, 497) + "...";
+        }
+
+        log.debug("[GeminiAI] Raw feedback: {}", cleaned);
+        return cleaned;
+    }
+
+    /**
+     * Build prompt cho grading feedback.
+     * Chỉ đưa vào dữ liệu có thật — không bịa.
+     */
+    private String buildGradingFeedbackPrompt(GradingFeedbackRequest req) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Bạn là một giáo viên có kinh nghiệm, viết nhận xét phản hồi cho bài kiểm tra của học sinh.\n");
+        sb.append("CHỈ dựa trên dữ liệu được cung cấp bên dưới. KHÔNG suy đoán hay bịa đặt nguyên nhân.\n\n");
+
+        sb.append("Thông tin bài kiểm tra:\n");
+        sb.append("- Môn: ").append(nullSafe(req.getSubject())).append("\n");
+        sb.append("- Lớp: ").append(nullSafe(req.getGradeLevel())).append("\n");
+        sb.append("- Tên học sinh: ").append(nullSafe(req.getStudentName())).append("\n");
+        sb.append("- Điểm: ").append(req.getTotalScore()).append("/").append(req.getTotalPossible())
+          .append(" (").append(req.getPercentage()).append("%)\n");
+        sb.append("- Số câu đúng: ").append(req.getCorrectCount())
+          .append(", sai: ").append(req.getWrongCount())
+          .append(", bỏ trống: ").append(req.getBlankCount()).append("\n\n");
+
+        if (!req.getWrongQuestions().isEmpty()) {
+            sb.append("Câu sai:\n");
+            for (GradingFeedbackRequest.WrongQuestionInfo q : req.getWrongQuestions()) {
+                sb.append("- Câu ").append(q.getOrder()).append(": ")
+                  .append(nullSafe(q.getQuestionContent())).append("\n");
+                sb.append("  Học sinh trả lời: ").append(nullSafe(q.getStudentAnswer()))
+                  .append(" | Đáp án đúng: ").append(nullSafe(q.getCorrectAnswer())).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        if (!req.getBlankQuestions().isEmpty()) {
+            sb.append("Câu bỏ trống:\n");
+            for (GradingFeedbackRequest.BlankQuestionInfo q : req.getBlankQuestions()) {
+                sb.append("- Câu ").append(q.getOrder()).append(": ")
+                  .append(nullSafe(q.getQuestionContent())).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        sb.append("YÊU CẦU:\n");
+        sb.append("1. Nhận xét NGẮN GỌN, tối đa 4-5 câu\n");
+        sb.append("2. GỢI Ý, không phán xét cứng nhắc\n");
+        sb.append("3. Điểm mạnh → ghi nhận ngắn gọn\n");
+        sb.append("4. Điểm yếu → chỉ ra DỰA TRÊN DỮ LIỆU CÓ (câu sai ở đâu, bỏ trống ở đâu)\n");
+        sb.append("5. Gợi ý hướng ôn tập cụ thể nếu có dữ liệu\n");
+        sb.append("6. KHÔNG dùng các cụm từ như \"có vẻ như em không hiểu\" - dùng \"câu trả lời chưa chính xác ở phần...\"\n");
+        sb.append("7. Nếu trên 50% câu bỏ trống → nhấn mạnh vấn đề bỏ trống\n");
+        sb.append("8. KHÔNG bịa nguyên nhân tâm lý (\"em có vẻ lo lắng\", \"em không tập trung\")\n\n");
+        sb.append("Format: plain text, không markdown, không bullet dài\n");
+
+        return sb.toString();
+    }
+
+    private String nullSafe(String s) {
+        return s != null ? s : "(không có thông tin)";
     }
 
     // =========================================================================

@@ -35,6 +35,8 @@ import AnswerSheetsPage from './features/answer-sheets/AnswerSheetsPage'
 import TeacherAnalyticsDashboard from './pages/teacher/TeacherAnalyticsDashboard'
 import ManagerRevenueDashboard from './pages/manager/ManagerRevenueDashboard'
 import AdminUserGrowthDashboard from './pages/admin/AdminUserGrowthDashboard'
+import GradingResultsList from './pages/teacher/GradingResultsList'
+import GradingResultDetail from './pages/teacher/GradingResultDetail'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -274,6 +276,22 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER']}>
                 <TeacherAnalyticsDashboard />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/grading"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <GradingResultsList />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/grading/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <GradingResultDetail />
               </RoleGuard>
             }
           />
