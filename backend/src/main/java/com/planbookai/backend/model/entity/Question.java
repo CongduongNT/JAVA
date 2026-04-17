@@ -98,4 +98,9 @@ public class Question {
     public enum Difficulty {
         EASY, MEDIUM, HARD
     }
+
+    public long getTotalElements() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getTotalElements'");
+    }
 }

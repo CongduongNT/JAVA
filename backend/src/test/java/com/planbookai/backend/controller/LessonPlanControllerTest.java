@@ -7,6 +7,7 @@ import com.planbookai.backend.dto.PageResponse;
 import com.planbookai.backend.model.entity.LessonPlan;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.LessonPlanRepository;
+import com.planbookai.backend.service.AiPromptTemplateService;
 import com.planbookai.backend.service.LessonPlanService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ class LessonPlanControllerTest {
                 false);
         RecordingLessonPlanService service = new RecordingLessonPlanService();
         service.listResponse = expected;
-        LessonPlanController controller = new LessonPlanController(service);
+        LessonPlanController controller = new LessonPlanController(null, service);
 
         ResponseEntity<PageResponse<LessonPlanListItemDTO>> response = controller.getMyLessonPlans(
                 0,
@@ -66,7 +67,7 @@ class LessonPlanControllerTest {
         LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).title("Lesson").status(LessonPlan.LessonPlanStatus.DRAFT).build();
         RecordingLessonPlanService service = new RecordingLessonPlanService();
         service.detailResponse = expected;
-        LessonPlanController controller = new LessonPlanController(service);
+        LessonPlanController controller = new LessonPlanController(null, service);
 
         ResponseEntity<LessonPlanDTO> response = controller.createLessonPlan(request, teacher);
 
@@ -82,9 +83,9 @@ class LessonPlanControllerTest {
         LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).title("Lesson").build();
         RecordingLessonPlanService service = new RecordingLessonPlanService();
         service.detailResponse = expected;
-        LessonPlanController controller = new LessonPlanController(service);
+        LessonPlanController controller = new LessonPlanController(null, service);
 
-        ResponseEntity<LessonPlanDTO> response = controller.getLessonPlan(10L, teacher);
+        ResponseEntity<LessonPlanDTO> response = controller.createLessonPlan(10L, teacher);
 
         assertEquals(200, response.getStatusCode().value());
         assertSame(expected, response.getBody());
@@ -99,7 +100,7 @@ class LessonPlanControllerTest {
         LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).title("Lesson").build();
         RecordingLessonPlanService service = new RecordingLessonPlanService();
         service.detailResponse = expected;
-        LessonPlanController controller = new LessonPlanController(service);
+        LessonPlanController controller = new LessonPlanController(null, service);
 
         ResponseEntity<LessonPlanDTO> response = controller.updateLessonPlan(10L, request, teacher);
 
@@ -114,9 +115,9 @@ class LessonPlanControllerTest {
     void deleteLessonPlanDelegatesToService() {
         User teacher = User.builder().id(5L).build();
         RecordingLessonPlanService service = new RecordingLessonPlanService();
-        LessonPlanController controller = new LessonPlanController(service);
+        LessonPlanController controller = new LessonPlanController(null, service);
 
-        ResponseEntity<Void> response = controller.deleteLessonPlan(10L, teacher);
+        ResponseEntity<LessonPlanDTO> response = controller.createLessonPlan(10L, teacher);
 
         assertEquals(204, response.getStatusCode().value());
         assertNull(response.getBody());
@@ -131,7 +132,7 @@ class LessonPlanControllerTest {
         LessonPlanDTO expected = LessonPlanDTO.builder().id(10L).status(LessonPlan.LessonPlanStatus.PUBLISHED).build();
         RecordingLessonPlanService service = new RecordingLessonPlanService();
         service.detailResponse = expected;
-        LessonPlanController controller = new LessonPlanController(service);
+        LessonPlanController controller = new LessonPlanController(null, service);
 
         ResponseEntity<LessonPlanDTO> response = controller.publishLessonPlan(10L, teacher);
 

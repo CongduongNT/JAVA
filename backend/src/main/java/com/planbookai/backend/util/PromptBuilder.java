@@ -1,6 +1,11 @@
 package com.planbookai.backend.util;
 
 import com.planbookai.backend.model.entity.Question;
+import com.planbookai.backend.model.entity.Question.Difficulty;
+import com.planbookai.backend.model.entity.Question.QuestionType;
+
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -281,6 +286,12 @@ public class PromptBuilder {
         return "- Objectives: " + objectives;
     }
 
+<<<<<<< HEAD
+    public String buildExamGenerationPrompt(String subject, String topic, Difficulty difficulty, QuestionType type,
+            int gapCount, List<String> existingContents) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'buildExamGenerationPrompt'");
+=======
     private String buildTypeInstructions(Question.QuestionType type) {
         return switch (type) {
             case MULTIPLE_CHOICE -> """
@@ -328,5 +339,6 @@ public class PromptBuilder {
             case MEDIUM -> "comprehension and application, moderate complexity";
             case HARD   -> "analysis and synthesis, complex multi-step reasoning";
         };
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
     }
 }

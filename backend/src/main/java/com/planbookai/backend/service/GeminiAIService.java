@@ -63,6 +63,10 @@ public class GeminiAIService {
             throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
         }
 
+<<<<<<< HEAD
+        // 1. Build prompt
+=======
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
         String prompt = promptBuilder.buildQuestionPrompt(subject, topic, difficulty, type, count);
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
                 count, subject, topic, difficulty, type);
@@ -336,6 +340,33 @@ public class GeminiAIService {
                 .collect(Collectors.toList());
     }
 
+<<<<<<< HEAD
+    /**
+     * Gọi AI trực tiếp với một chuỗi prompt đã build hoàn chỉnh.
+     *
+     * @param prompt Nội dung prompt đầy đủ
+     * @return Văn bản phản hồi từ AI
+     */
+    public String callAi(String prompt) {
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            return response.text();
+        } catch (Exception e) {
+            String errorMsg = e.getMessage();
+            log.error("[GeminiAI] Lỗi gọi AI: {}", errorMsg);
+            if (errorMsg != null && (errorMsg.contains("API key not valid") || errorMsg.contains("400"))) {
+                throw new AIServiceException("Lỗi xác thực: API Key không hợp lệ. Hãy đảm bảo bạn không nhập thừa dấu ngoặc kép hoặc khoảng trắng.");
+            }
+            throw new AIServiceException("Không thể kết nối với AI: " + errorMsg);
+        }
+    }
+
+=======
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
     /**
      * Loại bỏ markdown code fence (```json ... ```) nếu Gemini thêm vào.
      * Dùng regex để xử lý chính xác hơn.
