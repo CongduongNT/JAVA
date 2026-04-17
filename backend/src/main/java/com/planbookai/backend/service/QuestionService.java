@@ -53,14 +53,6 @@ public class QuestionService {
                 .toList();
     }
 
-<<<<<<< HEAD
-    private boolean hasRole(User user, RoleName roleName) {
-        return user != null
-                && user.getRole() != null
-                && user.getRole().getName() == roleName;
-    }
-=======
->>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
 
     public QuestionDTO.QuestionBankDTO getBank(Integer id, User user) {
         QuestionBank bank = findBankOrThrow(id);
@@ -324,6 +316,12 @@ public class QuestionService {
         return ownerId != null && ownerId.equals(user.getId());
     }
 
+    private boolean hasRole(User user, Role.RoleName roleName) {
+        return user != null
+                && user.getRole() != null
+                && user.getRole().getName() == roleName;
+    }
+
     private void requireAuthenticatedUser(User user) {
         if (user == null || user.getId() == null) {
             throw new ForbiddenOperationException("Authentication is required");
@@ -475,9 +473,5 @@ public class QuestionService {
         Question saved = questionRepository.save(question);
         return mapToQuestionDTO(saved);
     }
-<<<<<<< HEAD
-}
-=======
 
 }
->>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
