@@ -31,6 +31,7 @@ import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
 import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
 import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
 import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
+import AnswerSheetsPage from './features/answer-sheets/AnswerSheetsPage'
 import TeacherAnalyticsDashboard from './pages/teacher/TeacherAnalyticsDashboard'
 import ManagerRevenueDashboard from './pages/manager/ManagerRevenueDashboard'
 import AdminUserGrowthDashboard from './pages/admin/AdminUserGrowthDashboard'
@@ -291,6 +292,14 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER']}>
                 <GradingResultDetail />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/ocr-grading"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <AnswerSheetsPage />
               </RoleGuard>
             }
           />
