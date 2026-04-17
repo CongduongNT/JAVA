@@ -72,38 +72,35 @@ export default function PromptTemplatesPage() {
 
   // Giao diện Thư viện dành riêng cho Teacher
   const renderTeacherLibrary = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {displayTemplates.length === 0 ? (
-        <div className="col-span-full py-32 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200 shadow-sm">
-          <div className="bg-slate-50 size-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="size-10 text-slate-300" />
-          </div>
-          <p className="text-slate-600 font-bold text-lg">Thư viện hiện đang trống</p>
+        <div className="col-span-full py-20 text-center bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200">
+          <BookOpen className="size-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 font-medium">Hiện chưa có mẫu giáo án nào khả dụng.</p>
           <p className="text-sm text-gray-400">Vui lòng quay lại sau khi Manager đã phê duyệt nội dung mới.</p>
         </div>
       ) : (
         displayTemplates.map((item) => (
-          <Card key={item.id} className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-none bg-white rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200/60">
-            <div className="h-2 bg-gradient-to-r from-indigo-500 to-blue-500" />
-            <CardHeader className="pb-4 pt-6">
+          <Card key={item.id} className="hover:shadow-md transition-shadow border-t-4 border-t-primary">
+            <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
-                <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider rounded-lg">
+                <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded">
                   {item.purpose}
                 </span>
-                <Sparkles className="size-5 text-amber-400 fill-amber-400 group-hover:scale-110 transition-transform" />
+                <Sparkles className="size-4 text-amber-500" />
               </div>
-              <CardTitle className="text-xl font-black mt-4 text-slate-800 line-clamp-1">{item.title}</CardTitle>
-              <CardDescription className="line-clamp-2 min-h-[40px] text-slate-500 font-medium mt-2">
-                {item.description || 'Sử dụng mẫu này để AI hỗ trợ tạo nội dung bài giảng chuyên nghiệp theo khung chuẩn.'}
+              <CardTitle className="text-lg mt-2 line-clamp-1">{item.title}</CardTitle>
+              <CardDescription className="line-clamp-2 min-h-[40px]">
+                Sử dụng mẫu này để AI hỗ trợ tạo nội dung bài giảng chuyên nghiệp.
               </CardDescription>
             </CardHeader>
-            <CardContent className="py-4">
+            <CardContent className="py-2">
               <div className="flex flex-wrap gap-1.5">
                 {(item.variables?.split(',') || [])
                   .filter(v => v.trim() !== "")
                   .map((v, idx) => (
-                    <span key={idx} className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-md font-bold uppercase tracking-tighter">
-                      #{v.trim()}
+                    <span key={idx} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">
+                      {v.trim()}
                     </span>
                   ))}
               </div>
@@ -111,7 +108,7 @@ export default function PromptTemplatesPage() {
             <CardFooter className="pt-4">
               <Link
                 to={`/generate-lesson-plan/${item.id}`}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg hover:bg-indigo-600 hover:shadow-indigo-200 transition-all active:scale-95"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary py-2 text-sm font-bold text-white shadow-sm hover:bg-primary/90 transition-all"
               >
                 <Sparkles className="size-4" />
                 Sử dụng ngay
@@ -124,15 +121,14 @@ export default function PromptTemplatesPage() {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             {isApprovalView ? 'Phê duyệt Prompt Templates' : 
-             isTeacher ? 'Thư viện Giáo án ' : 'Quản lý Prompt Templates'}
-             {isTeacher && <span className="text-indigo-600">AI</span>}
+             isTeacher ? 'Thư viện Giáo án AI' : 'Quản lý Prompt Templates'}
           </h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">
+          <p className="text-sm text-gray-500">
             {isApprovalView ? 'Xét duyệt các câu lệnh AI mới từ nhân viên.' : 
              isTeacher ? 'Chọn mẫu giáo án và để AI hỗ trợ bạn soạn bài trong giây lát.' : 'Tạo và quản lý các câu lệnh AI để hỗ trợ giáo viên.'}
           </p>
@@ -140,7 +136,7 @@ export default function PromptTemplatesPage() {
         {!isApprovalView && !isTeacher && (
           <Link
             to="/prompt-templates/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow hover:bg-primary/90"
           >
             <Plus className="size-4" />
             Thêm mới
@@ -151,9 +147,9 @@ export default function PromptTemplatesPage() {
       {isTeacher ? (
         renderTeacherLibrary()
       ) : (
-        <div className="rounded-[2rem] border-none bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50/50 text-xs uppercase text-slate-500 font-black tracking-widest border-b border-slate-100">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-700 font-semibold border-b">
               <tr>
                 <th className="px-6 py-4">Tiêu đề</th>
                 {isApprovalView && <th className="px-6 py-4">Người tạo</th>}
@@ -166,31 +162,23 @@ export default function PromptTemplatesPage() {
             <tbody className="divide-y">
               {displayTemplates.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500 italic">
                     Danh sách hiện đang trống.
                   </td>
                 </tr>
               )}
               {displayTemplates.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
-                  <td className="px-6 py-5 font-bold text-slate-800">{item.title}</td>
+                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">{item.title}</td>
                   {isApprovalView && (
-                    <td className="px-6 py-5 text-slate-600 text-xs font-bold">{item.createdByName || 'N/A'}</td>
+                    <td className="px-6 py-4 text-gray-600 text-xs font-semibold">{item.createdByName || 'N/A'}</td>
                   )}
-                  <td className="px-6 py-5">
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium">
                       {item.purpose}
                     </span>
                   </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-wrap gap-1">
-                      {item.variables?.split(',').map((v, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-mono">
-                          {v.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+                  <td className="px-6 py-4 text-gray-500 font-mono text-xs italic">{item.variables}</td>
                   <td className="px-6 py-4">
                     <ApprovalStatusBadge 
                       status={item.status} 

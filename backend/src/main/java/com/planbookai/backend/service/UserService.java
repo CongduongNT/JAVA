@@ -173,9 +173,4 @@ public class UserService {
         res.setUpdatedAt(u.getUpdatedAt());
         return res;
     }
-
-    public User getByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-    }
 }

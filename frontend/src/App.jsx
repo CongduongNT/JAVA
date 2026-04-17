@@ -25,8 +25,6 @@ import PromptTemplatesPage from './pages/staff/PromptTemplatesPage'
 import PromptTemplateForm from './pages/staff/PromptTemplateForm'
 import GenerateLessonPlan from './pages/teacher/GenerateLessonPlan'
 import ExamGenerator from './pages/teacher/ExamGenerator'
-import ExamBuilderPage from './pages/teacher/ExamBuilderPage'
-import ExamsPage from './pages/teacher/ExamsPage'
 import LessonPlanGenerator from './pages/teacher/LessonPlanGenerator'
 import QuestionBankPage from './features/question-bank/QuestionBankPage'
 import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
@@ -202,38 +200,10 @@ function App() {
           />
 
           <Route
-            path="/exams"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-<<<<<<< HEAD
-                <ExamsPage />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/exams/:id/edit"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-                <ExamBuilderPage />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/exams/new"
-            element={
-              <RoleGuard roles={['TEACHER']}>
-                <ExamBuilderPage />
-              </RoleGuard>
-            }
-          />
-          <Route
             path="/lesson-plans"
             element={
-              <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
-                <PromptTemplatesPage />
-=======
+              <RoleGuard roles={['TEACHER']}>
                 <LessonPlansPage />
->>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
               </RoleGuard>
             }
           />
@@ -242,8 +212,6 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <GenerateLessonPlan />
-<<<<<<< HEAD
-=======
               </RoleGuard>
             }
           />
@@ -276,7 +244,6 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER']}>
                 <LessonPlanGenerator />
->>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
               </RoleGuard>
             }
           />

@@ -2,16 +2,6 @@ package com.planbookai.backend.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-<<<<<<< HEAD
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-@Entity
-@Table(name = "exam_questions")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
-public class ExamQuestion {
-=======
 
 import java.math.BigDecimal;
 
@@ -30,7 +20,6 @@ import java.math.BigDecimal;
 @Builder
 public class ExamQuestion {
 
->>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,18 +32,6 @@ public class ExamQuestion {
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
-<<<<<<< HEAD
-    @Column(name = "order_index", nullable = false)
-    private Integer orderIndex;
-
-    @Column(precision = 5, scale = 2)
-    private BigDecimal points;
-
-    @Column(name = "created_at", updatable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-}
-=======
     @Column(name = "order_index")
     @Builder.Default
     private Integer orderIndex = 0;
@@ -68,4 +45,3 @@ public class ExamQuestion {
     @Builder.Default
     private BigDecimal points = BigDecimal.ONE;
 }
->>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff

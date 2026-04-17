@@ -36,41 +36,37 @@ public class GeminiAIConfig {
      */
     @Bean
     public Client geminiClient() {
-        String rawKey = apiKey;
+        // Loại bỏ placeholder "dummy" hoặc chuỗi mẫu ban đầu để tránh lỗi 400
+        String effectiveKey = (apiKey != null && 
+                               !apiKey.isBlank() && 
+                               !apiKey.equalsIgnoreCase("dummy") && 
+                               !apiKey.startsWith("AIzaSyA...")) 
+                               ? apiKey : null;
         String source = "application.yml";
 
-        // Kiểm tra placeholder và fallback sang biến môi trường
-        if (isPlaceholder(rawKey)) {
-            rawKey = System.getenv("GEMINI_API_KEY");
+        // Fallback sang biến môi trường hệ thống nếu config trống
+        if (effectiveKey == null) {
+            effectiveKey = System.getenv("GEMINI_API_KEY");
             source = "System Environment (GEMINI_API_KEY)";
         }
         
-        if (isPlaceholder(rawKey)) {
-            rawKey = System.getenv("GOOGLE_API_KEY");
+        if (effectiveKey == null) {
+            effectiveKey = System.getenv("GOOGLE_API_KEY");
             source = "System Environment (GOOGLE_API_KEY)";
         }
 
-        // Làm sạch Key (xóa dấu ngoặc kép và khoảng trắng)
-        String cleanedKey = (rawKey != null) ? rawKey.trim().replaceAll("[\"']", "") : null;
-
-        if (isPlaceholder(cleanedKey)) {
-            log.error("[GeminiAI] CONFIG ERROR: API Key not found or invalid (Source: {}). AI features are DISABLED.", source);
+        if (effectiveKey == null) {
+            log.error("[GeminiAI] CONFIG ERROR: API Key not found. AI features are DISABLED.");
             return null;
         }
+
+        // Clean the key: remove quotes and whitespace
+        effectiveKey = effectiveKey.trim().replaceAll("[\"']", "");
 
         log.info("[GeminiAI] Client initialized successfully using source: {}", source);
 
         return new Client.Builder()
-                .apiKey(cleanedKey)
+                .apiKey(effectiveKey)
                 .build();
-    }
-
-    private boolean isPlaceholder(String key) {
-        if (key == null || key.isBlank()) return true;
-        String k = key.toLowerCase();
-        return k.contains("dummy") || 
-               k.contains("...") || 
-               k.contains("your_") || 
-               k.contains("${");
     }
 }
