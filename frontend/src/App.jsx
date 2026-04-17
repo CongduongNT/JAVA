@@ -33,6 +33,12 @@ import BankQuestionsPage from './features/question-bank/BankQuestionsPage'
 import LessonPlansPage from './features/lesson-plans/LessonPlansPage'
 import LessonPlanFormPage from './features/lesson-plans/LessonPlanFormPage'
 import LessonPlanDetailPage from './features/lesson-plans/LessonPlanDetailPage'
+import AnswerSheetsPage from './features/answer-sheets/AnswerSheetsPage'
+import TeacherAnalyticsDashboard from './pages/teacher/TeacherAnalyticsDashboard'
+import ManagerRevenueDashboard from './pages/manager/ManagerRevenueDashboard'
+import AdminUserGrowthDashboard from './pages/admin/AdminUserGrowthDashboard'
+import GradingResultsList from './pages/teacher/GradingResultsList'
+import GradingResultDetail from './pages/teacher/GradingResultDetail'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -157,9 +163,15 @@ function App() {
             path="/manager/analytics"
             element={
               <RoleGuard roles={['MANAGER', 'ADMIN']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Manager – Analytics (Coming Soon)</h2>
-                </div>
+                <ManagerRevenueDashboard />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/analytics/users"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <AdminUserGrowthDashboard />
               </RoleGuard>
             }
           />
@@ -193,6 +205,7 @@ function App() {
             path="/exams"
             element={
               <RoleGuard roles={['TEACHER']}>
+<<<<<<< HEAD
                 <ExamsPage />
               </RoleGuard>
             }
@@ -218,6 +231,9 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <PromptTemplatesPage />
+=======
+                <LessonPlansPage />
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
               </RoleGuard>
             }
           />
@@ -226,6 +242,41 @@ function App() {
             element={
               <RoleGuard roles={['TEACHER', 'STAFF', 'MANAGER']}>
                 <GenerateLessonPlan />
+<<<<<<< HEAD
+=======
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/new"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanDetailPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/:id/edit"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanFormPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/lesson-plans/ai-generator"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <LessonPlanGenerator />
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
               </RoleGuard>
             }
           />
@@ -254,12 +305,34 @@ function App() {
             }
           />
           <Route
+            path="/analytics"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <TeacherAnalyticsDashboard />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/grading"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <GradingResultsList />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/grading/:id"
+            element={
+              <RoleGuard roles={['TEACHER']}>
+                <GradingResultDetail />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="/ocr-grading"
             element={
               <RoleGuard roles={['TEACHER']}>
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold">Teacher - OCR Grading</h2>
-                </div>
+                <AnswerSheetsPage />
               </RoleGuard>
             }
           />

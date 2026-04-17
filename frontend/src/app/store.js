@@ -5,6 +5,7 @@ import settingsReducer from '../features/settings/settingsSlice'
 import promptTemplatesReducer from '../features/promptTemplates/promptTemplateSlice'
 import questionBankReducer from '../features/question-bank/questionBankSlice'
 import lessonPlansReducer from '../features/lesson-plans/lessonPlanSlice'
+import answerSheetsReducer from '../features/answer-sheets/answerSheetSlice'
 
 export const store = configureStore({
   reducer: {
@@ -14,5 +15,6 @@ export const store = configureStore({
     promptTemplates: promptTemplatesReducer,
     questionBank: questionBankReducer,
     lessonPlans: lessonPlansReducer,
+    answerSheets: answerSheetsReducer,
   },
 })

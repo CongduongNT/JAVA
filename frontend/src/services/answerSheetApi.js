@@ -1,0 +1,43 @@
+import api from './api'
+
+/**
+ * answerSheetApi – Gọi các endpoint /api/v1/answer-sheets
+ */
+export const answerSheetApi = {
+  /**
+   * Lấy danh sách bài làm đã upload (có phân trang).
+   * @param {object} params - { exam_id?, page?, size? }
+   */
+  getAnswerSheets: (params = {}) =>
+    api.get('/answer-sheets', { params }),
+
+  /**
+   * Upload nhiều file bài làm cho một đề thi.
+   * @param {number|string} examId - ID đề thi
+   * @param {File[]} files - Mảng file ảnh / PDF
+   */
+  uploadAnswerSheets: (examId, files) => {
+    const formData = new FormData()
+    formData.append('exam_id', examId)
+    files.forEach((file) => formData.append('files', file))
+    return api.post('/answer-sheets/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
+  /**
+   * Xem chi tiết một bài làm (bao gồm ocrRawData nếu đã xử lý).
+   * @param {number} id
+   */
+  getAnswerSheet: (id) =>
+    api.get(`/answer-sheets/${id}`),
+
+  /**
+   * Kích hoạt OCR cho một bài làm.
+   * @param {number} id
+   */
+  processAnswerSheet: (id) =>
+    api.post(`/answer-sheets/${id}/process`),
+}
+
+export default answerSheetApi

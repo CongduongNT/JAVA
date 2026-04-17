@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
+import com.planbookai.backend.dto.GradingFeedbackRequest;
 import com.planbookai.backend.dto.LessonPlanDTO;
 import com.planbookai.backend.dto.QuestionDTO;
 import com.planbookai.backend.exception.AIServiceException;
@@ -44,6 +45,13 @@ public class GeminiAIService {
         this.objectMapper = objectMapper;
     }
 
+    // =========================================================================
+    // Question Generation
+    // =========================================================================
+
+    /**
+     * Sinh danh sách câu hỏi thông qua Gemini AI (chưa lưu DB).
+     */
     public List<QuestionDTO> generateQuestions(
             String subject,
             String topic,
@@ -55,10 +63,249 @@ public class GeminiAIService {
             throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
         }
 
+<<<<<<< HEAD
         // 1. Build prompt
+=======
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
         String prompt = promptBuilder.buildQuestionPrompt(subject, topic, difficulty, type, count);
         log.info("[GeminiAI] Sending prompt for {} questions: subject={}, topic={}, difficulty={}, type={}",
                 count, subject, topic, difficulty, type);
+
+        return callGeminiAndParse(prompt, subject, topic, difficulty, type);
+    }
+
+    /**
+     * Sinh câu hỏi bù vào đề thi khi ngân hàng không đủ (KAN-23).
+     *
+     * <p>Prompt được tối ưu để tránh trùng lặp với các câu hỏi đã có trong đề.
+     *
+     * @param subject          Môn học
+     * @param topic            Chủ đề
+     * @param difficulty       Độ khó
+     * @param type             Loại câu hỏi
+     * @param gapCount         Số câu cần sinh bù
+     * @param existingContents Nội dung các câu hỏi đã có (để tránh trùng)
+     * @return Danh sách QuestionDTO mới (chưa lưu DB)
+     * @throws AIServiceException nếu Gemini trả về lỗi hoặc JSON không hợp lệ
+     */
+    public List<QuestionDTO> generateExamGapQuestions(
+            String subject,
+            String topic,
+            Question.Difficulty difficulty,
+            Question.QuestionType type,
+            int gapCount,
+            List<String> existingContents) {
+
+        if (gapCount <= 0) {
+            return List.of();
+        }
+
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
+        String prompt = promptBuilder.buildExamGenerationPrompt(
+                subject, topic, difficulty, type, gapCount, existingContents);
+
+        log.info("[GeminiAI][ExamGap] Generating {} gap questions: subject={}, topic={}, difficulty={}, type={}",
+                gapCount, subject, topic, difficulty, type);
+
+        return callGeminiAndParse(prompt, subject, topic, difficulty, type);
+    }
+
+    // =========================================================================
+    // Lesson Plan Generation
+    // =========================================================================
+
+    public LessonPlanDTO generateLessonPlan(
+            String subject,
+            String topic,
+            String grade,
+            int duration,
+            LessonFramework framework,
+            String objectives) {
+
+        String prompt = promptBuilder.buildLessonPlanPrompt(
+                subject, topic, grade, duration, framework, objectives);
+
+        log.info("[GeminiAI] Generating lesson plan: subject={}, topic={}, grade={}, duration={}, framework={}",
+                subject, topic, grade, duration, framework.label());
+
+        String rawResponse;
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            rawResponse = response != null ? response.text() : null;
+        } catch (Exception e) {
+            log.error("[GeminiAI] API call failed: {}", e.getMessage(), e);
+            throw new AIServiceException("Gemini AI service is unavailable: " + e.getMessage());
+        }
+
+        log.debug("[GeminiAI] Raw lesson plan response: {}", rawResponse);
+
+        String cleanedJson = cleanJsonResponse(rawResponse);
+
+        Map<String, Object> raw;
+        try {
+            raw = objectMapper.readValue(
+                    cleanedJson,
+                    new TypeReference<Map<String, Object>>() {}
+            );
+        } catch (Exception e) {
+            log.error("[GeminiAI] Failed to parse lesson plan JSON: {}", cleanedJson, e);
+            throw new AIServiceException("AI returned invalid JSON for lesson plan. Please try again.");
+        }
+
+        if (raw == null) {
+            log.error("[GeminiAI] Raw lesson plan map is null");
+            throw new AIServiceException("AI returned empty response for lesson plan.");
+        }
+
+        return mapRawToLessonPlan(raw);
+    }
+
+    // =========================================================================
+    // Grading Feedback Generation
+    // =========================================================================
+
+    /**
+     * Sinh gợi ý feedback cho bài kiểm tra bằng Gemini AI.
+     *
+     * <p>CHỈ dựa trên dữ liệu CÓ THẬT: điểm số, câu sai, câu bỏ trống.
+     * KHÔNG suy đoán hay bịa đặt nguyên nhân tâm lý.
+     *
+     * @param request Thông tin bài làm của học sinh
+     * @return Plain text feedback ngắn gọn (≤ 500 chars)
+     */
+    public String generateFeedback(GradingFeedbackRequest request) {
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
+        String prompt = buildGradingFeedbackPrompt(request);
+        log.info("[GeminiAI] Generating grading feedback for student={}, exam={}",
+                request.getStudentName(), request.getExamTitle());
+
+        String rawResponse;
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            rawResponse = response != null ? response.text() : null;
+        } catch (Exception e) {
+            log.error("[GeminiAI] generateFeedback failed: {}", e.getMessage(), e);
+            throw new AIServiceException("Không thể kết nối với AI: " + e.getMessage());
+        }
+
+        if (rawResponse == null || rawResponse.isBlank()) {
+            throw new AIServiceException("AI returned empty feedback response.");
+        }
+
+        String cleaned = rawResponse.trim();
+        // Limit to 500 chars
+        if (cleaned.length() > 500) {
+            cleaned = cleaned.substring(0, 497) + "...";
+        }
+
+        log.debug("[GeminiAI] Raw feedback: {}", cleaned);
+        return cleaned;
+    }
+
+    /**
+     * Build prompt cho grading feedback.
+     * Chỉ đưa vào dữ liệu có thật — không bịa.
+     */
+    private String buildGradingFeedbackPrompt(GradingFeedbackRequest req) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Bạn là một giáo viên có kinh nghiệm, viết nhận xét phản hồi cho bài kiểm tra của học sinh.\n");
+        sb.append("CHỈ dựa trên dữ liệu được cung cấp bên dưới. KHÔNG suy đoán hay bịa đặt nguyên nhân.\n\n");
+
+        sb.append("Thông tin bài kiểm tra:\n");
+        sb.append("- Môn: ").append(nullSafe(req.getSubject())).append("\n");
+        sb.append("- Lớp: ").append(nullSafe(req.getGradeLevel())).append("\n");
+        sb.append("- Tên học sinh: ").append(nullSafe(req.getStudentName())).append("\n");
+        sb.append("- Điểm: ").append(req.getTotalScore()).append("/").append(req.getTotalPossible())
+          .append(" (").append(req.getPercentage()).append("%)\n");
+        sb.append("- Số câu đúng: ").append(req.getCorrectCount())
+          .append(", sai: ").append(req.getWrongCount())
+          .append(", bỏ trống: ").append(req.getBlankCount()).append("\n\n");
+
+        if (!req.getWrongQuestions().isEmpty()) {
+            sb.append("Câu sai:\n");
+            for (GradingFeedbackRequest.WrongQuestionInfo q : req.getWrongQuestions()) {
+                sb.append("- Câu ").append(q.getOrder()).append(": ")
+                  .append(nullSafe(q.getQuestionContent())).append("\n");
+                sb.append("  Học sinh trả lời: ").append(nullSafe(q.getStudentAnswer()))
+                  .append(" | Đáp án đúng: ").append(nullSafe(q.getCorrectAnswer())).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        if (!req.getBlankQuestions().isEmpty()) {
+            sb.append("Câu bỏ trống:\n");
+            for (GradingFeedbackRequest.BlankQuestionInfo q : req.getBlankQuestions()) {
+                sb.append("- Câu ").append(q.getOrder()).append(": ")
+                  .append(nullSafe(q.getQuestionContent())).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        sb.append("YÊU CẦU:\n");
+        sb.append("1. Nhận xét NGẮN GỌN, tối đa 4-5 câu\n");
+        sb.append("2. GỢI Ý, không phán xét cứng nhắc\n");
+        sb.append("3. Điểm mạnh → ghi nhận ngắn gọn\n");
+        sb.append("4. Điểm yếu → chỉ ra DỰA TRÊN DỮ LIỆU CÓ (câu sai ở đâu, bỏ trống ở đâu)\n");
+        sb.append("5. Gợi ý hướng ôn tập cụ thể nếu có dữ liệu\n");
+        sb.append("6. KHÔNG dùng các cụm từ như \"có vẻ như em không hiểu\" - dùng \"câu trả lời chưa chính xác ở phần...\"\n");
+        sb.append("7. Nếu trên 50% câu bỏ trống → nhấn mạnh vấn đề bỏ trống\n");
+        sb.append("8. KHÔNG bịa nguyên nhân tâm lý (\"em có vẻ lo lắng\", \"em không tập trung\")\n\n");
+        sb.append("Format: plain text, không markdown, không bullet dài\n");
+
+        return sb.toString();
+    }
+
+    private String nullSafe(String s) {
+        return s != null ? s : "(không có thông tin)";
+    }
+
+    // =========================================================================
+    // Raw AI call (direct prompt)
+    // =========================================================================
+
+    /**
+     * Gọi AI trực tiếp với một chuỗi prompt đã build hoàn chỉnh.
+     *
+     * @param prompt Nội dung prompt đầy đủ
+     * @return Văn bản phản hồi từ AI
+     */
+    public String callAi(String prompt) {
+        if (geminiClient == null) {
+            throw new AIServiceException("Hệ thống AI chưa được thiết lập. Vui lòng liên hệ Admin để cấu hình GEMINI_API_KEY.");
+        }
+
+        try {
+            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
+            return response.text();
+        } catch (Exception e) {
+            String errorMsg = e.getMessage();
+            log.error("[GeminiAI] Lỗi gọi AI: {}", errorMsg);
+            if (errorMsg != null && (errorMsg.contains("API key not valid") || errorMsg.contains("400"))) {
+                throw new AIServiceException("Lỗi xác thực: API Key không hợp lệ. Hãy đảm bảo bạn không nhập thừa dấu ngoặc kép hoặc khoảng trắng.");
+            }
+            throw new AIServiceException("Không thể kết nối với AI: " + errorMsg);
+        }
+    }
+
+    // =========================================================================
+    // Internal helpers
+    // =========================================================================
+
+    /**
+     * Gọi Gemini API với prompt và parse kết quả thành danh sách QuestionDTO.
+     */
+    private List<QuestionDTO> callGeminiAndParse(
+            String prompt,
+            String subject,
+            String topic,
+            Question.Difficulty difficulty,
+            Question.QuestionType type) {
 
         String rawResponse;
         try {
@@ -93,6 +340,7 @@ public class GeminiAIService {
                 .collect(Collectors.toList());
     }
 
+<<<<<<< HEAD
     /**
      * Gọi AI trực tiếp với một chuỗi prompt đã build hoàn chỉnh.
      *
@@ -117,23 +365,25 @@ public class GeminiAIService {
         }
     }
 
+=======
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
     /**
      * Loại bỏ markdown code fence (```json ... ```) nếu Gemini thêm vào.
+     * Dùng regex để xử lý chính xác hơn.
      */
     private String cleanJsonResponse(String raw) {
         if (raw == null) return "[]";
 
         String cleaned = raw.trim();
-        
-        // Regex to find the JSON array/object inside optional markdown code fences
-        // Captures content starting with [ or { and ending with ] or }
+
+        // Regex: tìm JSON array/object bên trong optional markdown code fences
         Pattern pattern = Pattern.compile("```(?:json)?\\s*([\\[\\{].*?[\\]\\}])\\s*```", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(cleaned);
         if (matcher.find()) {
             return matcher.group(1).trim();
         }
-        
-        // Fallback: if no fences found, strip any potential markers manually
+
+        // Fallback: strip markers thủ công
         return cleaned.replaceAll("```json|```", "").trim();
     }
 
@@ -188,65 +438,6 @@ public class GeminiAIService {
                 .aiGenerated(true)
                 .isApproved(false)
                 .build();
-    }
-
-    private String getStr(Map<String, Object> map, String key, String defaultVal) {
-        Object val = map.get(key);
-        return val != null ? val.toString() : defaultVal;
-    }
-
-    private <T extends Enum<T>> T parseEnum(Class<T> enumClass, String value, T defaultVal) {
-        try {
-            return Enum.valueOf(enumClass, value.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            return defaultVal;
-        }
-    }
-
-    public LessonPlanDTO generateLessonPlan(
-            String subject,
-            String topic,
-            String grade,
-            int duration,
-            LessonFramework framework,
-            String objectives) {
-
-        String prompt = promptBuilder.buildLessonPlanPrompt(
-                subject, topic, grade, duration, framework, objectives);
-
-        log.info("[GeminiAI] Generating lesson plan: subject={}, topic={}, grade={}, duration={}, framework={}",
-                subject, topic, grade, duration, framework.label());
-
-        String rawResponse;
-        try {
-            GenerateContentResponse response = geminiClient.models.generateContent(model, prompt, null);
-            rawResponse = response != null ? response.text() : null;
-        } catch (Exception e) {
-            log.error("[GeminiAI] API call failed: {}", e.getMessage(), e);
-            throw new AIServiceException("Gemini AI service is unavailable: " + e.getMessage());
-        }
-
-        log.debug("[GeminiAI] Raw lesson plan response: {}", rawResponse);
-
-        String cleanedJson = cleanJsonResponse(rawResponse);
-
-        Map<String, Object> raw;
-        try {
-            raw = objectMapper.readValue(
-                    cleanedJson,
-                    new TypeReference<Map<String, Object>>() {}
-            );
-        } catch (Exception e) {
-            log.error("[GeminiAI] Failed to parse lesson plan JSON: {}", cleanedJson, e);
-            throw new AIServiceException("AI returned invalid JSON for lesson plan. Please try again.");
-        }
-
-        if (raw == null) {
-            log.error("[GeminiAI] Raw lesson plan map is null");
-            throw new AIServiceException("AI returned empty response for lesson plan.");
-        }
-
-        return mapRawToLessonPlan(raw);
     }
 
     private LessonPlanDTO mapRawToLessonPlan(Map<String, Object> raw) {
@@ -305,6 +496,11 @@ public class GeminiAIService {
                 .build();
     }
 
+    private String getStr(Map<String, Object> map, String key, String defaultVal) {
+        Object val = map.get(key);
+        return val != null ? val.toString() : defaultVal;
+    }
+
     private List<String> getStrList(Map<String, Object> raw, String key) {
         Object val = raw.get(key);
         if (val instanceof List<?>) {
@@ -332,5 +528,13 @@ public class GeminiAIService {
         }
 
         return defaultVal;
+    }
+
+    private <T extends Enum<T>> T parseEnum(Class<T> enumClass, String value, T defaultVal) {
+        try {
+            return Enum.valueOf(enumClass, value.toUpperCase(Locale.ROOT));
+        } catch (Exception e) {
+            return defaultVal;
+        }
     }
 }

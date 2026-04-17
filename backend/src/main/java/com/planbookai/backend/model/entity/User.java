@@ -17,24 +17,14 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 import java.time.LocalDateTime;
 
+/**
+ * User Entity
+ */
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
-/**
- * @param id
- * @param role
- * @param fullName
- * @param email
- * @param passwordHash
- * @param phone
- * @param avatarUrl
- * @param isActive
- * @param emailVerified
- * @param createdAt
- * @param updatedAt
- */
 @AllArgsConstructor
 @Builder
 public class User implements UserDetails { // Implement UserDetails interface
@@ -117,4 +107,15 @@ public class User implements UserDetails { // Implement UserDetails interface
     public boolean isEnabled() {
         return this.isActive != null && this.isActive;
     }
+
+    // Manual getters to bypass Lombok compilation bugs
+    public String getEmail() {
+        return this.email;
+    }
+
+    public Role getRole() {
+        return this.role;
+    }
+
+    
 }

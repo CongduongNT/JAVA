@@ -61,4 +61,7 @@ public class CurriculumFramework {
     @Column(name = "updated_at")
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    
+
 }

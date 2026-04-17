@@ -8,8 +8,10 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
- * PromptBuilder – Xây dựng prompt gửi lên Gemini AI để sinh câu hỏi.
+ * PromptBuilder – Xây dựng prompt gửi lên Gemini AI để sinh câu hỏi và giáo án.
  *
  * <p>Thiết kế theo nguyên tắc Single Responsibility: chỉ chịu trách nhiệm
  * xây dựng chuỗi prompt, không phụ thuộc vào bất kỳ service AI nào.
@@ -20,20 +22,16 @@ import org.springframework.stereotype.Component;
  *   <li>Định nghĩa rõ schema JSON để dễ parse.</li>
  *   <li>Điều chỉnh theo loại câu hỏi (MULTIPLE_CHOICE / SHORT_ANSWER / FILL_IN_BLANK).</li>
  * </ul>
- *
- * <p>Ví dụ prompt output:
- * <pre>
- * You are an expert Vietnamese high school Chemistry teacher...
- * Generate exactly 5 MULTIPLE_CHOICE questions about "Periodic Table" (difficulty: MEDIUM).
- * Return ONLY a valid JSON array, no markdown, no explanation.
- * ...
- * </pre>
  */
 @Component
 public class PromptBuilder {
 
+    // =========================================================================
+    // Question Prompts
+    // =========================================================================
+
     /**
-     * Tạo prompt hoàn chỉnh để gửi lên Gemini AI.
+     * Tạo prompt hoàn chỉnh để gửi lên Gemini AI sinh câu hỏi.
      *
      * @param subject    Môn học (VD: Chemistry)
      * @param topic      Chủ đề (VD: Periodic Table)
@@ -88,63 +86,83 @@ public class PromptBuilder {
     }
 
     /**
-     * Xây dựng hướng dẫn theo loại câu hỏi.
+     * Tạo prompt để sinh thêm câu hỏi bù vào đề thi khi ngân hàng không đủ (KAN-23).
+     *
+     * <p>Prompt chỉ yêu cầu Gemini sinh đúng {@code gapCount} câu (phần còn thiếu),
+     * và truyền danh sách câu đã chọn từ bank để tránh trùng lặp nội dung.
+     *
+     * @param subject          Môn học
+     * @param topic            Chủ đề
+     * @param difficulty       Độ khó
+     * @param type             Loại câu hỏi
+     * @param gapCount         Số câu cần sinh thêm
+     * @param existingContents Danh sách nội dung câu hỏi đã có (để tránh trùng)
+     * @return Chuỗi prompt hoàn chỉnh
      */
-    private String buildTypeInstructions(Question.QuestionType type) {
-        return switch (type) {
-            case MULTIPLE_CHOICE -> """
-                    For MULTIPLE_CHOICE questions:
-                    - Provide exactly 4 options labeled A, B, C, D.
-                    - Exactly one option must be correct (isCorrect: true), others false.
-                    - Options should be plausible but clearly differentiated.""";
-            case SHORT_ANSWER -> """
-                    For SHORT_ANSWER questions:
-                    - The question requires a short text answer (1-3 sentences).
-                    - Set options to null.
-                    - The correctAnswer field should contain the expected answer.""";
-            case FILL_IN_BLANK -> """
-                    For FILL_IN_BLANK questions:
-                    - Use "___" (three underscores) to indicate the blank in the content.
-                    - Set options to null.
-                    - The correctAnswer field should contain the word(s) that fill the blank.""";
-        };
-    }
+    public String buildExamGenerationPrompt(
+            String subject,
+            String topic,
+            Question.Difficulty difficulty,
+            Question.QuestionType type,
+            int gapCount,
+            List<String> existingContents) {
 
-    /**
-     * Schema JSON cho trường options tuỳ từng loại câu hỏi.
-     */
-    private String buildOptionsSchema(Question.QuestionType type) {
-        if (type == Question.QuestionType.MULTIPLE_CHOICE) {
-            return """
-                    [
-                      {"label": "A", "text": "<option A text>", "isCorrect": false},
-                      {"label": "B", "text": "<option B text>", "isCorrect": true},
-                      {"label": "C", "text": "<option C text>", "isCorrect": false},
-                      {"label": "D", "text": "<option D text>", "isCorrect": false}
-                    ]""";
+        String difficultyLabel = mapDifficultyLabel(difficulty);
+        String typeInstructions = buildTypeInstructions(type);
+
+        String avoidSection = "";
+        if (existingContents != null && !existingContents.isEmpty()) {
+            StringBuilder sb = new StringBuilder(
+                    "IMPORTANT – The following questions are already in the exam. Do NOT generate similar or duplicate questions:\n");
+            int cap = Math.min(existingContents.size(), 10); // limit context size
+            for (int i = 0; i < cap; i++) {
+                sb.append("- ").append(existingContents.get(i)).append("\n");
+            }
+            avoidSection = sb.toString();
         }
-        return "null";
+
+        return """
+                You are an expert Vietnamese high school %s teacher and exam writer.
+                Your task is to generate exactly %d NEW %s questions about the topic "%s" with %s difficulty.
+                These questions will supplement existing exam questions – AVOID duplicates.
+
+                %s
+
+                %s
+
+                CRITICAL RULES:
+                1. Return ONLY a valid JSON array. No markdown, no code fences, no explanation.
+                2. The JSON array must contain exactly %d question objects.
+                3. All text must be in Vietnamese.
+                4. Each question must be educationally accurate and appropriate for high school level.
+                5. Difficulty level "%s" means: %s
+
+                Required JSON schema for each question object:
+                {
+                  "content": "<question text in Vietnamese>",
+                  "type": "%s",
+                  "difficulty": "%s",
+                  "topic": "%s",
+                  "options": %s,
+                  "correctAnswer": "<correct answer>",
+                  "explanation": "<brief explanation in Vietnamese>"
+                }
+
+                Generate the JSON array now:
+                """.formatted(
+                subject, gapCount, type.name(), topic, difficultyLabel,
+                avoidSection,
+                typeInstructions,
+                gapCount,
+                difficultyLabel, getDifficultyDescription(difficulty),
+                type.name(), difficulty.name(), topic,
+                buildOptionsSchema(type)
+        );
     }
 
-    private String mapDifficultyLabel(Question.Difficulty difficulty) {
-        return switch (difficulty) {
-            case EASY -> "EASY (Dễ)";
-            case MEDIUM -> "MEDIUM (Trung bình)";
-            case HARD -> "HARD (Khó)";
-        };
-    }
-
-    private String getDifficultyDescription(Question.Difficulty difficulty) {
-        return switch (difficulty) {
-            case EASY -> "recall-level knowledge, straightforward questions";
-            case MEDIUM -> "comprehension and application, moderate complexity";
-            case HARD -> "analysis and synthesis, complex multi-step reasoning";
-        };
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lesson Plan Prompt Builder
-    // ─────────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // Lesson Plan Prompts
+    // =========================================================================
 
     /**
      * Framework dạy học được hỗ trợ cho sinh giáo án.
@@ -169,10 +187,7 @@ public class PromptBuilder {
     }
 
     /**
-     * Tạo prompt hoàn chỉnh để Gemini AI sinh giáo án.
-     * Sử dụng khi objectives do AI tự suy ra (không truyền vào).
-     *
-     * @see #buildLessonPlanPrompt(String, String, String, int, LessonFramework, String)
+     * Tạo prompt hoàn chỉnh để Gemini AI sinh giáo án (objectives do AI tự suy ra).
      */
     public String buildLessonPlanPrompt(
             String subject,
@@ -191,7 +206,7 @@ public class PromptBuilder {
      * @param grade      Lớp (VD: Lớp 4, Grade 6)
      * @param duration   Thời lượng tiết học (phút, VD: 45)
      * @param framework  Khung phương pháp giảng dạy
-     * @param objectives Chuỗi mục tiêu phân cách bằng dấu | , hoặc null để AI tự suy ra
+     * @param objectives Chuỗi mục tiêu phân cách bằng dấu |, hoặc null để AI tự suy ra
      * @return Chuỗi prompt hoàn chỉnh
      */
     public String buildLessonPlanPrompt(
@@ -260,6 +275,10 @@ public class PromptBuilder {
         );
     }
 
+    // =========================================================================
+    // Private helpers
+    // =========================================================================
+
     private String buildObjectivesBlock(String objectives, String topic) {
         if (objectives == null || objectives.isBlank()) {
             return "- Objectives: (AI will infer appropriate objectives based on the topic)";
@@ -267,9 +286,59 @@ public class PromptBuilder {
         return "- Objectives: " + objectives;
     }
 
+<<<<<<< HEAD
     public String buildExamGenerationPrompt(String subject, String topic, Difficulty difficulty, QuestionType type,
             int gapCount, List<String> existingContents) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'buildExamGenerationPrompt'");
+=======
+    private String buildTypeInstructions(Question.QuestionType type) {
+        return switch (type) {
+            case MULTIPLE_CHOICE -> """
+                    For MULTIPLE_CHOICE questions:
+                    - Provide exactly 4 options labeled A, B, C, D.
+                    - Exactly one option must be correct (isCorrect: true), others false.
+                    - Options should be plausible but clearly differentiated.""";
+            case SHORT_ANSWER -> """
+                    For SHORT_ANSWER questions:
+                    - The question requires a short text answer (1-3 sentences).
+                    - Set options to null.
+                    - The correctAnswer field should contain the expected answer.""";
+            case FILL_IN_BLANK -> """
+                    For FILL_IN_BLANK questions:
+                    - Use "___" (three underscores) to indicate the blank in the content.
+                    - Set options to null.
+                    - The correctAnswer field should contain the word(s) that fill the blank.""";
+        };
+    }
+
+    private String buildOptionsSchema(Question.QuestionType type) {
+        if (type == Question.QuestionType.MULTIPLE_CHOICE) {
+            return """
+                    [
+                      {"label": "A", "text": "<option A text>", "isCorrect": false},
+                      {"label": "B", "text": "<option B text>", "isCorrect": true},
+                      {"label": "C", "text": "<option C text>", "isCorrect": false},
+                      {"label": "D", "text": "<option D text>", "isCorrect": false}
+                    ]""";
+        }
+        return "null";
+    }
+
+    private String mapDifficultyLabel(Question.Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY   -> "EASY (Dễ)";
+            case MEDIUM -> "MEDIUM (Trung bình)";
+            case HARD   -> "HARD (Khó)";
+        };
+    }
+
+    private String getDifficultyDescription(Question.Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY   -> "recall-level knowledge, straightforward questions";
+            case MEDIUM -> "comprehension and application, moderate complexity";
+            case HARD   -> "analysis and synthesis, complex multi-step reasoning";
+        };
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
     }
 }

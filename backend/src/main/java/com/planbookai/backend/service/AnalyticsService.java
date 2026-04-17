@@ -9,7 +9,10 @@ import com.planbookai.backend.exception.ResourceNotFoundException;
 import com.planbookai.backend.model.entity.Exam;
 import com.planbookai.backend.model.entity.ExamQuestion;
 import com.planbookai.backend.model.entity.Question;
+<<<<<<< HEAD
 import com.planbookai.backend.model.entity.Question.Difficulty;
+=======
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
 import com.planbookai.backend.model.entity.QuestionBank;
 import com.planbookai.backend.model.entity.User;
 import com.planbookai.backend.repository.ExamQuestionRepository;
@@ -113,7 +116,11 @@ public class AnalyticsService {
                 exam.getTopic(),
                 exam.getTotalQuestions(),
                 exam.getDurationMins(),
+<<<<<<< HEAD
                 exam.getStatus() != null ? ((Enum<Difficulty>) exam.getStatus()).name() : null,
+=======
+                exam.getStatus() != null ? exam.getStatus().name() : null,
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
                 round2(avgScore),
                 round2(passRate),
                 scoreDist,
@@ -142,7 +149,11 @@ public class AnalyticsService {
         log.info("[AnalyticsService] getStudentAnalytics: teacher={}", teacher.getEmail());
 
         // 1. Load tất cả đề thi của teacher (không phân trang – dùng toàn bộ)
+<<<<<<< HEAD
         String allExams = examRepository.findByTeacherId(
+=======
+        List<Exam> allExams = examRepository.findByTeacherId(
+>>>>>>> e109ff8b3817c1be84ab73e4b9730312014b9eff
                 teacher.getId(),
                 org.springframework.data.domain.Pageable.unpaged()
         ).getContent();

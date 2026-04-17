@@ -25,4 +25,7 @@ public class AuthResponse {
         private String role;
         private Boolean isActive;
     }
-}
+
+    
+
+}
