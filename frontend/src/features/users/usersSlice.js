@@ -4,9 +4,15 @@ import { userService } from '@/services/userService'
 export const fetchUsers = createAsyncThunk('users/fetchAll', async (_, { rejectWithValue }) => {
   try {
     const res = await userService.getAll()
-    return res.data
+    console.log('🔍 fetchUsers raw res.data:', res.data)
+    console.log('🔍 typeof res.data:', typeof res.data, 'isArray:', Array.isArray(res.data))
+    const list = Array.isArray(res.data) ? res.data : (res.data?.content ?? res.data?.data ?? res.data?.value ?? [])
+    console.log('🔍 list to store:', list)
+    return list
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Không thể tải danh sách người dùng')
+    const msg = err.response?.data?.message || err.response?.data || err.message || 'Không thể tải danh sách người dùng'
+    console.error('🔴 fetchUsers error:', msg)
+    return rejectWithValue(typeof msg === 'string' ? msg : JSON.stringify(msg))
   }
 })
 
@@ -15,7 +21,8 @@ export const fetchUserById = createAsyncThunk('users/fetchById', async (id, { re
     const res = await userService.getById(id)
     return res.data
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Không tìm thấy người dùng')
+    const msg = err.response?.data?.message || err.message || 'Không tìm thấy người dùng'
+    return rejectWithValue(typeof msg === 'string' ? msg : JSON.stringify(msg))
   }
 })
 

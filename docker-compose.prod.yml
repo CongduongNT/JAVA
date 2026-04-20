@@ -1,0 +1,55 @@
+version: '3.8'
+
+# =====================================================================
+# docker-compose.prod.yml – Production deployment config (AWS ECS/EC2)
+# =====================================================================
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# Required environment variables (set in AWS Secrets Manager / .env.prod):
+#   ECR_URL              - AWS ECR repository URL (e.g. 123456789.dkr.ecr.ap-southeast-1.amazonaws.com)
+#   RDS_ENDPOINT         - AWS RDS MySQL endpoint
+#   MYSQL_PASSWORD       - Database password
+#   GEMINI_API_KEY       - Google Gemini AI API key
+#   SUPABASE_URL         - Supabase project URL
+#   SUPABASE_KEY         - Supabase anon/service key
+#   SUPABASE_S3_ENDPOINT - Supabase S3-compatible endpoint
+#   SUPABASE_S3_ACCESS_KEY
+#   SUPABASE_S3_SECRET_KEY
+#   JWT_SECRET           - JWT signing secret (min 32 chars)
+# =====================================================================
+
+services:
+  backend:
+    image: ${ECR_URL}/pba-backend:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MYSQL_HOST: ${RDS_ENDPOINT}
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: planbookai
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      SUPABASE_S3_ENDPOINT: ${SUPABASE_S3_ENDPOINT}
+      SUPABASE_S3_ACCESS_KEY: ${SUPABASE_S3_ACCESS_KEY}
+      SUPABASE_S3_SECRET_KEY: ${SUPABASE_S3_SECRET_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api-docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: ${ECR_URL}/pba-frontend:latest
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend

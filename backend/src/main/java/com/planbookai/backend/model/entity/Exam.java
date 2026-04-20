@@ -64,6 +64,11 @@ public class Exam {
     @Builder.Default
     private Boolean aiGenerated = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "exam_type", length = 20)
+    @Builder.Default
+    private ExamType examType = ExamType.EXAM;
+
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -78,5 +83,14 @@ public class Exam {
 
     public enum ExamStatus {
         DRAFT, PUBLISHED, CLOSED
+    }
+
+    /**
+     * ExamType – phân loại đề thi:
+     * EXAM = đề thi chính thức (có OCR chấm).
+     * EXERCISE = bài tập luyện tập (giáo viên tự chấm bên ngoài).
+     */
+    public enum ExamType {
+        EXAM, EXERCISE
     }
 }

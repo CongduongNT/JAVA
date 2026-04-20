@@ -49,38 +49,33 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        // Encode "admin" password using the application's PasswordEncoder
-        String encodedAdminPass = passwordEncoder.encode("admin");
-
-        ensureUser("admin@planbookai.com", "System Admin", Role.RoleName.ADMIN, encodedAdminPass);
-        ensureUser("manager@planbookai.com", "System Manager", Role.RoleName.MANAGER, encodedAdminPass);
-        ensureUser("staff@planbookai.com", "Educational Staff", Role.RoleName.STAFF, encodedAdminPass);
-        ensureUser("teacher@planbookai.com", "HighSchool Teacher", Role.RoleName.TEACHER, encodedAdminPass);
+        ensureUser("admin@planbookai.com",   "System Admin",       Role.RoleName.ADMIN,   "Admin@123");
+        ensureUser("manager@planbookai.com", "System Manager",     Role.RoleName.MANAGER, "Manager@123");
+        ensureUser("staff@planbookai.com",   "Educational Staff",  Role.RoleName.STAFF,   "Staff@123");
+        ensureUser("teacher@planbookai.com", "HighSchool Teacher", Role.RoleName.TEACHER, "Teacher@123");
     }
 
-    private void ensureUser(String email, String fullName, Role.RoleName roleName, String encodedPassword) {
+    private void ensureUser(String email, String fullName, Role.RoleName roleName, String plainPassword) {
         Role role = roleRepository.findByName(roleName).orElseThrow();
         User user = userRepository.findByEmail(email).orElse(null);
 
         if (user == null) {
             userRepository.save(User.builder()
                     .fullName(fullName).email(email)
-                    .passwordHash(encodedPassword).role(role)
+                    .passwordHash(passwordEncoder.encode(plainPassword))
+                    .role(role)
                     .isActive(true).emailVerified(true).build());
         } else {
             boolean updated = false;
-            // Force role update if mismatch
             if (user.getRole() == null || user.getRole().getName() != roleName) {
                 user.setRole(role);
                 updated = true;
             }
-            // Use passwordEncoder.matches to check if we need to update the hash
-            // If the current hash doesn't match "admin", update it to the new hash
-            if (!passwordEncoder.matches("admin", user.getPasswordHash())) {
-                user.setPasswordHash(encodedPassword);
+            // Re-hash if current password doesn't match
+            if (!passwordEncoder.matches(plainPassword, user.getPasswordHash())) {
+                user.setPasswordHash(passwordEncoder.encode(plainPassword));
                 updated = true;
             }
-            
             if (updated) {
                 userRepository.save(user);
             }

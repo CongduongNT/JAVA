@@ -13,4 +13,11 @@ export const subscriptionsApi = {
   getMyOrders: () => api.get('/orders/my'),
   createOrder: (data) => api.post('/orders', data),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
+
+  // VNPay Payment
+  createVNPayPayment: (packageId) =>
+    api.post('/payment/vnpay/create-payment-url', {
+      packageId,
+      paymentMethod: 'VNPAY',
+    }),
 };

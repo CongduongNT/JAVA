@@ -78,7 +78,7 @@ public class LessonPlanController {
     }
 
     @PostMapping("/lesson-plans")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Create lesson plan", description = "Creates a new manual lesson plan for the current teacher.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Lesson plan created successfully"),
@@ -108,7 +108,7 @@ public class LessonPlanController {
     }
 
     @PutMapping("/lesson-plans/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Update lesson plan", description = "Updates the editable content of a lesson plan owned by the current teacher.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lesson plan updated successfully"),
@@ -125,7 +125,7 @@ public class LessonPlanController {
     }
 
     @DeleteMapping("/lesson-plans/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Delete lesson plan", description = "Deletes a lesson plan owned by the current teacher.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Lesson plan deleted successfully"),
@@ -141,7 +141,7 @@ public class LessonPlanController {
     }
 
     @PutMapping("/lesson-plans/{id}/publish")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Publish lesson plan", description = "Publishes a lesson plan owned by the current teacher.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lesson plan published successfully"),
@@ -156,14 +156,14 @@ public class LessonPlanController {
     }
 
     @PostMapping("/ai/lesson-plans/generate")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Generate lesson plan with AI")
     public ResponseEntity<LessonPlanDTO> generate(@Valid @RequestBody LessonPlanGenerateRequest request) {
         return ResponseEntity.ok(lessonPlanService.generateLessonPlan(request));
     }
 
     @PostMapping("/ai/lesson-plans/save")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STAFF')")
     @Operation(summary = "Save edited AI lesson plan")
     public ResponseEntity<LessonPlanDTO> save(@Valid @RequestBody SaveLessonPlanRequest request) {
         return ResponseEntity.ok(lessonPlanService.saveEditedLessonPlan(request));

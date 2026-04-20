@@ -35,6 +35,15 @@ public class Order {
     @Column(name = "payment_method")
     private String paymentMethod;
 
+    @Column(name = "vnpay_txn_ref", length = 32, unique = true)
+    private String vnpayTxnRef;
+
+    @Column(name = "vnpay_transaction_no", length = 20)
+    private String vnpayTransactionNo;
+
+    @Column(name = "vnpay_bank_code", length = 20)
+    private String vnpayBankCode;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 

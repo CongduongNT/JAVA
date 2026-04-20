@@ -9,7 +9,7 @@ import { ROLES } from '@/services/userService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -141,9 +141,7 @@ export default function UserFormPage() {
 
             <Field label="Vai trò" required error={errors.roleId}>
               <Select value={form.roleId} onValueChange={set('roleId')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn vai trò..." />
-                </SelectTrigger>
+                <SelectTrigger placeholder="Chọn vai trò..." />
                 <SelectContent>
                   {ROLES.map((r) => (
                     <SelectItem key={r.id} value={String(r.id)}>
@@ -155,7 +153,9 @@ export default function UserFormPage() {
             </Field>
 
             {submitError && (
-              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{submitError}</p>
+              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {typeof submitError === 'string' ? submitError : JSON.stringify(submitError)}
+              </p>
             )}
 
             <div className="flex justify-end gap-2 pt-2">

@@ -42,6 +42,7 @@ public class SecurityConfig {
                     // =============================================================
                     .requestMatchers(
                             "/api/v1/auth/**",
+                            "/api/v1/payment/**",        // VNPay return/IPN – không cần login
                             "/api-docs",
                             "/api-docs/**",
                             "/v3/api-docs",

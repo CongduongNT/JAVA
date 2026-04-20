@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:planbookai}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 16112005
+    password: ${MYSQL_PASSWORD:2004duong}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -13,6 +13,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -43,3 +47,16 @@ gemini:
 jwt:
   secret: ${JWT_SECRET:planbookai-super-secret-key-long-enough-for-security-2024}
   expiration: 86400000
+
+# ── VNPay ────────────────────────────────────────────────────────────────────
+vnpay:
+  tmn-code:    ${VNPAY_TMN_CODE:VNPAYTEST}
+  hash-secret: ${VNPAY_HASH_SECRET:RAOEXHYVSDDIIENL}
+  payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url:  ${VNPAY_RETURN_URL:http://localhost:8080/api/v1/payment/vnpay/return}
+  ipn-url:     ${VNPAY_IPN_URL:}
+  version:     2.1.0
+
+# ── Application ──────────────────────────────────────────────────────────────
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}

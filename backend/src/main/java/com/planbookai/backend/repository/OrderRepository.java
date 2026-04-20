@@ -17,6 +17,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /** Lấy tất cả order của một user. */
     List<Order> findByUserId(Long userId);
 
+    /** Tìm order theo mã giao dịch VNPay (dùng khi xử lý IPN callback). */
+    java.util.Optional<Order> findByVnpayTxnRef(String vnpayTxnRef);
+
     // ── Revenue analytics queries (KAN-26) ────────────────────────────────────
 
     /**

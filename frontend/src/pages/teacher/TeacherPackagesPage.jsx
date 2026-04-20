@@ -1,40 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Check, ShoppingCart, Sparkles, Zap, Award, Star, ArrowRight, Rocket, Shield } from 'lucide-react';
+import { Loader2, Check, ShoppingCart, Sparkles, Zap, Award, Star, ArrowRight, Rocket, Shield, CheckCircle2 } from 'lucide-react';
 import { subscriptionsApi } from '../../features/subscriptions/subscriptionsApi';
 
 const TeacherPackagesPage = () => {
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchPackages = async () => {
-    try {
-      const res = await subscriptionsApi.getPackages();
-      const activePackages = res.data.filter(pkg => pkg.isActive);
-      setPackages(activePackages);
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách gói:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [packages, setPackages]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [activePkgName, setActivePkgName] = useState(null); // tên gói đang active
 
   useEffect(() => {
-    fetchPackages();
+    const fetchData = async () => {
+      try {
+        const [pkgRes, orderRes] = await Promise.all([
+          subscriptionsApi.getPackages(),
+          subscriptionsApi.getMyOrders(),
+        ]);
+        const activePackages = pkgRes.data.filter(pkg => pkg.isActive);
+        setPackages(activePackages);
+
+        // Tìm order đang ACTIVE
+        const activeOrder = (orderRes.data || []).find(o => o.status === 'ACTIVE');
+        if (activeOrder?.packageName) {
+          setActivePkgName(activeOrder.packageName.toUpperCase());
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
+  const [paying, setPaying] = useState(null); // id của gói đang xử lý
+
   const handleSubscribe = async (pkg) => {
-    const confirmBuy = window.confirm(`Bạn có muốn mua gói ${pkg.name} với giá $${pkg.price}?`);
-    if (confirmBuy) {
-      try {
-        await subscriptionsApi.createOrder({
-          packageId: pkg.id,
-          paymentMethod: 'credit_card'
-        });
-        alert('Giao dịch thành công! Đơn hàng của bạn đang chờ hệ thống xử lý.');
-      } catch (error) {
-        console.error("Lỗi khi đăng ký gói:", error);
-        alert('Lỗi khi thực hiện giao dịch.');
+    if (paying) return; // tránh double-click
+    setPaying(pkg.id);
+    try {
+      const res = await subscriptionsApi.createVNPayPayment(pkg.id);
+      const { paymentUrl } = res.data;
+      if (paymentUrl) {
+        // Redirect sang trang thanh toán VNPay
+        window.location.href = paymentUrl;
       }
+    } catch (error) {
+      console.error('Lỗi khi tạo thanh toán VNPay:', error);
+      alert('Không thể kết nối cổng thanh toán. Vui lòng thử lại sau.');
+    } finally {
+      setPaying(null);
     }
   };
 
@@ -76,22 +89,32 @@ const TeacherPackagesPage = () => {
           const isPremium = pkg.name.toUpperCase().includes('PREMIUM');
           const highlight = isPro || isPremium;
           
+          const isCurrentPlan = activePkgName && pkg.name.toUpperCase() === activePkgName;
+
           return (
             <div 
               key={pkg.id} 
               className={`group relative flex flex-col rounded-[2.5rem] p-10 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl 
-                ${highlight 
+                ${isCurrentPlan
+                   ? 'bg-slate-900 text-white shadow-emerald-500/30 shadow-2xl scale-105 z-10 border-4 border-emerald-500'
+                   : highlight 
                    ? 'bg-slate-900 text-white shadow-blue-500/20 shadow-2xl scale-105 z-10 border-none' 
                    : 'bg-white text-slate-800 border-2 border-slate-100 shadow-xl shadow-slate-200/50'}`}
               style={{ animationDelay: `${i * 150}ms` }}
             >
+              {/* Badge for currently active plan */}
+              {isCurrentPlan && (
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-black px-5 py-2 rounded-full shadow-xl uppercase tracking-widest flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3" /> Đang sử dụng
+                </div>
+              )}
               {/* Badge for highlight plans */}
-              {isPro && (
+              {!isCurrentPlan && isPro && (
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-5 py-2 rounded-full shadow-xl uppercase tracking-widest">
                   Được chọn nhiều nhất
                 </div>
               )}
-              {isPremium && (
+              {!isCurrentPlan && isPremium && (
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-[10px] font-black px-5 py-2 rounded-full shadow-xl uppercase tracking-widest">
                   Giải pháp tối ưu
                 </div>
@@ -108,19 +131,39 @@ const TeacherPackagesPage = () => {
               </div>
               
               <div className="mb-10 flex items-baseline gap-1">
-                <span className="text-5xl font-black tracking-tighter">${pkg.price}</span>
+                {pkg.price === 0 ? (
+                  <span className="text-5xl font-black tracking-tighter">Miễn phí</span>
+                ) : (
+                  <>
+                    <span className="text-4xl font-black tracking-tighter">
+                      {Number(pkg.price).toLocaleString('vi-VN')}₫
+                    </span>
+                  </>
+                )}
                 <span className={`text-lg font-bold ${highlight ? 'text-slate-500' : 'text-slate-400'}`}>/ {pkg.durationDays} ngày</span>
               </div>
               
-              <button 
-                onClick={() => handleSubscribe(pkg)}
-                className={`group w-full py-4 px-6 rounded-[1.25rem] font-black text-sm uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-300 shadow-lg active:scale-95
-                  ${highlight 
-                    ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-white/10' 
-                    : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'}`}
-              >
-                <ShoppingCart className="w-5 h-5" /> Đăng ký ngay <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </button>
+              {isCurrentPlan ? (
+                /* Gói đang dùng – không cho đăng ký lại */
+                <div className="w-full py-4 px-6 rounded-[1.25rem] font-black text-sm uppercase tracking-widest flex justify-center items-center gap-2 bg-emerald-500 text-white cursor-default select-none shadow-lg shadow-emerald-500/30">
+                  <CheckCircle2 className="w-5 h-5" /> Đang sử dụng
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleSubscribe(pkg)}
+                  disabled={!!paying}
+                  className={`group w-full py-4 px-6 rounded-[1.25rem] font-black text-sm uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-300 shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed
+                    ${highlight
+                      ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-white/10'
+                      : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'}`}
+                >
+                  {paying === pkg.id ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Đang xử lý...</>
+                  ) : (
+                    <><ShoppingCart className="w-5 h-5" /> Thanh toán VNPay <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" /></>
+                  )}
+                </button>
+              )}
 
               <div className="mt-12 pt-10 border-t border-dashed border-slate-700/50">
                 <h4 className="text-xs font-black uppercase tracking-widest opacity-60 mb-6 flex items-center gap-2">

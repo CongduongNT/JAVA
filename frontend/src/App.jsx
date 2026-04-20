@@ -37,6 +37,8 @@ import ManagerRevenueDashboard from './pages/manager/ManagerRevenueDashboard'
 import AdminUserGrowthDashboard from './pages/admin/AdminUserGrowthDashboard'
 import GradingResultsList from './pages/teacher/GradingResultsList'
 import GradingResultDetail from './pages/teacher/GradingResultDetail'
+import SystemConfigPage from './pages/admin/SystemConfigPage'
+import PaymentResultPage from './pages/payment/PaymentResultPage'
 import { Toaster } from 'sonner'
 
 const NotFound = () => (
@@ -46,14 +48,46 @@ const NotFound = () => (
   </div>
 )
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null, info: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, info) {
+    console.error('🔴 ErrorBoundary caught:', error.message)
+    console.error('📍 Component stack:', info.componentStack)
+    this.setState({ info })
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 24, fontFamily: 'monospace', background: '#fee', border: '2px solid red', margin: 16, borderRadius: 8 }}>
+          <h2 style={{ color: 'red' }}>⚠️ React Render Error</h2>
+          <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}>{String(this.state.error)}</pre>
+          <details style={{ marginTop: 8 }}>
+            <summary>Component Stack</summary>
+            <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap' }}>{this.state.info?.componentStack}</pre>
+          </details>
+          <button onClick={() => this.setState({ hasError: false, error: null, info: null })} style={{ marginTop: 8, padding: '4px 12px', cursor: 'pointer' }}>Retry</button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 function App() {
   return (
-    <>
+    <ErrorBoundary>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/payment/result" element={<PaymentResultPage />} />
 
         <Route
           element={
@@ -173,6 +207,14 @@ function App() {
               </RoleGuard>
             }
           />
+          <Route
+            path="/admin/system-config"
+            element={
+              <RoleGuard roles={['ADMIN']}>
+                <SystemConfigPage />
+              </RoleGuard>
+            }
+          />
 
           <Route
             path="/prompt-templates"
@@ -202,7 +244,7 @@ function App() {
           <Route
             path="/lesson-plans"
             element={
-              <RoleGuard roles={['TEACHER']}>
+              <RoleGuard roles={['TEACHER', 'STAFF']}>
                 <LessonPlansPage />
               </RoleGuard>
             }
@@ -242,7 +284,7 @@ function App() {
           <Route
             path="/lesson-plans/ai-generator"
             element={
-              <RoleGuard roles={['TEACHER']}>
+              <RoleGuard roles={['TEACHER', 'STAFF']}>
                 <LessonPlanGenerator />
               </RoleGuard>
             }
@@ -325,7 +367,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster position="top-right" richColors closeButton />
-    </>
+    </ErrorBoundary>
   )
 }
 

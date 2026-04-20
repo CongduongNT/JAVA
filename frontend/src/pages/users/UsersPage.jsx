@@ -8,7 +8,7 @@ import { ROLE_NAMES } from '@/services/userService'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import {
   Pagination, PaginationContent, PaginationEllipsis,
   PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
@@ -31,9 +31,7 @@ function FilterToolbar({ search, role, status, onSearch, onRole, onStatus, onRef
       </div>
 
       <Select value={role} onValueChange={onRole}>
-        <SelectTrigger className="h-9 w-[140px]">
-          <SelectValue placeholder="Role" />
-        </SelectTrigger>
+        <SelectTrigger className="h-9 w-[140px]" placeholder="Role" />
         <SelectContent>
           <SelectItem value="ALL">Tất cả Role</SelectItem>
           {ROLE_NAMES.map((r) => (
@@ -43,9 +41,7 @@ function FilterToolbar({ search, role, status, onSearch, onRole, onStatus, onRef
       </Select>
 
       <Select value={status} onValueChange={onStatus}>
-        <SelectTrigger className="h-9 w-[140px]">
-          <SelectValue placeholder="Trạng thái" />
-        </SelectTrigger>
+        <SelectTrigger className="h-9 w-[140px]" placeholder="Trạng thái" />
         <SelectContent>
           <SelectItem value="ALL">Tất cả</SelectItem>
           <SelectItem value="ACTIVE">Hoạt động</SelectItem>
@@ -160,7 +156,7 @@ export default function UsersPage() {
 
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
+          {typeof error === 'string' ? error : JSON.stringify(error)}
         </div>
       )}
 

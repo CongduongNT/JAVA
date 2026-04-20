@@ -12,6 +12,7 @@ import {
   LogOut,
   Package,
   Settings,
+  Settings2,
   Shield,
   Users,
   Loader2,
@@ -19,14 +20,12 @@ import {
 
 import { logout } from '../../features/auth/authSlice'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -36,23 +35,64 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-import { TooltipProvider } from '@/components/ui/tooltip'
 
-const NAV_ITEMS = [
-  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: [] },
-  { title: 'My Lesson Plans', href: '/lesson-plans', icon: BookOpen, roles: ['TEACHER'] },
-  { title: 'Packages', href: '/packages', icon: Package, roles: ['TEACHER'] },
-  { title: 'Order History', href: '/orders/history', icon: Settings, roles: ['TEACHER'] },
-  { title: 'Question Bank', href: '/question-bank', icon: BookCopy, roles: ['TEACHER', 'STAFF', 'MANAGER', 'ADMIN'] },
-  { title: 'Exam Generator', href: '/exam-generator', icon: FileText, roles: ['TEACHER'] },
-  { title: 'OCR Grading', href: '/ocr-grading', icon: Bot, roles: ['TEACHER'] },
-  { title: 'Prompt Templates', href: '/prompt-templates', icon: Settings, roles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { title: 'Manage Teachers', href: '/manager/teachers', icon: Users, roles: ['MANAGER', 'ADMIN'] },
-  { title: 'Manager Packages', href: '/manager/subscriptions', icon: Package, roles: ['MANAGER', 'ADMIN'] },
-  { title: 'Orders', href: '/manager/orders', icon: BookCopy, roles: ['MANAGER', 'ADMIN'] },
-  { title: 'Analytics', href: '/manager/analytics', icon: BarChart3, roles: ['MANAGER', 'ADMIN'] },
-  { title: 'User Management', href: '/admin/users', icon: Shield, roles: ['ADMIN'] },
-  { title: 'System Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
+const NAV_GROUPS = [
+  {
+    label: 'Tổng quan',
+    roles: [],            // visible to ALL
+    items: [
+      { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Công cụ giảng dạy',
+    roles: ['TEACHER', 'STAFF'],
+    items: [
+      { title: 'Giáo án của tôi',  href: '/lesson-plans',              icon: BookOpen,  roles: ['TEACHER', 'STAFF'] },
+      { title: 'Soạn giáo án AI', href: '/lesson-plans/ai-generator',  icon: Bot,       roles: ['TEACHER', 'STAFF'] },
+      { title: 'Ngân hàng câu hỏi', href: '/question-bank',           icon: BookCopy,  roles: ['TEACHER', 'STAFF'] },
+      { title: 'Tạo đề thi',      href: '/exam-generator',            icon: FileText,  roles: ['TEACHER'] },
+      { title: 'OCR Chấm bài',    href: '/ocr-grading',               icon: Bot,       roles: ['TEACHER'] },
+      { title: 'Thống kê',        href: '/analytics',                 icon: BarChart3, roles: ['TEACHER'] },
+    ],
+  },
+  {
+    label: 'Tài khoản & Dịch vụ',
+    roles: ['TEACHER'],
+    items: [
+      { title: 'Gói dịch vụ',     href: '/packages',                  icon: Package,   roles: ['TEACHER'] },
+      { title: 'Lịch sử đơn hàng', href: '/orders/history',           icon: BarChart3, roles: ['TEACHER'] },
+    ],
+  },
+  {
+    label: 'Quản lý nội dung',
+    roles: ['STAFF', 'MANAGER', 'ADMIN'],
+    items: [
+      { title: 'Ngân hàng câu hỏi', href: '/question-bank',            icon: BookCopy,  roles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { title: 'Prompt Templates', href: '/prompt-templates',          icon: Settings2, roles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { title: 'Duyệt câu hỏi',   href: '/manager/approve',           icon: Shield,    roles: ['MANAGER', 'ADMIN'] },
+    ],
+  },
+  {
+    label: 'Quản lý hệ thống',
+    roles: ['MANAGER', 'ADMIN'],
+    items: [
+      { title: 'Quản lý giáo viên', href: '/manager/teachers',         icon: Users,     roles: ['MANAGER', 'ADMIN'] },
+      { title: 'Gói đăng ký',      href: '/manager/subscriptions',    icon: Package,   roles: ['MANAGER', 'ADMIN'] },
+      { title: 'Đơn hàng',         href: '/manager/orders',           icon: BookCopy,  roles: ['MANAGER', 'ADMIN'] },
+      { title: 'Doanh thu',        href: '/manager/analytics',        icon: BarChart3, roles: ['MANAGER', 'ADMIN'] },
+    ],
+  },
+  {
+    label: 'Quản trị',
+    roles: ['ADMIN'],
+    items: [
+      { title: 'Người dùng',       href: '/admin/users',               icon: Users,     roles: ['ADMIN'] },
+      { title: 'Khung chương trình', href: '/admin/frameworks',        icon: BookOpen,  roles: ['ADMIN'] },
+      { title: 'Thống kê người dùng', href: '/admin/analytics/users', icon: BarChart3, roles: ['ADMIN'] },
+      { title: 'Cấu hình hệ thống', href: '/admin/system-config',     icon: Settings2, roles: ['ADMIN'] },
+    ],
+  },
 ]
 
 const ROLE_LABELS = {
@@ -109,12 +149,7 @@ function AppSidebar() {
     navigate('/login')
   }
 
-  const visibleItems = NAV_ITEMS.filter((item) => {
-    if (!item.roles || item.roles.length === 0) return true
-    return role && item.roles.map((r) => r.toUpperCase().replace('ROLE_', '')).includes(role)
-  })
-
-  const currentRoleKey = role; // Đã chuẩn hóa ở trên
+  const currentRoleKey = role
   const roleInfo = ROLE_LABELS[currentRoleKey] || { label: role || 'User', color: 'bg-slate-100 text-slate-600' }
 
   return (
@@ -131,78 +166,77 @@ function AppSidebar() {
 
       <Separator className="bg-sidebar-border" />
 
-      <SidebarContent className="py-2">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-3 pb-1">Navigation</SidebarGroupLabel>
-          <SidebarMenu>
-            {visibleItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(item.href)}
-                  tooltip={item.title}
-                  className="transition-colors duration-150"
-                >
-                  <Link to={item.href}>
-                    <item.icon className="size-4 shrink-0" />
-                    <span className="truncate">{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+      <SidebarContent className="py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {NAV_GROUPS.map((group, idx) => {
+          // Filter items visible for current role
+          const visibleItems = group.items.filter(item => {
+            if (!item.roles || item.roles.length === 0) return true
+            return role && item.roles.map(r => r.toUpperCase()).includes(role)
+          })
+          // Hide entire group if no items visible
+          if (visibleItems.length === 0) return null
+          // Hide group header if roles don't match group-level check
+          if (group.roles.length > 0 && !group.roles.map(r => r.toUpperCase()).includes(role)) return null
+
+          return (
+            <React.Fragment key={group.label}>
+              {idx > 0 && (
+                <div className="mx-3 my-1 h-px bg-sidebar-border/50 group-data-[collapsible=icon]:mx-2" />
+              )}
+              <SidebarGroup className="py-0.5">
+                <SidebarMenu>
+                  {visibleItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        isActive={isActive(item.href)}
+                        tooltip={item.title}
+                        onClick={() => navigate(item.href)}
+                        className="cursor-pointer transition-colors duration-150"
+                      >
+                        <item.icon className="size-4 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            </React.Fragment>
+          )
+        })}
       </SidebarContent>
 
       <Separator className="bg-sidebar-border" />
       <SidebarFooter className="py-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                  tooltip={user?.fullName || 'Account'}
-                >
-                  <Avatar className="size-8 rounded-lg">
-                    <AvatarImage src={user?.avatarUrl} alt={user?.fullName} />
-                    <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="truncate font-semibold text-sidebar-foreground">
-                      {user?.fullName || 'Admin'}
-                    </span>
-                    <span className="truncate text-[11px] text-sidebar-accent-foreground">
-                      {user?.email || 'admin@planbookai.com'}
-                    </span>
-                    {role && (
-                      <span className={`mt-1 inline-flex w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold ${roleInfo.color}`}>
-                        {roleInfo.label}
-                      </span>
-                    )}
-                  </div>
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 rounded-lg" side="right" align="end" sideOffset={8}>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-sm font-semibold">{user?.fullName || 'Admin'}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email || 'admin@planbookai.com'}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 size-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex w-full items-center gap-3 rounded-lg px-3 py-2">
+              <Avatar className="size-8 rounded-lg shrink-0">
+                <AvatarImage src={user?.avatarUrl} alt={user?.fullName} />
+                <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden min-w-0">
+                <span className="truncate font-semibold text-sidebar-foreground">
+                  {user?.fullName || 'Admin'}
+                </span>
+                <span className="truncate text-[11px] text-sidebar-accent-foreground">
+                  {user?.email || 'admin@planbookai.com'}
+                </span>
+                {role && (
+                  <span className={`mt-1 inline-flex w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold ${roleInfo.color}`}>
+                    {roleInfo.label}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors group-data-[collapsible=icon]:hidden"
+                title="Logout"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
@@ -271,8 +305,7 @@ export default function MainLayout() {
   }
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <SidebarProvider>
+    <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="flex min-h-screen flex-col bg-background">
           <TopHeader />
@@ -282,6 +315,5 @@ export default function MainLayout() {
           <AppFooter />
         </SidebarInset>
       </SidebarProvider>
-    </TooltipProvider>
   )
 }

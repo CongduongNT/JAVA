@@ -1,0 +1,87 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_BACKEND_REPO: pba-backend
+  ECR_FRONTEND_REPO: pba-frontend
+  ECS_CLUSTER: pba-cluster
+  ECS_BACKEND_SERVICE: pba-backend-service
+  ECS_FRONTEND_SERVICE: pba-frontend-service
+
+jobs:
+  deploy:
+    name: Build & Deploy to AWS ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # 3. Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4. Build & push Backend image
+      - name: Build and push Backend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_BACKEND_REPO:$IMAGE_TAG \
+                       -t $ECR_REGISTRY/$ECR_BACKEND_REPO:latest \
+                       ./backend
+          docker push $ECR_REGISTRY/$ECR_BACKEND_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_BACKEND_REPO:latest
+
+      # 5. Build & push Frontend image
+      - name: Build and push Frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_FRONTEND_REPO:$IMAGE_TAG \
+                       -t $ECR_REGISTRY/$ECR_FRONTEND_REPO:latest \
+                       ./frontend
+          docker push $ECR_REGISTRY/$ECR_FRONTEND_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_FRONTEND_REPO:latest
+
+      # 6. Deploy Backend service to ECS
+      - name: Deploy Backend to ECS
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_BACKEND_SERVICE \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      # 7. Deploy Frontend service to ECS
+      - name: Deploy Frontend to ECS
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_FRONTEND_SERVICE \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      # 8. Wait for backend to stabilize
+      - name: Wait for ECS Backend deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $ECS_BACKEND_SERVICE \
+            --region $AWS_REGION
